@@ -3,9 +3,8 @@ using System.Globalization;
 namespace Cmux.Core.Terminal;
 
 /// <summary>
-/// Manages the terminal cell grid, cursor state, scrollback buffer,
-/// and scroll regions. This is the core data structure that the VT parser
-/// operates on and the renderer reads from.
+/// 管理终端单元格网格、光标状态、回滚缓冲区和滚动区域。
+/// 这是 VT 解析器操作的核心数据结构，渲染器从中读取数据。
 /// </summary>
 public class TerminalBuffer
 {
@@ -19,19 +18,19 @@ public class TerminalBuffer
     public int CursorCol { get; set; }
     public bool CursorVisible { get; set; } = true;
 
-    // Scroll region (inclusive, 0-based)
+    // 滚动区域（包含边界，从 0 开始）
     public int ScrollTop { get; private set; }
     public int ScrollBottom { get; private set; }
 
-    // Saved cursor state
+    // 已保存的光标状态
     private int _savedCursorRow;
     private int _savedCursorCol;
     private TerminalAttribute _savedAttribute;
 
-    // Current writing attribute
+    // 当前写入属性
     public TerminalAttribute CurrentAttribute { get; set; } = TerminalAttribute.Default;
 
-    // Mode flags
+    // 模式标志
     public bool OriginMode { get; set; }
     public bool AutoWrapMode { get; set; } = true;
     public bool InsertMode { get; set; }
@@ -39,16 +38,16 @@ public class TerminalBuffer
     public bool BracketedPasteMode { get; set; }
     public bool IsAlternateScreen { get; private set; }
 
-    // Mouse tracking modes
-    public bool MouseTrackingNormal { get; set; }    // Mode 1000: button events
-    public bool MouseTrackingButton { get; set; }    // Mode 1002: button + motion while pressed
-    public bool MouseTrackingAny { get; set; }       // Mode 1003: all motion
-    public bool MouseSgrExtended { get; set; }       // Mode 1006: SGR extended coordinates
+    // 鼠标追踪模式
+    public bool MouseTrackingNormal { get; set; }    // 模式 1000：按键事件
+    public bool MouseTrackingButton { get; set; }    // 模式 1002：按键 + 按下时的移动
+    public bool MouseTrackingAny { get; set; }       // 模式 1003：所有移动
+    public bool MouseSgrExtended { get; set; }       // 模式 1006：SGR 扩展坐标
     public bool MouseEnabled => MouseTrackingNormal || MouseTrackingButton || MouseTrackingAny;
 
     private bool _wrapPending;
 
-    // Alternate screen buffer state
+    // 备用屏幕缓冲区状态
     private TerminalCell[,]? _savedMainCells;
     private List<TerminalCell[]>? _savedMainScrollbackList;
     private int _savedMainCursorRow;
@@ -117,8 +116,8 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Writes a character at the current cursor position and advances the cursor.
-    /// Handles auto-wrap and insert mode.
+    /// 在当前光标位置写入字符并推进光标。
+    /// 处理自动换行和插入模式。
     /// </summary>
     public void WriteChar(char c)
     {
@@ -247,14 +246,14 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Scrolls the scroll region up by the given number of lines.
-    /// Lines scrolled out of the top go to scrollback if the scroll region is the full screen.
+    /// 将滚动区域向上滚动指定行数。
+    /// 滚出顶部的行在滚动区域为全屏时进入回滚缓冲区。
     /// </summary>
     public void ScrollUp(int lines = 1)
     {
         for (int n = 0; n < lines; n++)
         {
-            // If the scroll region starts at line 0, push to scrollback
+            // 若滚动区域从第 0 行开始，推入回滚缓冲区
             if (ScrollTop == 0)
             {
                 var scrolledLine = new TerminalCell[Cols];
@@ -264,12 +263,12 @@ public class TerminalBuffer
                 _scrollback.Add(scrolledLine);
             }
 
-            // Shift lines up within the scroll region
+            // 在滚动区域内将行上移
             for (int r = ScrollTop; r < ScrollBottom; r++)
                 for (int c = 0; c < Cols; c++)
                     _cells[r, c] = _cells[r + 1, c];
 
-            // Clear the bottom line
+            // 清除底部行
             for (int c = 0; c < Cols; c++)
                 _cells[ScrollBottom, c] = TerminalCell.Empty;
         }
@@ -278,7 +277,7 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Scrolls the scroll region down by the given number of lines.
+    /// 将滚动区域向下滚动指定行数。
     /// </summary>
     public void ScrollDown(int lines = 1)
     {
@@ -296,8 +295,8 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Erases parts of the display.
-    /// 0 = cursor to end, 1 = start to cursor, 2 = all, 3 = all + scrollback
+    /// 擦除部分显示内容。
+    /// 0 = 光标到末尾，1 = 起始到光标，2 = 全部，3 = 全部 + 回滚缓冲区
     /// </summary>
     public void EraseInDisplay(int mode)
     {
@@ -306,24 +305,24 @@ public class TerminalBuffer
 
         switch (mode)
         {
-            case 0: // Cursor to end
+            case 0: // 光标到末尾
                 for (int c = CursorCol; c < Cols; c++)
                     _cells[CursorRow, c] = TerminalCell.Empty;
                 for (int r = CursorRow + 1; r < Rows; r++)
                     for (int c = 0; c < Cols; c++)
                         _cells[r, c] = TerminalCell.Empty;
                 break;
-            case 1: // Start to cursor
+            case 1: // 起始到光标
                 for (int r = 0; r < CursorRow; r++)
                     for (int c = 0; c < Cols; c++)
                         _cells[r, c] = TerminalCell.Empty;
                 for (int c = 0; c <= CursorCol; c++)
                     _cells[CursorRow, c] = TerminalCell.Empty;
                 break;
-            case 2: // All
+            case 2: // 全部
                 Clear();
                 break;
-            case 3: // All + scrollback
+            case 3: // 全部 + 回滚缓冲区
                 Clear();
                 _scrollback.Clear();
                 break;
@@ -333,8 +332,8 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Erases parts of the current line.
-    /// 0 = cursor to end, 1 = start to cursor, 2 = entire line
+    /// 擦除当前行的部分内容。
+    /// 0 = 光标到末尾，1 = 起始到光标，2 = 整行
     /// </summary>
     public void EraseInLine(int mode)
     {
@@ -467,21 +466,21 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Switches to the alternate screen buffer (DECSET 1049).
-    /// Saves main screen cells, scrollback, cursor, and attribute.
+    /// 切换到备用屏幕缓冲区（DECSET 1049）。
+    /// 保存主屏幕单元格、回滚缓冲区、光标和属性。
     /// </summary>
     public void SwitchToAlternateScreen()
     {
         if (IsAlternateScreen) return;
 
-        // Save main screen state
+        // 保存主屏幕状态
         _savedMainCells = _cells;
         _savedMainScrollbackList = _scrollback.ToList();
         _savedMainCursorRow = CursorRow;
         _savedMainCursorCol = CursorCol;
         _savedMainAttribute = CurrentAttribute;
 
-        // Create a fresh screen
+        // 创建全新屏幕
         _cells = new TerminalCell[Rows, Cols];
         Clear();
         _scrollback.Clear();
@@ -494,14 +493,14 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Switches back to the main screen buffer (DECRST 1049).
-    /// Restores saved main screen state.
+    /// 切换回主屏幕缓冲区（DECRST 1049）。
+    /// 恢复已保存的主屏幕状态。
     /// </summary>
     public void SwitchToMainScreen()
     {
         if (!IsAlternateScreen) return;
 
-        // Restore main screen state
+        // 恢复主屏幕状态
         if (_savedMainCells != null)
         {
             _cells = _savedMainCells;
@@ -569,7 +568,7 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Resizes the buffer, preserving content as much as possible.
+    /// 调整缓冲区大小，尽可能保留内容。
     /// </summary>
     public void Resize(int newCols, int newRows)
     {
@@ -617,8 +616,8 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Creates a plain-text snapshot of scrollback and visible rows.
-    /// Used for restoring terminal context across app restarts.
+    /// 创建回滚和可见行的纯文本快照。
+    /// 用于在应用重启时恢复终端上下文。
     /// </summary>
     public TerminalBufferSnapshot CreateSnapshot(int maxScrollbackLines = 3000)
     {
@@ -641,7 +640,7 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Restores a previously captured plain-text snapshot.
+    /// 恢复之前捕获的纯文本快照。
     /// </summary>
     public void RestoreSnapshot(TerminalBufferSnapshot snapshot)
     {
@@ -723,7 +722,7 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Marks all cells as dirty (for full repaint).
+    /// 将所有单元格标记为脏（用于全量重绘）。
     /// </summary>
     public void MarkAllDirty()
     {
@@ -733,7 +732,7 @@ public class TerminalBuffer
     }
 
     /// <summary>
-    /// Clears dirty flags on all cells.
+    /// 清除所有单元格的脏标记。
     /// </summary>
     public void ClearDirty()
     {

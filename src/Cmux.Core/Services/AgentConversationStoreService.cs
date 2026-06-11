@@ -268,7 +268,7 @@ public sealed class AgentConversationStoreService
             }
             catch
             {
-                // Ignore load failures and start with an empty index.
+                // 忽略加载失败，从空索引开始。
             }
         }
     }
@@ -325,7 +325,7 @@ public sealed class AgentConversationStoreService
         {
             output.Clear();
 
-            // Fallback for legacy malformed content.
+            // 回退方案：用于历史遗留的格式异常内容。
             foreach (var line in File.ReadLines(filePath, Encoding.UTF8))
             {
                 if (string.IsNullOrWhiteSpace(line))
@@ -342,7 +342,7 @@ public sealed class AgentConversationStoreService
                 }
                 catch
                 {
-                    // Ignore malformed lines.
+                    // 忽略格式异常的行。
                 }
             }
         }

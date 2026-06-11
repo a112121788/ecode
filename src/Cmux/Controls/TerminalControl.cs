@@ -18,9 +18,9 @@ using Cmux.Core.Terminal;
 namespace Cmux.Controls;
 
 /// <summary>
-/// WPF control that renders a TerminalBuffer and handles keyboard/mouse input.
-/// Uses DrawingVisual for efficient rendering of the terminal cell grid.
-/// Features: scrollback, URL detection, search highlights, mouse reporting, visual bell.
+/// 用于渲染 TerminalBuffer 并处理键盘/鼠标输入的 WPF 控件。
+/// 使用 DrawingVisual 高效渲染终端单元格网格。
+/// 功能：回滚、URL 检测、搜索高亮、鼠标上报、可视响铃。
 /// </summary>
 public class TerminalControl : FrameworkElement
 {
@@ -35,30 +35,30 @@ public class TerminalControl : FrameworkElement
     private int _cols;
     private int _rows;
     private bool _mouseDown;
-    private int _scrollOffset; // Negative = scrolled into history, 0 = at bottom
+    private int _scrollOffset; // 负值 = 已滚入历史，0 = 处于底部
     private bool _followOutput = true;
     private int _lastScrollbackCount;
     private int _renderQueued;
     private string _cursorStyle = "bar";
     private bool _cursorBlink = true;
 
-    // Cursor blink timer
+    // 光标闪烁计时器
     private System.Windows.Threading.DispatcherTimer? _cursorTimer;
     private bool _cursorVisible = true;
     private bool _nativeCaretCreated;
     private IntPtr _nativeCaretHwnd;
     private HwndSource? _imeSource;
 
-    // Visual bell
+    // 可视响铃
     private DateTime _bellFlashUntil;
     private System.Windows.Threading.DispatcherTimer? _bellTimer;
 
-    // URL detection
+    // URL 检测
     private (int row, int startCol, int endCol, string url)? _hoveredUrl;
     private int _lastUrlRow = -1;
     private List<(int startCol, int endCol, string url)>? _cachedRowUrls;
 
-    // Search highlights
+    // 搜索高亮
     private List<(int row, int col, int length)> _searchMatches = [];
     private int _currentSearchMatch = -1;
     private HashSet<(int row, int col)>? _searchMatchSetCache;
@@ -67,7 +67,7 @@ public class TerminalControl : FrameworkElement
     private readonly StringBuilder _inputLineBuffer = new();
     private bool _suppressNextEnterToShell;
 
-    // Rendering caches to avoid per-frame allocations
+    // 渲染缓存以避免每帧分配
     private readonly Dictionary<Color, SolidColorBrush> _brushCache = [];
     private Typeface? _typefaceBold;
     private Typeface? _typefaceItalic;
@@ -88,7 +88,7 @@ public class TerminalControl : FrameworkElement
 
     private static readonly Dictionary<string, FontFamily> TerminalFontFamilyCache = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Fired when the pane wants focus.</summary>
+    /// <summary>当面板请求焦点时触发。</summary>
     public event Action? FocusRequested;
     public event Action<string>? CommandSubmitted;
     public event Func<string, bool>? CommandInterceptRequested;
@@ -98,7 +98,7 @@ public class TerminalControl : FrameworkElement
     public event Action? ClosePaneRequested;
     public event Action? SearchRequested;
 
-    /// <summary>Clears all event handlers (called before re-attaching to visual tree).</summary>
+    /// <summary>清除所有事件处理程序（在重新附加到可视化树之前调用）。</summary>
     public void ClearEventHandlers()
     {
         FocusRequested = null;
@@ -111,7 +111,7 @@ public class TerminalControl : FrameworkElement
         SearchRequested = null;
     }
 
-    /// <summary>Whether this pane has notification state (blue ring).</summary>
+    /// <summary>此面板是否具有通知状态（蓝色光环）。</summary>
     public static readonly DependencyProperty HasNotificationProperty =
         DependencyProperty.Register(nameof(HasNotification), typeof(bool), typeof(TerminalControl),
             new PropertyMetadata(false, OnHasNotificationChanged));
@@ -122,7 +122,7 @@ public class TerminalControl : FrameworkElement
         set => SetValue(HasNotificationProperty, value);
     }
 
-    /// <summary>Whether this pane is focused.</summary>
+    /// <summary>此面板是否处于聚焦状态。</summary>
     public static readonly DependencyProperty IsPaneFocusedProperty =
         DependencyProperty.Register(nameof(IsPaneFocused), typeof(bool), typeof(TerminalControl),
             new PropertyMetadata(false, OnIsPaneFocusedChanged));
@@ -133,7 +133,7 @@ public class TerminalControl : FrameworkElement
         set => SetValue(IsPaneFocusedProperty, value);
     }
 
-    /// <summary>Whether the parent surface is currently zoomed.</summary>
+    /// <summary>父 Surface 当前是否处于缩放状态。</summary>
     public bool IsSurfaceZoomed { get; set; }
 
     public TerminalControl()
@@ -164,7 +164,7 @@ public class TerminalControl : FrameworkElement
 
         _selection.SelectionChanged += () => RequestRender(System.Windows.Threading.DispatcherPriority.Render);
 
-        // Cursor blink
+        // 光标闪烁
         _cursorTimer = new System.Windows.Threading.DispatcherTimer
         {
             Interval = TimeSpan.FromMilliseconds(530),
@@ -212,13 +212,13 @@ public class TerminalControl : FrameworkElement
 
         if (_followOutput || _scrollOffset == 0)
         {
-            // Live mode: always stick to bottom.
+            // 实时模式：始终紧贴底部。
             _scrollOffset = 0;
             _followOutput = true;
         }
         else if (_scrollOffset < 0 && scrollbackDelta > 0)
         {
-            // Freeze viewport while output is streaming.
+            // 输出流式传输时冻结视口。
             _scrollOffset -= scrollbackDelta;
         }
 
@@ -239,7 +239,7 @@ public class TerminalControl : FrameworkElement
         {
             Interval = TimeSpan.FromMilliseconds(170),
         };
-        // Restart the timer (handles rapid bell sequences)
+        // 重新启动计时器（处理快速连续的响铃序列）
         _bellTimer.Stop();
         _bellTimer.Tick -= OnBellTimerTick;
         _bellTimer.Tick += OnBellTimerTick;
@@ -252,7 +252,7 @@ public class TerminalControl : FrameworkElement
         RequestRender();
     }
 
-    // --- Search support ---
+    // --- 搜索支持 ---
 
     public void SetSearchHighlights(List<(int row, int col, int length)> matches, int currentIndex)
     {
@@ -310,7 +310,7 @@ public class TerminalControl : FrameworkElement
         }, priority);
     }
 
-    // --- Layout ---
+    // --- 布局 ---
 
     private void CalculateCellSize()
     {
@@ -349,7 +349,7 @@ public class TerminalControl : FrameworkElement
         RequestRender(System.Windows.Threading.DispatcherPriority.Render);
     }
 
-    // --- Rendering ---
+    // --- 渲染 ---
 
     private SolidColorBrush GetCachedBrush(Color color)
     {
@@ -388,18 +388,18 @@ public class TerminalControl : FrameworkElement
             using var dc = _visual.RenderOpen();
             var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
 
-            // Background
+            // 背景
             var bgColor = ToWpfColor(_theme.Background);
             dc.DrawRectangle(GetCachedBrush(bgColor), null, new Rect(0, 0, ActualWidth, ActualHeight));
 
-            // Visual bell flash
+            // 可视响铃闪烁
             if (DateTime.UtcNow < _bellFlashUntil)
             {
                 dc.DrawRectangle(GetCachedBrush(Color.FromArgb(25, 255, 255, 255)), null,
                     new Rect(0, 0, ActualWidth, ActualHeight));
             }
 
-            // Notification ring
+            // 通知光环
             if (HasNotification)
             {
                 var notifPen = new Pen(GetCachedBrush(Color.FromArgb(180, 0x63, 0x66, 0xF1)), 2);
@@ -407,7 +407,7 @@ public class TerminalControl : FrameworkElement
                 dc.DrawRoundedRectangle(null, notifPen, new Rect(1, 1, ActualWidth - 2, ActualHeight - 2), 4, 4);
             }
 
-            // Focused pane indicator
+            // 聚焦面板指示器
             if (IsPaneFocused)
             {
                 var focusPen = new Pen(GetCachedBrush(Color.FromArgb(50, 0x81, 0x8C, 0xF8)), 1);
@@ -415,18 +415,18 @@ public class TerminalControl : FrameworkElement
                 dc.DrawRectangle(null, focusPen, new Rect(0, 0, ActualWidth, ActualHeight));
             }
 
-            // Calculate scrollback offset
+            // 计算回滚偏移
             int scrollbackCount = buffer.ScrollbackCount;
             bool isScrolledBack = _scrollOffset < 0;
             int viewStartLine = scrollbackCount + _scrollOffset;
 
-            // Use cached search match sets (built once in SetSearchHighlights)
+            // 使用缓存的搜索匹配集合（在 SetSearchHighlights 中一次性构建）
             var searchMatchSet = _searchMatchSetCache ?? EmptyMatchSet;
             var currentMatchSet = _currentMatchSetCache ?? EmptyMatchSet;
             var searchMatchBrush = searchMatchSet.Count > 0 ? GetCachedBrush(Color.FromArgb(100, 0xFB, 0xBF, 0x24)) : null;
             var currentMatchBrush = currentMatchSet.Count > 0 ? GetCachedBrush(Color.FromArgb(180, 0xFB, 0x92, 0x3C)) : null;
 
-            // Render visible rows with batched text
+            // 使用批处理文本渲染可见行
             for (int visRow = 0; visRow < _rows; visRow++)
             {
                 int virtualLine = viewStartLine + visRow;
@@ -439,7 +439,7 @@ public class TerminalControl : FrameworkElement
 
                 double y = visRow * _cellHeight;
 
-                // Text run state for batching
+                // 用于批处理的文本运行状态
                 int runStartCol = -1;
                 Color runFgColor = default;
                 bool runBold = false, runItalic = false, runDim = false;
@@ -470,7 +470,7 @@ public class TerminalControl : FrameworkElement
                     bool isSelected = _selection.IsSelected(visRow, c);
                     bool isInverse = attr.Flags.HasFlag(CellFlags.Inverse) != isSelected;
 
-                    // Cell colors
+                    // 单元格颜色
                     TerminalColor cellBg, cellFg;
                     if (isInverse)
                     {
@@ -486,14 +486,14 @@ public class TerminalControl : FrameworkElement
                     if (isSelected && _theme.SelectionBackground.HasValue)
                         cellBg = _theme.SelectionBackground.Value;
 
-                    // Draw cell background
+                    // 绘制单元格背景
                     if (!cellBg.IsDefault)
                     {
                         dc.DrawRectangle(GetCachedBrush(ToWpfColor(cellBg)), null,
                             new Rect(x, y, _cellWidth, _cellHeight));
                     }
 
-                    // Search match highlight (behind text)
+                    // 搜索匹配高亮（位于文本下方）
                     bool isSearchMatch = searchMatchSet.Contains((visRow, c));
                     bool isCurrentMatch = currentMatchSet.Contains((visRow, c));
                     if (isCurrentMatch)
@@ -501,7 +501,7 @@ public class TerminalControl : FrameworkElement
                     else if (isSearchMatch)
                         dc.DrawRectangle(searchMatchBrush, null, new Rect(x, y, _cellWidth, _cellHeight));
 
-                    // URL hover highlight
+                    // URL 悬停高亮
                     if (_hoveredUrl is { } url && visRow == url.row && c >= url.startCol && c <= url.endCol)
                     {
                         var urlPen = new Pen(GetCachedBrush(Color.FromRgb(0x81, 0x8C, 0xF8)), 1);
@@ -509,7 +509,7 @@ public class TerminalControl : FrameworkElement
                         dc.DrawLine(urlPen, new Point(x, y + _cellHeight - 1), new Point(x + _cellWidth, y + _cellHeight - 1));
                     }
 
-                    // Text batching: group consecutive characters with same visual style
+                    // 文本批渲染：把视觉样式相同的连续字符合并为同一次绘制
                     bool hasChar = cell.Character != '\0' && cell.Character != ' ';
                     if (hasChar)
                     {
@@ -520,7 +520,7 @@ public class TerminalControl : FrameworkElement
                         bool underline = attr.Flags.HasFlag(CellFlags.Underline);
                         bool strikethrough = attr.Flags.HasFlag(CellFlags.Strikethrough);
 
-                        // Style changed? Flush the current run first
+                        // 样式已更改？先刷新当前运行
                         if (runStartCol >= 0 && (fgColor != runFgColor || bold != runBold ||
                             italic != runItalic || dim != runDim ||
                             underline != runUnderline || strikethrough != runStrikethrough))
@@ -529,7 +529,7 @@ public class TerminalControl : FrameworkElement
                             runStartCol = -1;
                         }
 
-                        // Start new run or continue existing
+                        // 开始新的运行或继续现有运行
                         if (runStartCol < 0)
                         {
                             runStartCol = c;
@@ -548,18 +548,18 @@ public class TerminalControl : FrameworkElement
                     }
                     else if (runStartCol >= 0)
                     {
-                        // Empty cell — flush the current run
+                        // 空单元格 — 刷新当前运行
                         FlushTextRun(dc, dpi, y, runStartCol, runFgColor, runBold, runItalic, runDim, runUnderline, runStrikethrough);
                         runStartCol = -1;
                     }
                 }
 
-                // Flush final run for this row
+                // 刷新此行的最终运行
                 if (runStartCol >= 0)
                     FlushTextRun(dc, dpi, y, runStartCol, runFgColor, runBold, runItalic, runDim, runUnderline, runStrikethrough);
             }
 
-            // Cursor (only when viewing live buffer)
+            // 光标（仅在查看实时缓冲区时）
             if (!isScrolledBack && buffer.CursorVisible && IsPaneFocused && (_cursorVisible || !_cursorBlink))
             {
                 double cx = buffer.CursorCol * _cellWidth;
@@ -583,7 +583,7 @@ public class TerminalControl : FrameworkElement
                 }
             }
 
-            // Scrollback indicator
+            // 回滚指示器
             if (isScrolledBack)
             {
                 int linesBack = -_scrollOffset;
@@ -614,7 +614,7 @@ public class TerminalControl : FrameworkElement
     }
 
     /// <summary>
-    /// Draws a batched text run and its decorations (underline/strikethrough).
+    /// 绘制批处理的文本运行及其装饰（下划线/删除线）。
     /// </summary>
     private void FlushTextRun(DrawingContext dc, double dpi, double y, int startCol,
         Color fgColor, bool bold, bool italic, bool dim, bool underline, bool strikethrough)
@@ -649,7 +649,7 @@ public class TerminalControl : FrameworkElement
         }
         else
         {
-            // Fall back to fixed-cell placement for missing/proportional fonts.
+            // 对于缺失/等宽字体回退到固定单元格位置。
             double colOffset = 0;
             foreach (var (character, width) in _textRunCells)
             {
@@ -1017,7 +1017,7 @@ public class TerminalControl : FrameworkElement
             string.Equals(font.Source, familyName, StringComparison.OrdinalIgnoreCase) ||
             font.FamilyNames.Values.Any(name => string.Equals(name, familyName, StringComparison.OrdinalIgnoreCase)));
 
-    // --- Mouse reporting ---
+    // --- 鼠标上报 ---
 
     private bool IsMouseTrackingActive =>
         _session?.Buffer.MouseEnabled == true;
@@ -1107,9 +1107,9 @@ public class TerminalControl : FrameworkElement
             _suppressNextEnterToShell = true;
             _suppressNextEnterTextInput = true;
 
-            // The command text has already been sent character-by-character to the shell.
-            // Cancel the current input line so a subsequent newline from agent output
-            // cannot execute the intercepted handler command.
+            // 命令文本已经按字符逐个发送给 Shell。
+            // 取消当前正在输入的这一行，以便 agent 输出中的后续换行
+            // 不会再次执行被截获的处理命令。
             if (_session != null)
                 _session.Write("\x03");
             return;
@@ -1133,7 +1133,7 @@ public class TerminalControl : FrameworkElement
             }
             catch
             {
-                // Ignore handler failures to avoid breaking terminal input.
+                // 忽略处理失败，避免破坏终端输入流程。
             }
         }
 
@@ -1164,14 +1164,14 @@ public class TerminalControl : FrameworkElement
         bool shift = modifiers.HasFlag(ModifierKeys.Shift);
         bool alt = modifiers.HasFlag(ModifierKeys.Alt);
 
-        // Let application-level shortcuts bubble to MainWindow.
-        // Ctrl+Alt combos (pane focus), Ctrl+Tab (surface cycling),
-        // and Ctrl+Shift combos (split, zoom, search, etc.) are app-level.
+        // 让应用级快捷键可以冒泡到 MainWindow。
+        // Ctrl+Alt 组合（面板聚焦）、Ctrl+Tab（Surface 循环），
+        // 以及 Ctrl+Shift 组合（分屏、缩放、搜索等）属于应用级快捷键。
         if (ctrl && alt) return;
         if (ctrl && shift) return;
         if (ctrl && e.Key == Key.Tab) return;
 
-        // Ctrl+Backspace: delete previous word (send Ctrl+W / unix-word-rubout)
+        // Ctrl+Backspace：删除上一个词（发送 Ctrl+W / unix-word-rubout）
         if (ctrl && e.Key == Key.Back)
         {
             _inputLineBuffer.Clear();
@@ -1181,12 +1181,12 @@ public class TerminalControl : FrameworkElement
             return;
         }
 
-        // Terminal shortcuts
+        // 终端级快捷键
         if (ctrl && e.Key == Key.C)
         {
             if (!CopySelectionToClipboard())
             {
-                // Forward Ctrl+C to shell as interrupt when no selection is active.
+                // 没有选中内容时，把 Ctrl+C 转发给 Shell 作为中断信号。
                 _inputLineBuffer.Clear();
                 EnsureLiveView();
                 _session.Write("\x03");
@@ -1210,7 +1210,7 @@ public class TerminalControl : FrameworkElement
             return;
         }
 
-        // Forward Ctrl+letter as control bytes (e.g. Ctrl+X => 0x18) for TUI apps like nano.
+        // 将 Ctrl+字母 作为控制字节转发给 Shell（例如 Ctrl+X => 0x18），以支持 nano 等 TUI 应用。
         if (ctrl && !modifiers.HasFlag(ModifierKeys.Alt) && TryGetCtrlLetterSequence(e.Key, out var ctrlSequence))
         {
             _inputLineBuffer.Clear();
@@ -1247,8 +1247,8 @@ public class TerminalControl : FrameworkElement
     {
         if (_session == null || string.IsNullOrEmpty(e.Text)) return;
 
-        // KeyDown handles Enter; suppress the trailing TextInput CR/LF when
-        // an intercepted command consumed the shell submission.
+        // KeyDown 已经处理了 Enter；当被截获的命令已经消费掉 Shell 提交时，
+        // 抑制 TextInput 路径尾随产生的 CR/LF。
         if (_suppressNextEnterTextInput && (e.Text.Contains('\r') || e.Text.Contains('\n')))
         {
             _suppressNextEnterTextInput = false;
@@ -1256,14 +1256,14 @@ public class TerminalControl : FrameworkElement
             return;
         }
 
-        // Prevent duplicate newline writes from TextInput path.
+        // 防止 TextInput 路径重复写入换行。
         if (e.Text.Contains('\r') || e.Text.Contains('\n'))
         {
             e.Handled = true;
             return;
         }
 
-        // Handle Ctrl+C (copy when selection exists)
+        // 处理 Ctrl+C（有选中内容时复制）
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Text == "\x03")
         {
             if (_selection.HasSelection)
@@ -1276,7 +1276,7 @@ public class TerminalControl : FrameworkElement
             }
         }
 
-        // Handle Ctrl+V (paste)
+        // 处理 Ctrl+V（粘贴）
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Text == "\x16")
         {
             PasteFromClipboard();
@@ -1366,7 +1366,7 @@ public class TerminalControl : FrameworkElement
         }
         catch
         {
-            // Ignore clipboard race/format exceptions and treat as unavailable.
+            // 忽略剪贴板的竞争条件或格式异常，并视为剪贴板不可用。
         }
 
         return false;
@@ -1469,7 +1469,7 @@ public class TerminalControl : FrameworkElement
         }
         catch
         {
-            // Ignore drag-data conversion failures.
+            // 忽略拖拽数据转换失败。
         }
 
         return false;
@@ -1561,7 +1561,7 @@ public class TerminalControl : FrameworkElement
         int col = Math.Clamp((int)(pos.X / _cellWidth), 0, _cols - 1);
         int row = Math.Clamp((int)(pos.Y / _cellHeight), 0, _rows - 1);
 
-        // Ctrl+Click for URL opening
+        // Ctrl+点击 打开 URL
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && _hoveredUrl.HasValue)
         {
             try
@@ -1573,7 +1573,7 @@ public class TerminalControl : FrameworkElement
             return;
         }
 
-        // Mouse reporting (bypass selection when app requests mouse)
+        // 鼠标上报（应用请求鼠标事件时绕过选区）
         if (IsMouseTrackingActive)
         {
             SendMouseReport(0, col, row, true);
@@ -1611,10 +1611,10 @@ public class TerminalControl : FrameworkElement
         int col = Math.Clamp((int)(pos.X / _cellWidth), 0, _cols - 1);
         int row = Math.Clamp((int)(pos.Y / _cellHeight), 0, _rows - 1);
 
-        // URL detection (Ctrl held) — cache scanned URLs per row
+        // URL 检测（按住 Ctrl）—— 按行缓存扫描到的 URL
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && _session != null && row < _session.Buffer.Rows)
         {
-            // Only re-scan when the row changes
+            // 仅在行号发生变化时重新扫描
             if (row != _lastUrlRow)
             {
                 _lastUrlRow = row;
@@ -1622,7 +1622,7 @@ public class TerminalControl : FrameworkElement
                 _cachedRowUrls = UrlDetector.FindUrls(lineText);
             }
 
-            // Check cached URLs for hit at current column
+            // 在缓存的 URL 中查找当前列是否有命中
             var oldHover = _hoveredUrl;
             _hoveredUrl = null;
             if (_cachedRowUrls != null)
@@ -1650,23 +1650,23 @@ public class TerminalControl : FrameworkElement
             RequestRender(System.Windows.Threading.DispatcherPriority.Render);
         }
 
-        // Mouse reporting (motion events)
+        // 鼠标上报（移动事件）
         if (IsMouseTrackingActive && _mouseDown)
         {
             var buf = _session!.Buffer;
             if (buf.MouseTrackingButton || buf.MouseTrackingAny)
             {
-                SendMouseReport(32, col, row, true); // 32 = motion flag
+                SendMouseReport(32, col, row, true); // 32 = 移动事件标志位
             }
             return;
         }
         if (IsMouseTrackingActive && _session!.Buffer.MouseTrackingAny)
         {
-            SendMouseReport(35, col, row, true); // 35 = no-button motion
+            SendMouseReport(35, col, row, true); // 35 = 无按键移动
             return;
         }
 
-        // Selection drag
+        // 选区拖拽
         if (_mouseDown && !IsMouseTrackingActive)
         {
             _selection.ExtendSelection(row, col);
@@ -1728,8 +1728,8 @@ public class TerminalControl : FrameworkElement
         menu.Resources.Add(typeof(MenuItem), menuItemStyle);
         menu.Resources.Add(typeof(Separator), separatorStyle);
 
-        // Copy
-        var copyItem = new MenuItem { Header = "Copy", InputGestureText = "Ctrl+C" };
+        // 复制
+        var copyItem = new MenuItem { Header = "复制", InputGestureText = "Ctrl+C" };
         copyItem.Icon = MakeIcon("\uE8C8");
         copyItem.IsEnabled = _selection.HasSelection;
         copyItem.Click += (_, _) =>
@@ -1743,15 +1743,15 @@ public class TerminalControl : FrameworkElement
         };
         menu.Items.Add(copyItem);
 
-        // Paste
-        var pasteItem = new MenuItem { Header = "Paste", InputGestureText = "Ctrl+V" };
+        // 粘贴
+        var pasteItem = new MenuItem { Header = "粘贴", InputGestureText = "Ctrl+V" };
         pasteItem.Icon = MakeIcon("\uE77F");
         pasteItem.IsEnabled = HasClipboardPasteContent();
         pasteItem.Click += (_, _) => PasteFromClipboard();
         menu.Items.Add(pasteItem);
 
-        // Select All
-        var selectAllItem = new MenuItem { Header = "Select All" };
+        // 全选
+        var selectAllItem = new MenuItem { Header = "全选" };
         selectAllItem.Icon = MakeIcon("\uE8B3");
         selectAllItem.Click += (_, _) =>
         {
@@ -1762,25 +1762,25 @@ public class TerminalControl : FrameworkElement
 
         menu.Items.Add(new Separator());
 
-        // Split Right
-        var splitRight = new MenuItem { Header = "Split Right", InputGestureText = "Ctrl+D" };
+        // 向右分屏
+        var splitRight = new MenuItem { Header = "向右分屏", InputGestureText = "Ctrl+D" };
         splitRight.Icon = MakeIcon("\uE745");
         splitRight.Click += (_, _) => SplitRequested?.Invoke(SplitDirection.Vertical);
         menu.Items.Add(splitRight);
 
-        // Split Down
-        var splitDown = new MenuItem { Header = "Split Down", InputGestureText = "Ctrl+Shift+D" };
+        // 向下分屏
+        var splitDown = new MenuItem { Header = "向下分屏", InputGestureText = "Ctrl+Shift+D" };
         splitDown.Icon = MakeIcon("\uE74B");
         splitDown.Click += (_, _) => SplitRequested?.Invoke(SplitDirection.Horizontal);
         menu.Items.Add(splitDown);
 
         menu.Items.Add(new Separator());
 
-        // Zoom
+        // 缩放
         var isZoomed = IsSurfaceZoomed;
         var zoom = new MenuItem
         {
-            Header = isZoomed ? "Unzoom Pane" : "Zoom Pane",
+            Header = isZoomed ? "取消缩放面板" : "缩放面板",
             InputGestureText = "Ctrl+Shift+Z",
             IsCheckable = true,
             IsChecked = isZoomed,
@@ -1789,8 +1789,8 @@ public class TerminalControl : FrameworkElement
         zoom.Click += (_, _) => ZoomRequested?.Invoke();
         menu.Items.Add(zoom);
 
-        // Close Pane
-        var closePane = new MenuItem { Header = "Close Pane" };
+        // 关闭面板
+        var closePane = new MenuItem { Header = "关闭面板" };
         closePane.Icon = MakeIcon("\uE711");
         closePane.Foreground = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44));
         closePane.Click += (_, _) => ClosePaneRequested?.Invoke();
@@ -1798,8 +1798,8 @@ public class TerminalControl : FrameworkElement
 
         menu.Items.Add(new Separator());
 
-        // Clear Terminal
-        var clear = new MenuItem { Header = "Clear Terminal" };
+        // 清屏
+        var clear = new MenuItem { Header = "清屏" };
         clear.Icon = MakeIcon("\uE894");
         clear.Click += (_, _) =>
         {
@@ -1808,8 +1808,8 @@ public class TerminalControl : FrameworkElement
         };
         menu.Items.Add(clear);
 
-        // Search
-        var search = new MenuItem { Header = "Search", InputGestureText = "Ctrl+Shift+F" };
+        // 搜索
+        var search = new MenuItem { Header = "搜索", InputGestureText = "Ctrl+Shift+F" };
         search.Icon = MakeIcon("\uE721");
         search.Click += (_, _) => SearchRequested?.Invoke();
         menu.Items.Add(search);
@@ -1832,7 +1832,7 @@ public class TerminalControl : FrameworkElement
         _lastScrollbackCount = _session.Buffer.ScrollbackCount;
         RequestRender(System.Windows.Threading.DispatcherPriority.Render);
 
-        // Ask shell to repaint prompt where supported.
+        // 在支持的情况下请 Shell 重绘提示符。
         _session.Write("\x0c");
     }
 
@@ -1841,7 +1841,7 @@ public class TerminalControl : FrameworkElement
         base.OnMouseWheel(e);
         if (_session == null) return;
 
-        // Mouse wheel reporting
+        // 鼠标滚轮上报
         if (IsMouseTrackingActive)
         {
             if (_cols <= 0 || _rows <= 0) return;
@@ -1849,13 +1849,13 @@ public class TerminalControl : FrameworkElement
             var pos = e.GetPosition(this);
             int col = Math.Clamp((int)(pos.X / _cellWidth), 0, _cols - 1);
             int row = Math.Clamp((int)(pos.Y / _cellHeight), 0, _rows - 1);
-            int button = e.Delta > 0 ? 64 : 65; // 64 = scroll up, 65 = scroll down
+            int button = e.Delta > 0 ? 64 : 65; // 64 = 向上滚动，65 = 向下滚动
             SendMouseReport(button, col, row, true);
             e.Handled = true;
             return;
         }
 
-        // Scrollback navigation
+        // 滚动历史导航
         int lines = e.Delta > 0 ? -3 : 3;
         _scrollOffset = Math.Clamp(_scrollOffset + lines, -_session.Buffer.ScrollbackCount, 0);
         _followOutput = _scrollOffset == 0;
@@ -2065,7 +2065,7 @@ public class TerminalControl : FrameworkElement
 
     public void UpdateSettings(TerminalTheme theme, string fontFamily, int fontSize)
     {
-        // Convert TerminalTheme to GhosttyTheme
+        // 将 TerminalTheme 转换为 GhosttyTheme
         var ghosttyTheme = new GhosttyTheme
         {
             Background = theme.Background,

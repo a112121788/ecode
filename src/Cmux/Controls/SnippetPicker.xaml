@@ -16,7 +16,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Header -->
+            <!-- 头部 -->
             <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
                 <Grid>
                     <TextBlock Text="代码片段" FontSize="16" FontWeight="SemiBold"
@@ -31,17 +31,17 @@
                                 HorizontalAlignment="Right"
                                 Click="Close_Click"
                                 Style="{StaticResource IconButton}"
-                                ToolTip="Close" />
+                                ToolTip="关闭" />
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- Search -->
+            <!-- 搜索 -->
             <TextBox Grid.Row="1" x:Name="SearchBox" Margin="12,8"
                      Style="{StaticResource CmuxTextBox}"
                      TextChanged="SearchBox_TextChanged" KeyDown="SearchBox_KeyDown" />
 
-            <!-- Snippet editor -->
+            <!-- 片段编辑器 -->
             <Border Grid.Row="2" x:Name="NewSnippetPanel" Margin="12,0,12,8" Padding="10"
                     Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
@@ -94,7 +94,7 @@
                 </Grid>
             </Border>
 
-            <!-- List -->
+            <!-- 列表 -->
             <ListBox Grid.Row="3" x:Name="SnippetsList" Margin="8,0,8,8"
                      Background="Transparent" BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -177,7 +177,7 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <!-- Empty state -->
+            <!-- 空状态 -->
             <TextBlock x:Name="EmptyText" Grid.Row="3"
                        Text="未找到代码片段" Foreground="{StaticResource ForegroundDimBrush}"
                        FontSize="13" HorizontalAlignment="Center"

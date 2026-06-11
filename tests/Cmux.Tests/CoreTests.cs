@@ -48,7 +48,7 @@ public class VtParserTests
             receivedFinal = final;
         };
 
-        // CSI 10;20H = cursor position (row 10, col 20)
+        // CSI 10;20H = 光标定位（第 10 行，第 20 列）
         parser.Feed("\x1b[10;20H");
 
         receivedFinal.Should().Be('H');
@@ -115,7 +115,7 @@ public class VtParserTests
         byte? dispatched = null;
         parser.OnEscDispatch = b => dispatched = b;
 
-        // ESC 7 = DECSC (save cursor)
+        // ESC 7 = DECSC（保存光标）
         parser.Feed("\u001b7");
 
         dispatched.Should().Be((byte)'7');
@@ -133,7 +133,7 @@ public class VtParserTests
             receivedQualifier = qualifier;
         };
 
-        // CSI ? 25 h = show cursor (DECTCEM)
+        // CSI ? 25 h = 显示光标（DECTCEM）
         parser.Feed("\x1b[?25h");
 
         receivedParams.Should().Equal(25);
@@ -163,7 +163,7 @@ public class TerminalBufferTests
         buffer.WriteString("Line2");
         buffer.NewLine();
         buffer.WriteString("Line3");
-        buffer.NewLine(); // Should scroll
+        buffer.NewLine(); // 应触发滚动
 
         buffer.ScrollbackCount.Should().Be(1);
     }
@@ -199,11 +199,11 @@ public class TerminalBufferTests
     {
         var buffer = new TerminalBuffer(10, 5);
         buffer.SetScrollRegion(1, 3);
-        buffer.MoveCursorTo(3, 0); // Bottom of scroll region
+        buffer.MoveCursorTo(3, 0); // 滚动区域的底部
         buffer.WriteString("X");
-        buffer.LineFeed(); // Should scroll only lines 1-3
+        buffer.LineFeed(); // 应只滚动第 1-3 行
 
-        buffer.CellAt(0, 0).Character.Should().Be(' '); // Line 0 untouched
+        buffer.CellAt(0, 0).Character.Should().Be(' '); // 第 0 行不受影响
     }
 
     [Fact]
@@ -430,7 +430,7 @@ public class SplitNodeTests
         next.Should().NotBeNull();
         next!.PaneId.Should().Be(child2.PaneId);
 
-        // Wraps around
+        // 循环回到起点
         var wrap = node.GetNextLeaf(child2.PaneId!);
         wrap.Should().NotBeNull();
         wrap!.PaneId.Should().Be("pane-1");
@@ -529,7 +529,7 @@ public class TerminalSelectionTests
         selection.ExtendSelection(2, 10);
 
         selection.IsSelected(0, 6).Should().BeTrue();
-        selection.IsSelected(1, 0).Should().BeTrue(); // Middle line, full
+        selection.IsSelected(1, 0).Should().BeTrue(); // 中间行，整行选中
         selection.IsSelected(2, 5).Should().BeTrue();
         selection.IsSelected(2, 11).Should().BeFalse();
     }

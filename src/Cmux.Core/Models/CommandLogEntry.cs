@@ -20,7 +20,7 @@ public class CommandLogEntry
         {
             var d = Duration;
             if (d is null)
-                return "running...";
+                return "运行中...";
 
             var ts = d.Value;
             if (ts.TotalSeconds < 1)
@@ -34,8 +34,8 @@ public class CommandLogEntry
     }
 
     /// <summary>
-    /// Segoe MDL2 Assets glyph for command status.
-    /// null exit code = clock, 0 = check, other = error.
+    /// 命令状态的 Segoe MDL2 Assets 字形。
+    /// 退出码为 null = 时钟，0 = 勾选，其他 = 错误。
     /// </summary>
     public string StatusIcon => ExitCode switch
     {

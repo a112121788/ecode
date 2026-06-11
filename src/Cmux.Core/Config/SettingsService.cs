@@ -3,8 +3,8 @@ using System.Text.Json;
 namespace Cmux.Core.Config;
 
 /// <summary>
-/// Manages reading, writing, and caching of <see cref="CmuxSettings"/>.
-/// Settings are stored at <c>%LOCALAPPDATA%/cmux/settings.json</c>.
+/// 管理 <see cref="CmuxSettings"/> 的读取、写入和缓存。
+/// 设置存储于 <c>%LOCALAPPDATA%/cmux/settings.json</c>。
 /// </summary>
 public static class SettingsService
 {
@@ -23,17 +23,17 @@ public static class SettingsService
     private static CmuxSettings? _current;
 
     /// <summary>
-    /// The current in-memory settings instance (loaded on first access).
+    /// 当前内存中的设置实例（首次访问时加载）。
     /// </summary>
     public static CmuxSettings Current => _current ??= Load();
 
     /// <summary>
-    /// Raised after <see cref="NotifyChanged"/> is called to signal that settings have been modified.
+    /// 在调用 <see cref="NotifyChanged"/> 后触发，通知设置已被修改。
     /// </summary>
     public static event Action? SettingsChanged;
 
     /// <summary>
-    /// Reads settings from disk. Returns a fresh default instance on any failure.
+    /// 从磁盘读取设置。任何失败时返回全新的默认实例。
     /// </summary>
     public static CmuxSettings Load()
     {
@@ -52,7 +52,7 @@ public static class SettingsService
     }
 
     /// <summary>
-    /// Persists the given settings to disk atomically (write to .tmp, then move).
+    /// 将给定设置原子性地持久化到磁盘（先写入 .tmp，再移动）。
     /// </summary>
     public static void Save(CmuxSettings? settings = null)
     {
@@ -69,13 +69,13 @@ public static class SettingsService
         }
         catch
         {
-            // Swallow write failures (permission issues, disk full, etc.)
-            // to avoid crashing the application.
+            // 吞掉写入失败（权限问题、磁盘已满等），
+            // 以避免让应用程序崩溃。
         }
     }
 
     /// <summary>
-    /// Resets settings to defaults and persists the result.
+    /// 将设置重置为默认值并持久化。
     /// </summary>
     public static CmuxSettings Reset()
     {
@@ -85,8 +85,8 @@ public static class SettingsService
     }
 
     /// <summary>
-    /// Raises the <see cref="SettingsChanged"/> event.
-    /// Call after modifying <see cref="Current"/> properties.
+    /// 触发 <see cref="SettingsChanged"/> 事件。
+    /// 修改 <see cref="Current"/> 属性后调用此方法。
     /// </summary>
     public static void NotifyChanged() => SettingsChanged?.Invoke();
 }

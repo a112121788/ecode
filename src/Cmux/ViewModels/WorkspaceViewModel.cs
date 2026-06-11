@@ -61,7 +61,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         _accentColor = workspace.AccentColor;
         _notificationService = notificationService;
 
-        // Create surface VMs for existing surfaces
+        // 为已有的 Surface 创建 VM
         foreach (var surface in workspace.Surfaces)
         {
             var surfaceVm = new SurfaceViewModel(surface, workspace.Id, notificationService);
@@ -78,7 +78,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
             SelectedSurface = Surfaces[0];
         }
 
-        // Start periodic info refresh (git branch, ports)
+        // 启动周期性信息刷新（git 分支、端口）
         _infoRefreshTimer = new System.Threading.Timer(_ => RefreshInfo(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
     }
 
@@ -131,7 +131,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void Rename()
     {
-        // This would be handled by the view showing an input box
+        // 此操作交由视图层（弹出输入框）处理
     }
 
     private void OnSurfaceWorkingDirectoryChanged(string directory)
@@ -155,7 +155,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
                 }
             }
 
-            // AI agent detection
+            // AI agent 检测
             var activeSurface = SelectedSurface;
             if (activeSurface?.ShellPid is int pid and > 0)
             {
@@ -170,7 +170,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         }
         catch
         {
-            // Non-critical
+            // 非关键路径，吞掉异常即可
         }
     }
 

@@ -10,7 +10,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Browser toolbar -->
+        <!-- 浏览器工具栏 -->
         <Grid Grid.Row="0" Background="{StaticResource SurfaceTabBackgroundBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -32,7 +32,7 @@
                     Style="{StaticResource CmuxButton}" Click="Reload_Click"
                     Width="32" Height="28" Padding="0" FontSize="12" />
 
-            <!-- Address bar -->
+            <!-- 地址栏 -->
             <Border Grid.Column="3" CornerRadius="6" Margin="4"
                     Background="{StaticResource SurfaceHighBrush}">
                 <TextBox x:Name="AddressBar"

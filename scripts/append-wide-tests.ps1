@@ -1,17 +1,16 @@
 ﻿$path = "C:\Users\ATPX4869\Downloads\cmux-windows\tests\Cmux.Tests\CoreTests.cs"
 $src = [System.IO.File]::ReadAllText($path, [System.Text.UTF8Encoding]::new($false))
 
-# Anchor: end of TerminalBufferTests class, just before OscHandlerTests
+# 锚点：TerminalBufferTests 类的结尾，紧靠 OscHandlerTests 之前
 $anchor = "`r`n}`r`n`r`npublic class OscHandlerTests"
 
-# Build the new test block. We embed a C# char literal `'`\`0`'`
-# for the NUL character by concatenating the components to avoid
-# PowerShell eating the escape sequence.
+# 构建新的测试代码块。我们通过拼接各部分来嵌入表示 NUL 字符的
+# C# 字符字面量 `'`\`0`'`，以避免 PowerShell 吞掉转义序列。
 $nl = "`r`n"
 $sq = [string][char]39
 $bs = [string][char]92
 $zero = "0"
-$nulLiteral = $sq + $bs + $zero + $sq   # produces: '\0'   (4 characters)
+$nulLiteral = $sq + $bs + $zero + $sq   # 生成：'\0'（4 个字符）
 
 $tests = "`r`n" + @"
 

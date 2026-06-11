@@ -16,8 +16,8 @@ public partial class Snippet
     public bool IsFavorite { get; set; }
 
     /// <summary>
-    /// Replaces <c>{{key}}</c> placeholders in <see cref="Content"/> with values from the dictionary.
-    /// Unmatched placeholders are left as-is.
+    /// 将 <see cref="Content"/> 中的 <c>{{key}}</c> 占位符替换为字典中的值。
+    /// 未匹配到的占位符保持原样。
     /// </summary>
     public string Resolve(Dictionary<string, string>? parameters)
     {
@@ -32,12 +32,12 @@ public partial class Snippet
     }
 
     /// <summary>
-    /// Returns the content without parameter substitution.
+    /// 返回未进行参数替换的原始内容。
     /// </summary>
     public string Resolve() => Content;
 
     /// <summary>
-    /// Extracts distinct placeholder names from <see cref="Content"/>.
+    /// 从 <see cref="Content"/> 中提取所有不同的占位符名称。
     /// </summary>
     public List<string> GetPlaceholders()
     {

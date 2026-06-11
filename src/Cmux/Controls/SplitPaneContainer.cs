@@ -10,8 +10,8 @@ using Cmux.Views;
 namespace Cmux.Controls;
 
 /// <summary>
-/// Recursively renders a SplitNode tree as nested Grid panels with
-/// GridSplitters for resizable dividers. Leaf nodes contain TerminalControl instances.
+/// 将 SplitNode 树递归渲染为带 GridSplitter 可调分割条的嵌套 Grid 面板。
+/// 叶子节点包含 TerminalControl 实例。
 /// </summary>
 public class SplitPaneContainer : ContentControl
 {
@@ -39,8 +39,8 @@ public class SplitPaneContainer : ContentControl
             oldSurface.PropertyChanged -= OnSurfacePropertyChanged;
         }
 
-        // Clear terminal cache when switching surfaces/workspaces
-        // This prevents reusing terminals from a different workspace
+        // 切换 Surface/工作区时清除终端缓存
+        // 防止重用来自其他工作区的终端
         _terminalCache.Clear();
 
         _surface = e.NewValue as SurfaceViewModel;
@@ -70,14 +70,15 @@ public class SplitPaneContainer : ContentControl
     }
 
     /// <summary>
-    /// Updates only focus-related visual state on cached terminals without
-    /// rebuilding the entire UI tree.
+    /// 仅更新缓存终端上与焦点相关的视觉状态，
+    /// 而不重建整个 UI 树。
     /// </summary>
     private void UpdateFocusState()
     {
         if (_surface == null) return;
 
-        // In zoom mode, focus change may require rebuild if the zoomed pane changed
+        // 在缩放模式下，如果缩放的面板发生变化，焦点变更可能需要重建"}
+
         if (_surface.IsZoomed)
         {
             Rebuild();
@@ -94,7 +95,7 @@ public class SplitPaneContainer : ContentControl
     {
         if (_surface == null) return;
 
-        // Zoom mode: show only the focused pane full-size
+        // 缩放模式：仅全尺寸显示聚焦的面板
         if (_surface.IsZoomed && _surface.FocusedPaneId != null)
         {
             var focusedNode = _surface.RootNode.FindNode(_surface.FocusedPaneId);
@@ -123,9 +124,9 @@ public class SplitPaneContainer : ContentControl
         if (node.PaneId == null)
             return new Border { Background = Brushes.Transparent };
 
-        var paneId = node.PaneId; // Capture for closures
+        var paneId = node.PaneId; // 为闭包捕获
 
-        // Reuse cached terminal if available (preserves session and scroll position)
+        // 复用缓存中的终端（保留会话和滚动位置）
         if (!_terminalCache.TryGetValue(paneId, out var terminal))
         {
             terminal = new TerminalControl();
@@ -133,8 +134,8 @@ public class SplitPaneContainer : ContentControl
         }
         else
         {
-            // Detach from old parent before reusing
-            // Terminal could be inside DockPanel (with header) or Border
+            // 复用前从原父容器分离
+            // 终端可能在 DockPanel（含头部）或 Border 中
             var oldParent = System.Windows.Media.VisualTreeHelper.GetParent(terminal) as FrameworkElement;
             
             if (oldParent is DockPanel dockPanel)
@@ -146,11 +147,11 @@ public class SplitPaneContainer : ContentControl
                 border.Child = null;
             }
             
-            // Clear old event handlers to prevent memory leaks and wrong callbacks
+            // 清除旧的事件处理程序以防止内存泄漏和错误回调
             terminal.ClearEventHandlers();
         }
 
-        // Wire up event handlers with closures capturing the current pane ID
+        // 用闭包连接事件处理程序，捕获当前面板 ID
         terminal.FocusRequested += () => _surface?.FocusPane(paneId);
         terminal.CommandInterceptRequested += command => _surface?.TryHandlePaneCommand(paneId, command) == true;
         terminal.CommandSubmitted += command => _surface?.RegisterCommandSubmission(paneId, command);
@@ -166,18 +167,18 @@ public class SplitPaneContainer : ContentControl
         terminal.IsPaneFocused = paneId == _surface?.FocusedPaneId;
         terminal.IsSurfaceZoomed = _surface?.IsZoomed == true;
 
-        // Attach the terminal session
+        // 附加终端会话
         var session = _surface?.GetSession(paneId);
         if (session != null)
             terminal.AttachSession(session);
 
-        // Get pane title (custom name takes precedence over shell title)
+        // 获取面板标题（自定义名称优先于 Shell 标题）
         var title = _surface?.GetPaneTitle(paneId, session?.Title) ?? "Terminal";
 
-        // Create panel with header
+        // 创建带头部的面板
         var panel = new DockPanel { LastChildFill = true };
 
-        // Header bar with title and close button
+        // 带标题和关闭按钮的头部栏
         var header = new Border
         {
             Background = GetThemeBrush("SidebarItemHoverBrush"),
@@ -186,13 +187,13 @@ public class SplitPaneContainer : ContentControl
         };
 
         var headerMenu = new ContextMenu();
-        var renamePane = new MenuItem { Header = "Rename Pane" };
+        var renamePane = new MenuItem { Header = "重命名面板" };
         renamePane.Click += (_, _) =>
         {
             var currentName = _surface?.GetPaneTitle(paneId, session?.Title) ?? "Terminal";
             var prompt = new TextPromptWindow(
-                title: "Rename Pane",
-                message: "Set a custom name for this pane.",
+                title: "重命名面板",
+                message: "为此面板设置自定义名称。",
                 defaultValue: currentName)
             {
                 Owner = Window.GetWindow(this),
@@ -203,7 +204,7 @@ public class SplitPaneContainer : ContentControl
         };
         headerMenu.Items.Add(renamePane);
 
-        var resetPaneName = new MenuItem { Header = "Reset Pane Name" };
+        var resetPaneName = new MenuItem { Header = "重置面板名称" };
         resetPaneName.Click += (_, _) => _surface?.SetPaneCustomName(paneId, string.Empty);
         headerMenu.Items.Add(resetPaneName);
 
@@ -212,11 +213,11 @@ public class SplitPaneContainer : ContentControl
         DockPanel.SetDock(header, Dock.Top);
 
         var headerGrid = new Grid();
-        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) }); // Focus indicator
-        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Title
-        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) }); // Close button
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) }); // 焦点指示器
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // 标题
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) }); // 关闭按钮
 
-        // Focus indicator (shows which pane is focused)
+        // 焦点指示器（显示哪个面板被聚焦）
         var focusIndicator = new Border
         {
             Width = 3,
@@ -230,7 +231,7 @@ public class SplitPaneContainer : ContentControl
         };
         Grid.SetColumn(focusIndicator, 0);
 
-        // Title text
+        // 标题文本
         var titleText = new TextBlock
         {
             Text = title,
@@ -241,7 +242,7 @@ public class SplitPaneContainer : ContentControl
         };
         Grid.SetColumn(titleText, 1);
 
-        // Close button
+        // 关闭按钮
         var closeButton = new Button
         {
             Content = "\u2715",
@@ -252,7 +253,7 @@ public class SplitPaneContainer : ContentControl
             Foreground = GetThemeBrush("ForegroundDimBrush"),
             BorderThickness = new Thickness(0),
             Cursor = System.Windows.Input.Cursors.Hand,
-            ToolTip = "Close pane",
+            ToolTip = "关闭面板",
         };
         closeButton.Click += (s, e) => _surface?.ClosePane(paneId);
         Grid.SetColumn(closeButton, 2);
@@ -283,7 +284,7 @@ public class SplitPaneContainer : ContentControl
 
         if (node.Direction == SplitDirection.Vertical)
         {
-            // Left | Right
+            // 左 | 右
             grid.ColumnDefinitions.Add(new ColumnDefinition
             {
                 Width = new GridLength(node.SplitRatio, GridUnitType.Star),
@@ -323,7 +324,7 @@ public class SplitPaneContainer : ContentControl
         }
         else
         {
-            // Top / Bottom
+            // 上 / 下
             grid.RowDefinitions.Add(new RowDefinition
             {
                 Height = new GridLength(node.SplitRatio, GridUnitType.Star),
@@ -367,7 +368,7 @@ public class SplitPaneContainer : ContentControl
     }
 
     /// <summary>
-    /// Updates settings for all cached terminal controls.
+    /// 更新所有缓存的终端控件的设置。
     /// </summary>
     public void UpdateAllTerminals(TerminalTheme theme, string fontFamily, int fontSize)
     {

@@ -57,7 +57,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
         _rootNode = surface.RootSplitNode;
         _focusedPaneId = surface.FocusedPaneId;
 
-        // Wire daemon events for session persistence
+        // 为会话持久化连接守护进程事件
         var daemon = App.DaemonClient;
         daemon.RawOutputReceived += OnDaemonRawOutput;
         daemon.CwdChanged += OnDaemonCwdChanged;
@@ -66,7 +66,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
         daemon.BellReceived += OnDaemonBellReceived;
         daemon.Disconnected += OnDaemonDisconnected;
 
-        // Start terminal sessions for all leaf nodes
+        // 为所有叶子节点启动终端会话
         foreach (var leaf in _rootNode.GetLeaves())
         {
             if (leaf.PaneId != null)
@@ -103,7 +103,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     private void OnDaemonCwdChanged(string paneId, string dir)
     {
         if (!_daemonPanes.Contains(paneId)) return;
-        // Update the session's WorkingDirectory so it's captured in snapshots
+        // 更新会话的 WorkingDirectory，以便写入快照
         if (_sessions.TryGetValue(paneId, out var session))
             session.WorkingDirectory = dir;
         if (paneId == FocusedPaneId)
@@ -128,7 +128,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
 
     private void OnDaemonDisconnected()
     {
-        // Daemon died — fall back all daemon sessions to local ConPTY
+        // 守护进程已停止 —— 把所有守护进程上的会话回退到本地 ConPTY
         var paneIds = _daemonPanes.ToList();
         if (paneIds.Count == 0) return;
 
@@ -336,11 +336,11 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     private TerminalSession StartSession(string paneId, string? workingDirectory = null, PaneStateSnapshot? restoredState = null, string? shell = null)
     {
         var effectiveShell = shell ?? GetConfiguredShell();
-        // Store the explicit override (null = use default shell from settings)
+        // 存储显式覆盖（null 表示使用设置中的默认 Shell）
         _paneShells[paneId] = shell;
 
-        // Wait for daemon connect task (includes starting daemon if needed).
-        // First pane blocks up to 5s; subsequent panes get the cached result instantly.
+        // 等待守护进程连接任务完成（包含按需拉起守护进程的逻辑）。
+        // 第一个面板最多阻塞 5 秒；后续面板直接复用已缓存的结果。
         lock (_daemonWaitLock)
         {
             if (!_daemonWaitDone)
@@ -357,7 +357,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
 
         DaemonLog($"[StartSession:{paneId}] daemonReady={daemonReady}, IsConnected={App.DaemonClient.IsConnected}, TaskStatus={App.DaemonConnectTask.Status}");
 
-        // Try daemon-backed session first
+        // 先尝试走守护进程托管的会话
         if (daemonReady)
         {
             try
@@ -378,13 +378,13 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
 
     private TerminalSession StartDaemonSession(string paneId, string? workingDirectory, PaneStateSnapshot? restoredState, string? shell)
     {
-        // Use saved snapshot dimensions if available (avoids spurious resize on reconnect)
+        // 优先使用快照中保存的尺寸（避免重连后触发不必要的 resize）
         var initCols = restoredState?.BufferSnapshot?.Cols ?? 120;
         var initRows = restoredState?.BufferSnapshot?.Rows ?? 30;
         var session = new TerminalSession(paneId, initCols, initRows);
         WireSessionEvents(session, paneId);
 
-        // Set daemon delegates so Write/Resize route through daemon
+        // 设置守护进程委托，让 Write/Resize 经由守护进程转发
         var daemon = App.DaemonClient;
         session.DaemonWrite = data => daemon.WriteAsync(paneId, data);
         session.DaemonResize = (cols, rows) => daemon.ResizeAsync(paneId, cols, rows);
@@ -394,7 +394,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
 
         var effectiveCwd = workingDirectory ?? restoredState?.WorkingDirectory;
 
-        // Create/attach session on daemon asynchronously
+        // 在守护进程上异步创建/挂载会话
         _ = Task.Run(async () =>
         {
             try
@@ -415,11 +415,11 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
 
                 DaemonLog($"[DaemonSession:{paneId}] CreateSessionAsync OK: IsExisting={result.IsExisting}, IsRunning={result.IsRunning}, Cwd={result.WorkingDirectory}");
 
-                // Set working directory from daemon response
+                // 从守护进程响应中设置工作目录
                 if (!string.IsNullOrEmpty(result.WorkingDirectory))
                     session.WorkingDirectory = result.WorkingDirectory;
 
-                // If reconnecting to an existing daemon session, get the live buffer snapshot
+                // 若为重连已有守护进程会话，则获取其实时的缓冲区快照
                 if (result.IsExisting && result.IsRunning)
                 {
                     DaemonLog($"[DaemonSession:{paneId}] Reconnecting — fetching daemon snapshot...");
@@ -445,11 +445,11 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
                         DaemonLog($"[DaemonSession:{paneId}] GetSnapshotAsync returned null");
                     }
 
-                    // Send Enter after a brief delay to force the shell to print a fresh prompt.
-                    // The snapshot restores scrollback but the prompt line may be missing
-                    // because the shell already printed it before disconnect.
+                    // 短暂延时后发送回车，强制 Shell 重新打印一次提示符。
+                    // 快照虽然会恢复滚动历史，但提示符所在行可能已经缺失，
+                    // 因为 Shell 早在断连前就把提示符打印过了。
                     await Task.Delay(300);
-                    await daemon.WriteAsync(paneId, [0x0d]); // CR = Enter
+                    await daemon.WriteAsync(paneId, [0x0d]); // CR = 回车
                 }
             }
             catch (Exception ex)
@@ -552,7 +552,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
             FocusedPaneId = newChild.PaneId;
         }
 
-        // Trigger UI update
+        // 触发 UI 更新
         OnPropertyChanged(nameof(RootNode));
     }
 
@@ -573,11 +573,11 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
 
         CapturePaneTranscript(paneId, "pane-close");
 
-        // Get adjacent pane before removal
+        // 在移除前先取相邻面板
         var nextLeaf = RootNode.GetNextLeaf(paneId) ?? RootNode.GetPreviousLeaf(paneId);
         string? nextPaneId = nextLeaf?.PaneId;
 
-        // Stop and remove the session
+        // 停止并移除该会话
         if (_sessions.TryGetValue(paneId, out var session))
         {
             if (_daemonPanes.Remove(paneId))
@@ -591,7 +591,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
         _paneCommandHistory.Remove(paneId);
         _paneShells.Remove(paneId);
 
-        // If this is the only pane, don't remove it
+        // 如果这是唯一的面板，则不移除
         var leaves = RootNode.GetLeaves().ToList();
         if (leaves.Count <= 1) return;
 
@@ -651,7 +651,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     {
         CapturePaneSnapshotsForPersistence();
 
-        // Unwire daemon events
+        // 断开守护进程事件
         var daemon = App.DaemonClient;
         daemon.RawOutputReceived -= OnDaemonRawOutput;
         daemon.CwdChanged -= OnDaemonCwdChanged;

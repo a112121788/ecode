@@ -31,26 +31,26 @@ public partial class MainWindow : Window
         CommandPaletteControl.ItemExecuted += item => FocusTerminal();
 
 
-        // Wire snippet picker events
+        // 连接代码片段选择器的事件
         SnippetPickerControl.SnippetSelected += OnSnippetSelected;
         SnippetPickerControl.Closed += () => SnippetPickerControl.Visibility = Visibility.Collapsed;
 
-        // Wire inline search events from tab bar
+        // 连接来自标签栏的内联搜索事件
         SurfaceTabBarControl.SearchTextChanged += OnSearchTextChanged;
         SurfaceTabBarControl.NextMatchRequested += OnSearchNext;
         SurfaceTabBarControl.PreviousMatchRequested += OnSearchPrevious;
 
-        // Wire terminal surface events
+        // 连接终端 Surface 的事件
         SplitPaneContainerControl.SearchRequested += () =>
         {
             SurfaceTabBarControl.FocusSearch();
         };
 
-        // Periodically refresh lightweight UI state (pane count, zoom icon)
+        // 定期刷新轻量级 UI 状态（面板数量、缩放图标）
         _uiRefreshTimer.Tick += (_, _) => RefreshSurfaceUiState();
         _uiRefreshTimer.Start();
 
-        // Subscribe to settings changes
+        // 订阅设置变更事件
         Cmux.Core.Config.SettingsService.SettingsChanged += OnSettingsChanged;
         OnSettingsChanged();
 
@@ -64,12 +64,12 @@ public partial class MainWindow : Window
 
         Opacity = Math.Clamp(settings.Opacity, 0.5, 1.0);
 
-        // Update all visible terminal controls
+        // 更新所有可见的终端控件
         foreach (var workspace in ViewModel.Workspaces)
         {
             foreach (var surface in workspace.Surfaces)
             {
-                // Find the SplitPaneContainer for this surface and update terminals
+                // 找到该 Surface 对应的 SplitPaneContainer 并更新其中的终端
                 var container = FindVisualChild<SplitPaneContainer>(ContentArea, null);
                 if (container != null)
                 {
@@ -113,7 +113,7 @@ public partial class MainWindow : Window
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        // Restore window position from session state if available
+        // 如果有可用的会话状态，则恢复窗口位置
         var session = Cmux.Core.Services.SessionPersistenceService.Load();
         if (session?.Window != null)
         {
@@ -136,7 +136,7 @@ public partial class MainWindow : Window
         StateChanged += (_, _) => UpdateWindowChrome();
         UpdateWindowClip();
 
-        // Monitor daemon connection changes
+        // 监听守护进程连接状态变化
         App.DaemonClient.Connected += () => Dispatcher.BeginInvoke(UpdateDaemonStatus);
         App.DaemonClient.Disconnected += () => Dispatcher.BeginInvoke(UpdateDaemonStatus);
     }
@@ -145,8 +145,8 @@ public partial class MainWindow : Window
     {
         var connected = App.DaemonClient.IsConnected;
         DaemonStatusDot.Fill = connected
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x34, 0xD3, 0x99)) // green
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x6B, 0x72, 0x80)); // gray
+            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x34, 0xD3, 0x99)) // 绿色
+            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x6B, 0x72, 0x80)); // 灰色
         DaemonStatusText.Text = connected ? "守护进程" : "本地";
         DaemonStatusBorder.ToolTip = connected
             ? "已连接到 cmux-daemon——会话将在重启后保留"
@@ -156,10 +156,10 @@ public partial class MainWindow : Window
     private void UpdateWindowChrome()
     {
         bool maximized = WindowState == WindowState.Maximized;
-        // When maximized, use zero corner radius and no border
+        // 最大化时，使用 0 圆角且无边框
         WindowBorder.CornerRadius = maximized ? new CornerRadius(0) : (CornerRadius)FindResource("WindowCornerRadius");
         WindowBorder.BorderThickness = maximized ? new Thickness(0) : new Thickness(1);
-        // Update maximize/restore icon
+        // 更新最大化/还原图标
         MaxRestoreIcon.Text = maximized ? "\uE923" : "\uE922";
         MaxRestoreButton.ToolTip = maximized ? "还原" : "最大化";
         UpdateWindowClip();
@@ -196,9 +196,9 @@ public partial class MainWindow : Window
         bool shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
         bool alt = (Keyboard.Modifiers & ModifierKeys.Alt) != 0;
 
-        // === App-level shortcuts that always work, even with terminal focus ===
+        // === 始终可用的应用级快捷键（即使在终端聚焦时也生效） ===
 
-        // Ctrl+Tab / Ctrl+Shift+Tab: cycle surfaces
+        // Ctrl+Tab / Ctrl+Shift+Tab：循环切换 Surface
         if (ctrl && e.Key == Key.Tab)
         {
             if (shift)
@@ -209,7 +209,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Ctrl+Alt: pane focus + history picker
+        // Ctrl+Alt：面板聚焦 + 历史选择器
         if (ctrl && alt && !shift)
         {
             switch (e.Key)
@@ -224,14 +224,14 @@ public partial class MainWindow : Window
                     ViewModel.SelectedWorkspace?.SelectedSurface?.FocusPreviousPane();
                     e.Handled = true;
                     return;
-                case Key.H: // Open command history picker (Ctrl+Alt+H)
+                case Key.H: // 打开命令历史选择器（Ctrl+Alt+H）
                     OpenCommandHistoryPicker();
                     e.Handled = true;
                     return;
             }
         }
 
-        // Ctrl+Shift: app-level shortcuts (split, zoom, search, surfaces, etc.)
+        // Ctrl+Shift：应用级快捷键（分屏、缩放、搜索、Surface 等）
         if (ctrl && shift && !alt)
         {
             switch (e.Key)
@@ -287,42 +287,42 @@ public partial class MainWindow : Window
             }
         }
 
-        // === Ctrl-only shortcuts (skip when terminal has focus to let terminal handle them) ===
+        // === 仅 Ctrl 修饰的快捷键（终端聚焦时跳过，让终端自行处理） ===
         if (ctrl && !alt && IsTerminalFocusActive())
             return;
 
-        // Workspaces
+        // 工作区
         if (ctrl && !shift && !alt)
         {
             switch (e.Key)
             {
-                case Key.N: // New workspace
+                case Key.N: // 新建工作区
                     ViewModel.CreateNewWorkspace();
                     e.Handled = true;
                     return;
-                case Key.B: // Toggle sidebar
+                case Key.B: // 切换侧边栏
                     ViewModel.ToggleSidebar();
                     e.Handled = true;
                     return;
-                case Key.I: // Notification panel
+                case Key.I: // 通知面板
                     ViewModel.ToggleNotificationPanel();
                     e.Handled = true;
                     return;
-                case Key.T: // New surface
+                case Key.T: // 新建 Surface
                     ViewModel.SelectedWorkspace?.CreateNewSurface();
                     e.Handled = true;
                     return;
-                case Key.W: // Close surface
+                case Key.W: // 关闭 Surface
                     var surface = ViewModel.SelectedWorkspace?.SelectedSurface;
                     if (surface != null)
                         ViewModel.SelectedWorkspace?.CloseSurface(surface);
                     e.Handled = true;
                     return;
-                case Key.D: // Split right
+                case Key.D: // 向右分屏
                     ViewModel.SelectedWorkspace?.SelectedSurface?.SplitRight();
                     e.Handled = true;
                     return;
-                // Workspace 1-8
+                // 工作区 1-8
                 case Key.D1: ViewModel.SelectWorkspace(0); e.Handled = true; return;
                 case Key.D2: ViewModel.SelectWorkspace(1); e.Handled = true; return;
                 case Key.D3: ViewModel.SelectWorkspace(2); e.Handled = true; return;
@@ -331,12 +331,12 @@ public partial class MainWindow : Window
                 case Key.D6: ViewModel.SelectWorkspace(5); e.Handled = true; return;
                 case Key.D7: ViewModel.SelectWorkspace(6); e.Handled = true; return;
                 case Key.D8: ViewModel.SelectWorkspace(7); e.Handled = true; return;
-                case Key.D9: // Last workspace
+                case Key.D9: // 最后一个工作区
                     if (ViewModel.Workspaces.Count > 0)
                         ViewModel.SelectWorkspace(ViewModel.Workspaces.Count - 1);
                     e.Handled = true;
                     return;
-                case Key.OemComma: // Settings (Ctrl+,)
+                case Key.OemComma: // 设置（Ctrl+,）
                     OpenSettings();
                     e.Handled = true;
                     return;
@@ -344,7 +344,7 @@ public partial class MainWindow : Window
         }
     }
 
-    // Title bar handlers
+    // 标题栏事件处理
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ClickCount == 2)
@@ -484,7 +484,7 @@ public partial class MainWindow : Window
         }
     }
 
-    // Title bar + menu handlers
+    // 标题栏 + 菜单事件处理
     private void CommandPalette_Click(object sender, RoutedEventArgs e) => ToggleCommandPalette();
     private void Search_Click(object sender, RoutedEventArgs e) => ToggleSearch();
     private void Snippets_Click(object sender, RoutedEventArgs e) => ToggleSnippetPicker();
@@ -507,7 +507,7 @@ public partial class MainWindow : Window
             MessageBoxImage.Information);
     }
 
-    // Toolbar handlers
+    // 工具栏事件处理
     private void ToolbarSplitRight_Click(object sender, RoutedEventArgs e) => ViewModel.SelectedWorkspace?.SelectedSurface?.SplitRight();
     private void ToolbarSplitDown_Click(object sender, RoutedEventArgs e) => ViewModel.SelectedWorkspace?.SelectedSurface?.SplitDown();
     private void ShellSelector_Click(object sender, RoutedEventArgs e)
@@ -690,7 +690,7 @@ public partial class MainWindow : Window
 
         NormalizeToSinglePane(surface);
 
-        // Main pane on left, stack of 2 on right
+        // 左侧主面板，右侧上下两个面板
         surface.SplitRight();
 
         var rightPaneId = surface.RootNode.GetLeaves()
@@ -729,7 +729,7 @@ public partial class MainWindow : Window
 
     private void FocusTerminal()
     {
-        // Return focus to the active terminal pane
+        // 让焦点回到当前激活的终端面板
         ContentArea.Focus();
     }
 
@@ -771,7 +771,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Search in focused terminal
+        // 在聚焦的终端中进行搜索
         var surface = ViewModel.SelectedWorkspace?.SelectedSurface;
         if (surface?.FocusedPaneId is string paneId)
         {

@@ -67,13 +67,13 @@ internal static class WindowAppearance
                 var borderColor = DwmColorNone;
                 _ = DwmSetWindowAttribute(hwnd, DwmWindowBorderColor, ref borderColor, sizeof(uint));
 
-                // Hook WM_GETMINMAXINFO to prevent maximized window from covering the taskbar
+                // 挂接 WM_GETMINMAXINFO，防止最大化窗口遮挡任务栏
                 var source = HwndSource.FromHwnd(hwnd);
                 source?.AddHook(MaximizeBoundsHook);
             }
             catch
             {
-                // Best effort: ignore on unsupported systems.
+                // 尽力而为：在不受支持的系统上忽略。
             }
         };
     }

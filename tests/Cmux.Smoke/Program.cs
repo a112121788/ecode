@@ -70,10 +70,9 @@ internal static class Program
             catch (Exception ex) { Log($"    [env] process after 3s lookup failed: {ex.Message}"); }
         }
         Log($"    [env] events={Interlocked.CompareExchange(ref _outputEvents, 0, 0)} bytes={Interlocked.CompareExchange(ref _outputBytes, 0, 0)}");
-        // Read the read pipe directly via the handle the producer task
-        // also uses. If we see data here but events=0, the channel/parser
-        // path is the problem; if we see no data here, ConPTY itself is
-        // not delivering.
+        // 通过生产者任务同样使用的句柄直接读取读管道。
+        // 如果这里能读到数据但 events=0，说明问题出在 channel/解析器链路；
+        // 如果这里也读不到数据，说明 ConPTY 本身没有输出。
         var consoleField = typeof(TerminalSession).GetField("_console", BindingFlags.Instance | BindingFlags.NonPublic)!;
         var console = (PseudoConsole?)consoleField.GetValue(session);
         if (console != null)

@@ -1,31 +1,31 @@
 ﻿<#
 .SYNOPSIS
-  Build and publish cmux (Cmux + Cmux.Cli) for Windows.
+  为 Windows 构建并发布 cmux（Cmux + Cmux.Cli）。
 
 .DESCRIPTION
-  Reproduces the three publish flavors documented in README.md:
-    1) Framework-dependent  -> publish/cmux-win-x64       (smallest, needs .NET 10 Desktop Runtime)
-    2) Self-contained dir   -> publish/cmux-win-x64-sc    (folder, runs anywhere on win-x64)
-    3) CLI                  -> publish/cmux-cli           (self-contained, drop into PATH)
+  复现 README.md 中记录的三种发布形态：
+    1) 框架依赖版          -> publish/cmux-win-x64       （体积最小，需要 .NET 10 Desktop Runtime）
+    2) 自包含目录版        -> publish/cmux-win-x64-sc    （文件夹形式，可在任意 win-x64 上运行）
+    3) CLI                 -> publish/cmux-cli           （自包含，可直接放入 PATH）
 
-  WPF + ConPTY does NOT play well with PublishSingleFile, so the single-file
-  flavor is intentionally omitted. Use the self-contained folder instead.
+  WPF + ConPTY 与 PublishSingleFile 配合不佳，因此有意省略了单文件
+  发布形态。请改用自包含文件夹版本。
 
 .PARAMETER Config
-  Build configuration. Default: Release.
+  构建配置。默认值：Release。
 
 .PARAMETER Rid
-  Target runtime identifier. Default: win-x64.
+  目标运行时标识符。默认值：win-x64。
 
 .PARAMETER Flavor
-  Which artifact to produce. Default: All.
-    Framework    -> flavor 1
-    SelfContained-> flavor 2
-    Cli          -> flavor 3
+  要生成的产物。默认值：All。
+    Framework    -> 形态 1
+    SelfContained-> 形态 2
+    Cli          -> 形态 3
     All          -> 1 + 2 + 3
 
 .PARAMETER OutputRoot
-  Output root directory. Default: <repo>\publish.
+  输出根目录。默认值：<repo>\publish。
 
 .EXAMPLE
   pwsh ./scripts/publish.ps1
@@ -50,7 +50,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# --- locate repo root (script lives in <repo>/scripts) -----------------------------
+# --- 定位仓库根目录（脚本位于 <repo>/scripts 下）-----------------------------
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot  = Resolve-Path (Join-Path $ScriptDir '..')
 if ($OutputRoot) {
@@ -79,10 +79,10 @@ function Ensure-Dir([string]$path) {
     if (-not (Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null }
 }
 
-# --- preflight: clean WPF temp csproj cache that survives `dotnet clean` ----------
-# Without this, a stale Cmux_*_wpftmp.csproj in obj/ can cause XAML code-behind
-# fields (ContentArea, PaneCountText, SurfaceTabBarControl, AgentMessagesList...)
-# to be reported as missing on a second build.
+# --- 预检：清理 `dotnet clean` 清不掉的 WPF 临时 csproj 缓存 ----------
+# 若不清理，obj/ 中残留的 Cmux_*_wpftmp.csproj 可能导致第二次构建时
+# XAML code-behind 字段（ContentArea、PaneCountText、SurfaceTabBarControl、
+# AgentMessagesList 等）被报告为缺失。
 $cacheDirs = @(
     (Join-Path $RepoRoot 'src/Cmux/obj'),
     (Join-Path $RepoRoot 'src/Cmux/bin'),

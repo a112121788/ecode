@@ -1,7 +1,7 @@
 using Cmux.Core.IPC;
 using Cmux.Daemon;
 
-// Single-instance check via named mutex
+// 通过命名互斥体进行单实例检查
 const string MutexName = "Global\\CmuxDaemon";
 using var mutex = new Mutex(true, MutexName, out bool createdNew);
 if (!createdNew)
@@ -17,7 +17,7 @@ var pipeServer = new DaemonPipeServer(sessionManager);
 
 using var cts = new CancellationTokenSource();
 
-// Idle timeout: exit after 24h with no connected clients and no active sessions
+// 空闲超时：在没有客户端连接且没有活动会话的情况下，24 小时后退出
 var idleTimeout = TimeSpan.FromHours(24);
 DateTime lastActivity = DateTime.UtcNow;
 
@@ -45,7 +45,7 @@ sessionManager.SessionExited += (paneId, exitCode) =>
 };
 
 Log("[cmux-daemon] Starting pipe server...");
-// Run pipe server on a dedicated background thread (synchronous I/O)
+// 在专用后台线程上运行管道服务器（同步 I/O）
 var serverThread = new Thread(() =>
 {
     try { pipeServer.Run(cts.Token); }
@@ -58,7 +58,7 @@ var serverThread = new Thread(() =>
 serverThread.Start();
 Log("[cmux-daemon] Pipe server started, waiting for connections...");
 
-// Idle monitoring loop — blocks the main thread until shutdown
+// 空闲监控循环 —— 阻塞主线程直到关闭
 while (!cts.Token.IsCancellationRequested)
 {
     try
@@ -81,5 +81,5 @@ sessionManager.Dispose();
 Log("[cmux-daemon] Stopped.");
 return 0;
 
-// Log to the same daemon-debug.log used by the WPF client
+// 写入与 WPF 客户端共用的 daemon-debug.log
 static void Log(string message) => DaemonClient.LogDaemon(message);

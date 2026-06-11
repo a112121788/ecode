@@ -12,7 +12,7 @@ public sealed class DaemonPipeServer
 {
     private const string PipeName = "cmux-daemon";
     private readonly DaemonSessionManager _sessionManager;
-    // Each client gets a channel for thread-safe event delivery
+    // 每个客户端拥有一个 channel，用于线程安全的事件投递
     private readonly ConcurrentDictionary<string, Channel<string>> _clientChannels = new();
     private int _connectedClients;
 
@@ -54,10 +54,9 @@ public sealed class DaemonPipeServer
         {
             try
             {
-                // Use PipeOptions.Asynchronous (overlapped I/O) so reads and writes
-                // can proceed concurrently. With PipeOptions.None Windows serializes
-                // all I/O on the same handle, causing deadlocks when the reader thread
-                // blocks the writer thread (or vice-versa).
+                // 使用 PipeOptions.Asynchronous（重叠 I/O），使读写可以并发进行。
+                // 若使用 PipeOptions.None，Windows 会将同一句柄上的所有 I/O 串行化，
+                // 导致读线程阻塞写线程（或相反）时发生死锁。
                 var pipe = new NamedPipeServerStream(
                     PipeName,
                     PipeDirection.InOut,
@@ -91,7 +90,7 @@ public sealed class DaemonPipeServer
     private void HandleConnection(NamedPipeServerStream pipe, CancellationToken ct)
     {
         var clientId = Guid.NewGuid().ToString("N")[..8];
-        // Single channel for ALL writes (events + responses) — guarantees serial writes to pipe
+        // 所有写入（事件 + 响应）共用单个 channel —— 保证对管道的串行写入
         var writeChannel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -107,7 +106,7 @@ public sealed class DaemonPipeServer
         {
             using (pipe)
             {
-                // Writer thread: drains channel and writes raw bytes to pipe.
+                // 写线程：从 channel 取出数据并将原始字节写入管道。
                 var writerThread = new Thread(() =>
                 {
                     try
@@ -130,8 +129,8 @@ public sealed class DaemonPipeServer
 
                 LogDaemon($"[PipeServer:{clientId}] Entering read loop (IsConnected={pipe.IsConnected})...");
 
-                // Read raw bytes from pipe and parse lines manually.
-                // Bypasses StreamReader which has issues reading from named pipes.
+                // 从管道读取原始字节并手动解析行。
+                // 绕开 StreamReader，因为它在读取命名管道时存在问题。
                 var readBuffer = new byte[65536];
                 var lineBuffer = new StringBuilder();
 
@@ -155,7 +154,7 @@ public sealed class DaemonPipeServer
 
                     lineBuffer.Append(Encoding.UTF8.GetString(readBuffer, 0, bytesRead));
 
-                    // Extract complete lines
+                    // 提取完整的行
                     var accumulated = lineBuffer.ToString();
                     int newlineIndex;
                     while ((newlineIndex = accumulated.IndexOf('\n')) >= 0)
@@ -197,7 +196,7 @@ public sealed class DaemonPipeServer
             if (request == null)
                 return JsonSerializer.Serialize(new DaemonResponse { Success = false, Error = "Invalid request" });
 
-            // Log non-write requests (writes are too frequent)
+            // 记录非写入类请求（写入请求过于频繁，不记录）
             if (request.Type != DaemonMessageTypes.SessionWrite)
                 LogDaemon($"[PipeServer] Request: {request.Type} pane={request.PaneId}");
 

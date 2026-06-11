@@ -26,13 +26,13 @@ public class SplitNode
     }
 
     /// <summary>
-    /// Splits this leaf node into a container with two children.
-    /// Returns the new second child (the newly created pane).
+    /// 将此叶子节点拆分为包含两个子节点的容器。
+    /// 返回新的第二个子节点（新创建的面板）。
     /// </summary>
     public SplitNode Split(SplitDirection direction)
     {
         if (!IsLeaf)
-            throw new InvalidOperationException("Cannot split a non-leaf node.");
+            throw new InvalidOperationException("无法拆分非叶子节点。");
 
         var firstChild = new SplitNode
         {
@@ -53,7 +53,7 @@ public class SplitNode
     }
 
     /// <summary>
-    /// Recursively finds the node containing the given pane ID.
+    /// 递归查找包含指定面板 ID 的节点。
     /// </summary>
     public SplitNode? FindNode(string paneId)
     {
@@ -64,7 +64,7 @@ public class SplitNode
     }
 
     /// <summary>
-    /// Finds the parent of a node with the given ID.
+    /// 查找具有指定 ID 的节点的父节点。
     /// </summary>
     public SplitNode? FindParent(string nodeId)
     {
@@ -77,7 +77,7 @@ public class SplitNode
     }
 
     /// <summary>
-    /// Returns all leaf nodes (terminal panes) in traversal order.
+    /// 按遍历顺序返回所有叶子节点（终端面板）。
     /// </summary>
     public IEnumerable<SplitNode> GetLeaves()
     {
@@ -101,15 +101,15 @@ public class SplitNode
     }
 
     /// <summary>
-    /// Removes a leaf node with the given pane ID.
-    /// The surviving sibling replaces the parent container.
-    /// Returns true if the removal succeeded.
+    /// 移除具有指定面板 ID 的叶子节点。
+    /// 幸存的兄弟节点会替换父容器。
+    /// 移除成功返回 true。
     /// </summary>
     public bool Remove(string paneId)
     {
         if (IsLeaf) return false;
 
-        // Check if one of our direct children is the target
+        // 检查直接子节点之一是否为目标
         SplitNode? target = null;
         SplitNode? survivor = null;
 
@@ -126,7 +126,7 @@ public class SplitNode
 
         if (target != null && survivor != null)
         {
-            // Replace this node's content with the survivor's content
+            // 用幸存者的内容替换此节点的内容
             IsLeaf = survivor.IsLeaf;
             Direction = survivor.Direction;
             First = survivor.First;
@@ -136,7 +136,7 @@ public class SplitNode
             return true;
         }
 
-        // Recurse into children
+        // 递归到子节点
         if (First?.Remove(paneId) == true) return true;
         if (Second?.Remove(paneId) == true) return true;
 
@@ -144,7 +144,7 @@ public class SplitNode
     }
 
     /// <summary>
-    /// Gets the next leaf node after the given pane ID (for focus navigation).
+    /// 获取指定面板 ID 之后的下一个叶子节点（用于焦点导航）。
     /// </summary>
     public SplitNode? GetNextLeaf(string paneId)
     {
@@ -158,7 +158,7 @@ public class SplitNode
     }
 
     /// <summary>
-    /// Gets the previous leaf node before the given pane ID.
+    /// 获取指定面板 ID 之前的上一个叶子节点。
     /// </summary>
     public SplitNode? GetPreviousLeaf(string paneId)
     {
@@ -171,7 +171,7 @@ public class SplitNode
         return leaves.Count > 0 ? leaves[^1] : null;
     }
 
-    /// <summary>Creates a layout with the given number of equal vertical columns.</summary>
+    /// <summary>创建具有指定数量等宽垂直列的布局。</summary>
     public static SplitNode CreateColumns(int count)
     {
         if (count <= 1) return CreateLeaf();
@@ -188,7 +188,7 @@ public class SplitNode
         return node;
     }
 
-    /// <summary>Creates a layout with the given number of equal horizontal rows.</summary>
+    /// <summary>创建具有指定数量等高水平行的布局。</summary>
     public static SplitNode CreateRows(int count)
     {
         if (count <= 1) return CreateLeaf();
@@ -205,7 +205,7 @@ public class SplitNode
         return node;
     }
 
-    /// <summary>Creates a 2x2 grid layout.</summary>
+    /// <summary>创建 2x2 网格布局。</summary>
     public static SplitNode CreateGrid()
     {
         return new SplitNode
@@ -232,7 +232,7 @@ public class SplitNode
         };
     }
 
-    /// <summary>Creates a main+stack layout (large pane left, stacked panes right).</summary>
+    /// <summary>创建主+堆叠布局（左侧大面板，右侧堆叠面板）。</summary>
     public static SplitNode CreateMainStack(int stackCount = 2)
     {
         var stack = CreateLeaf();
@@ -255,7 +255,7 @@ public class SplitNode
         };
     }
 
-    /// <summary>Recursively sets all split ratios to 0.5 (equalizes pane sizes).</summary>
+    /// <summary>递归地将所有分割比例设置为 0.5（使面板大小相等）。</summary>
     public void Equalize()
     {
         if (IsLeaf) return;
@@ -264,7 +264,7 @@ public class SplitNode
         Second?.Equalize();
     }
 
-    /// <summary>Adjusts the split ratio of the nearest ancestor containing the given pane.</summary>
+    /// <summary>调整包含指定面板的最近祖先节点的分割比例。</summary>
     public bool ResizePane(string paneId, double delta)
     {
         if (IsLeaf) return false;
@@ -272,22 +272,22 @@ public class SplitNode
         bool inSecond = Second?.FindNode(paneId) != null;
         if (!inFirst && !inSecond) return false;
 
-        // Direct child is the target
+        // 直接子节点是目标
         if ((First?.IsLeaf == true && First.PaneId == paneId) ||
             (Second?.IsLeaf == true && Second.PaneId == paneId))
         {
             SplitRatio = Math.Clamp(SplitRatio + (inFirst ? delta : -delta), 0.1, 0.9);
             return true;
         }
-        // Recurse into the subtree containing the pane
+        // 递归到包含该面板的子树
         if (inFirst && First!.ResizePane(paneId, delta)) return true;
         if (inSecond && Second!.ResizePane(paneId, delta)) return true;
-        // Pane is nested deeper — resize at this level
+        // 面板嵌套更深 — 在此层调整
         SplitRatio = Math.Clamp(SplitRatio + (inFirst ? delta : -delta), 0.1, 0.9);
         return true;
     }
 
-    /// <summary>Swaps two panes by exchanging their PaneId values.</summary>
+    /// <summary>通过交换两个面板的 PaneId 来交换它们。</summary>
     public bool SwapPanes(string paneId1, string paneId2)
     {
         var node1 = FindNode(paneId1);

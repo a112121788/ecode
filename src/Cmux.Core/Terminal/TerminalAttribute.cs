@@ -33,7 +33,7 @@ public struct TerminalColor : IEquatable<TerminalColor>
 
     public static TerminalColor FromIndex(int index)
     {
-        // Standard 256-color lookup
+        // 标准 256 色查找
         if (index < 16)
         {
             return index switch
@@ -60,7 +60,7 @@ public struct TerminalColor : IEquatable<TerminalColor>
 
         if (index < 232)
         {
-            // 216-color cube (6x6x6)
+            // 216 色立方体（6x6x6）
             int i = index - 16;
             int r = i / 36;
             int g = (i / 6) % 6;
@@ -70,7 +70,7 @@ public struct TerminalColor : IEquatable<TerminalColor>
 
         if (index < 256)
         {
-            // 24-step grayscale
+            // 24 级灰度
             byte v = (byte)(index - 232);
             v = (byte)(v * 10 + 8);
             return new(v, v, v);
@@ -109,7 +109,7 @@ public struct TerminalCell
     public char Character;
     public TerminalAttribute Attribute;
     public bool IsDirty;
-    public int Width; // 1 for normal, 2 for wide chars
+    public int Width; // 1 = 普通字符，2 = 宽字符
 
     public static TerminalCell Empty => new()
     {

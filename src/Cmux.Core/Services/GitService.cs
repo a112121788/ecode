@@ -3,19 +3,19 @@ using System.Diagnostics;
 namespace Cmux.Core.Services;
 
 /// <summary>
-/// Extracts git information (branch, remote, PR status) for a working directory.
+/// 提取工作目录的 git 信息（分支、远程、PR 状态）。
 /// </summary>
 public static class GitService
 {
     /// <summary>
-    /// Gets the current git branch name for the given directory.
-    /// Returns null if not a git repository.
+    /// 获取指定目录的当前 git 分支名称。
+    /// 若非 git 仓库则返回 null。
     /// </summary>
     public static string? GetBranch(string? workingDirectory)
     {
         if (string.IsNullOrEmpty(workingDirectory)) return null;
 
-        // Fast path: read .git/HEAD directly
+        // 快速路径：直接读取 .git/HEAD
         var gitHeadPath = FindGitHead(workingDirectory);
         if (gitHeadPath != null && File.Exists(gitHeadPath))
         {
@@ -26,13 +26,13 @@ public static class GitService
                 if (content.StartsWith(refPrefix))
                     return content[refPrefix.Length..];
 
-                // Detached HEAD — return short SHA
+                // 分离 HEAD — 返回短 SHA
                 if (content.Length >= 7)
                     return content[..7];
             }
             catch
             {
-                // Fall through to git command
+                // 回退到 git 命令
             }
         }
 
@@ -40,7 +40,7 @@ public static class GitService
     }
 
     /// <summary>
-    /// Gets the git remote URL for the given directory.
+    /// 获取指定目录的 git 远程 URL。
     /// </summary>
     public static string? GetRemoteUrl(string? workingDirectory)
     {
@@ -57,7 +57,7 @@ public static class GitService
             if (Directory.Exists(gitDir))
                 return Path.Combine(gitDir, "HEAD");
 
-            // Handle .git file (worktrees)
+            // 处理 .git 文件（worktree）
             if (File.Exists(gitDir))
             {
                 try
@@ -73,7 +73,7 @@ public static class GitService
                 }
                 catch
                 {
-                    // Continue
+                    // 继续
                 }
             }
 

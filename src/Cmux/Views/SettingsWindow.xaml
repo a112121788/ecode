@@ -8,7 +8,7 @@
         ResizeMode="NoResize">
 
     <Window.Resources>
-        <!-- Force dark system brush overrides inside settings window -->
+        <!-- 在设置窗口内强制覆盖为深色系统画刷 -->
         <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#FF1A1A1A" />
         <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#FF1A1A1A" />
         <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="#FFE2E2E9" />
@@ -16,7 +16,7 @@
         <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#FF252547" />
         <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFE2E2E9" />
 
-        <!-- Nav button style -->
+        <!-- 导航按钮样式 -->
         <Style x:Key="NavButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource ForegroundDimBrush}" />
@@ -47,7 +47,7 @@
             </Setter>
         </Style>
 
-        <!-- Settings text input style -->
+        <!-- 设置文本输入框样式 -->
         <Style x:Key="SettingsTextBox" TargetType="TextBox">
             <Setter Property="Background" Value="#FF1A1A1A" />
             <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
@@ -84,7 +84,7 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Settings combo style -->
+        <!-- 设置下拉框样式 -->
         <Style x:Key="SettingsCombo" TargetType="ComboBox">
             <Style.Resources>
                 <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#FF1A1A1A" />
@@ -201,14 +201,14 @@
             </Setter>
         </Style>
 
-        <!-- Settings checkbox style -->
+        <!-- 设置复选框样式 -->
         <Style x:Key="SettingsCheck" TargetType="CheckBox">
             <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
-        <!-- Section label -->
+        <!-- 小节标签 -->
         <Style x:Key="SectionLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource ForegroundDimBrush}" />
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -251,7 +251,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Title Bar -->
+            <!-- 标题栏 -->
             <Border Grid.Row="0" Background="Transparent" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid>
                     <TextBlock Text="设置" FontSize="14" FontWeight="SemiBold"
@@ -264,7 +264,7 @@
                 </Grid>
             </Border>
 
-            <!-- Main Content -->
+            <!-- 主内容区 -->
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="150" />
@@ -272,7 +272,7 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <!-- Left Nav Sidebar -->
+                <!-- 左侧导航栏 -->
                 <StackPanel Grid.Column="0" Margin="0,8,0,0">
                     <Button x:Name="NavAppearance" Style="{StaticResource NavButton}"
                             Click="NavButton_Click">
@@ -324,19 +324,19 @@
                     </Button>
                 </StackPanel>
 
-                <!-- Divider -->
+                <!-- 分隔线 -->
                 <Border Grid.Column="1" Background="{StaticResource BorderBrush}" />
 
-                <!-- Content Area -->
+                <!-- 内容区域 -->
                 <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Padding="24,16">
                     <Grid>
 
-                    <!-- ═══ Appearance Section ═══ -->
+                    <!-- ═══ 外观部分 ═══ -->
                     <StackPanel x:Name="AppearanceSection">
                         <TextBlock Text="Appearance" FontSize="18" FontWeight="SemiBold"
                                    Foreground="{StaticResource ForegroundBrush}" Margin="0,0,0,20" />
 
-                        <!-- Font Family -->
+                        <!-- 字体 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -350,7 +350,7 @@
                                       IsTextSearchEnabled="True" />
                         </Grid>
 
-                        <!-- Font Size -->
+                        <!-- 字号 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -367,7 +367,7 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Theme -->
+                        <!-- 主题 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -388,7 +388,7 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Opacity -->
+                        <!-- 不透明度 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -405,7 +405,7 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Cursor Style -->
+                        <!-- 光标样式 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -418,7 +418,7 @@
                                       Width="140" HorizontalAlignment="Left" />
                         </Grid>
 
-                        <!-- Cursor Blink -->
+                        <!-- 光标闪烁 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -429,7 +429,7 @@
                                       Style="{StaticResource SettingsCheck}" />
                         </Grid>
 
-                        <!-- System Theme (detected) -->
+                        <!-- 系统主题（已检测） -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -444,12 +444,12 @@
                         </Grid>
                     </StackPanel>
 
-                    <!-- ═══ Terminal Section ═══ -->
+                    <!-- ═══ 终端部分 ═══ -->
                     <StackPanel x:Name="TerminalSection" Visibility="Collapsed">
                         <TextBlock Text="Terminal" FontSize="18" FontWeight="SemiBold"
                                    Foreground="{StaticResource ForegroundBrush}" Margin="0,0,0,20" />
 
-                        <!-- Color Preset -->
+                        <!-- 配色预设 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -463,7 +463,7 @@
                                       SelectionChanged="TerminalThemePresetCombo_SelectionChanged" />
                         </Grid>
 
-                        <!-- Use custom colors -->
+                        <!-- 使用自定义颜色 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -472,12 +472,12 @@
                             <TextBlock Text="自定义颜色" Style="{StaticResource SectionLabel}" />
                             <CheckBox x:Name="UseCustomTerminalColorsCheck" Grid.Column="1"
                                       Style="{StaticResource SettingsCheck}"
-                                      Content="Override preset colors"
+                                      Content="覆盖预设颜色"
                                       Checked="UseCustomTerminalColorsCheck_Changed"
                                       Unchecked="UseCustomTerminalColorsCheck_Changed" />
                         </Grid>
 
-                        <!-- Terminal color swatches -->
+                        <!-- 终端颜色色块 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -489,7 +489,7 @@
                                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0" />
                                 <TextBox x:Name="TerminalBackgroundHexBox" Style="{StaticResource SettingsTextBox}" Width="110" Margin="0,0,8,0"
                                          TextChanged="TerminalColorHexBox_TextChanged" />
-                                <Button Content="Pick" Style="{StaticResource CmuxButton}" Padding="10,5"
+                                <Button Content="选取" Style="{StaticResource CmuxButton}" Padding="10,5"
                                         Click="PickTerminalBackgroundColor_Click" />
                             </StackPanel>
                         </Grid>
@@ -505,7 +505,7 @@
                                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0" />
                                 <TextBox x:Name="TerminalForegroundHexBox" Style="{StaticResource SettingsTextBox}" Width="110" Margin="0,0,8,0"
                                          TextChanged="TerminalColorHexBox_TextChanged" />
-                                <Button Content="Pick" Style="{StaticResource CmuxButton}" Padding="10,5"
+                                <Button Content="选取" Style="{StaticResource CmuxButton}" Padding="10,5"
                                         Click="PickTerminalForegroundColor_Click" />
                             </StackPanel>
                         </Grid>
@@ -521,7 +521,7 @@
                                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0" />
                                 <TextBox x:Name="TerminalCursorHexBox" Style="{StaticResource SettingsTextBox}" Width="110" Margin="0,0,8,0"
                                          TextChanged="TerminalColorHexBox_TextChanged" />
-                                <Button Content="Pick" Style="{StaticResource CmuxButton}" Padding="10,5"
+                                <Button Content="选取" Style="{StaticResource CmuxButton}" Padding="10,5"
                                         Click="PickTerminalCursorColor_Click" />
                             </StackPanel>
                         </Grid>
@@ -537,14 +537,14 @@
                                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0" />
                                 <TextBox x:Name="TerminalSelectionHexBox" Style="{StaticResource SettingsTextBox}" Width="110" Margin="0,0,8,0"
                                          TextChanged="TerminalColorHexBox_TextChanged" />
-                                <Button Content="Pick" Style="{StaticResource CmuxButton}" Padding="10,5"
+                                <Button Content="选取" Style="{StaticResource CmuxButton}" Padding="10,5"
                                         Click="PickTerminalSelectionColor_Click" />
-                                <Button Content="Reset" Style="{StaticResource CmuxButton}" Padding="10,5" Margin="8,0,0,0"
+                                <Button Content="重置" Style="{StaticResource CmuxButton}" Padding="10,5" Margin="8,0,0,0"
                                         Click="ResetTerminalColors_Click" />
                             </StackPanel>
                         </Grid>
 
-                        <!-- Default Shell -->
+                        <!-- 默认 Shell -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -556,7 +556,7 @@
                                       Background="#FF1A1A1A" Foreground="{StaticResource ForegroundBrush}" />
                         </Grid>
 
-                        <!-- Shell Arguments -->
+                        <!-- Shell 参数 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -567,7 +567,7 @@
                                      Style="{StaticResource SettingsTextBox}" />
                         </Grid>
 
-                        <!-- Scrollback Lines -->
+                        <!-- 回滚行数 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -579,7 +579,7 @@
                                      HorizontalAlignment="Left" />
                         </Grid>
 
-                        <!-- Visual Bell -->
+                        <!-- 视觉响铃 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -590,7 +590,7 @@
                                       Style="{StaticResource SettingsCheck}" />
                         </Grid>
 
-                        <!-- Bracketed Paste -->
+                        <!-- 括号粘贴模式 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -602,12 +602,12 @@
                         </Grid>
                     </StackPanel>
 
-                    <!-- ═══ Behavior Section ═══ -->
+                    <!-- ═══ 行为部分 ═══ -->
                     <StackPanel x:Name="BehaviorSection" Visibility="Collapsed">
                         <TextBlock Text="Behavior" FontSize="18" FontWeight="SemiBold"
                                    Foreground="{StaticResource ForegroundBrush}" Margin="0,0,0,20" />
 
-                        <!-- Restore Session -->
+                        <!-- 恢复会话 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -616,10 +616,10 @@
                             <TextBlock Text="启动时恢复上一次会话" Style="{StaticResource SectionLabel}" />
                             <CheckBox x:Name="RestoreSessionCheck" Grid.Column="1"
                                       Style="{StaticResource SettingsCheck}"
-                                      Content="Restore previous session on startup" />
+                                      Content="启动时恢复上一次的会话" />
                         </Grid>
 
-                        <!-- Confirm on Close -->
+                        <!-- 关闭前确认 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -628,10 +628,10 @@
                             <TextBlock Text="关闭前确认" Style="{StaticResource SectionLabel}" />
                             <CheckBox x:Name="ConfirmCloseCheck" Grid.Column="1"
                                       Style="{StaticResource SettingsCheck}"
-                                      Content="Ask before closing window" />
+                                      Content="关闭窗口前询问" />
                         </Grid>
 
-                        <!-- Auto Copy -->
+                        <!-- 自动复制 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -640,10 +640,10 @@
                             <TextBlock Text="自动复制" Style="{StaticResource SectionLabel}" />
                             <CheckBox x:Name="AutoCopyCheck" Grid.Column="1"
                                       Style="{StaticResource SettingsCheck}"
-                                      Content="Copy to clipboard on text selection" />
+                                      Content="选中文本时复制到剪贴板" />
                         </Grid>
 
-                        <!-- Ctrl+Click URLs -->
+                        <!-- Ctrl+点击链接 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -652,10 +652,10 @@
                             <TextBlock Text="Ctrl+点击链接" Style="{StaticResource SectionLabel}" />
                             <CheckBox x:Name="CtrlClickUrlCheck" Grid.Column="1"
                                       Style="{StaticResource SettingsCheck}"
-                                      Content="Open URLs with Ctrl+Click" />
+                                      Content="使用 Ctrl+点击 打开 URL" />
                         </Grid>
 
-                        <!-- Auto Save Interval -->
+                        <!-- 自动保存间隔 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -667,7 +667,7 @@
                                      HorizontalAlignment="Left" />
                         </Grid>
 
-                        <!-- Log Retention -->
+                        <!-- 日志保留 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -679,7 +679,7 @@
                                      HorizontalAlignment="Left" ToolTip="删除超过此天数的日志文件。设为 0 表示永久保留。" />
                         </Grid>
 
-                        <!-- Capture transcript on close -->
+                        <!-- 关闭时保存终端记录 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -688,10 +688,10 @@
                             <TextBlock Text="关闭时保存记录" Style="{StaticResource SectionLabel}" />
                             <CheckBox x:Name="CaptureOnCloseCheck" Grid.Column="1"
                                       Style="{StaticResource SettingsCheck}"
-                                      Content="Save terminal transcript when pane/surface/workspace/app closes" />
+                                      Content="在面板/Surface/工作区/应用关闭时保存终端脚本" />
                         </Grid>
 
-                        <!-- Capture transcript on clear -->
+                        <!-- 清屏前保存终端记录 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -700,10 +700,10 @@
                             <TextBlock Text="清屏前保存记录" Style="{StaticResource SectionLabel}" />
                             <CheckBox x:Name="CaptureOnClearCheck" Grid.Column="1"
                                       Style="{StaticResource SettingsCheck}"
-                                      Content="Save terminal transcript before Clear Terminal" />
+                                      Content="在清屏前保存终端脚本" />
                         </Grid>
 
-                        <!-- Transcript retention -->
+                        <!-- 终端记录保留 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="160" />
@@ -716,7 +716,7 @@
                         </Grid>
                     </StackPanel>
 
-                    <!-- ═══ Keyboard Section ═══ -->
+                    <!-- ═══ 键盘部分 ═══ -->
                     <StackPanel x:Name="KeyboardSection" Visibility="Collapsed">
                         <TextBlock Text="键盘快捷键" FontSize="18" FontWeight="SemiBold"
                                    Foreground="{StaticResource ForegroundBrush}" Margin="0,0,0,20" />
@@ -750,7 +750,7 @@
                                     <RowDefinition Height="28" />
                                 </Grid.RowDefinitions>
 
-                                <!-- Workspaces -->
+                                <!-- 工作区 -->
                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+N" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentBrush}" FontSize="13" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="0" Grid.Column="1" Text="新建工作区"
@@ -766,7 +766,7 @@
                                 <TextBlock Grid.Row="2" Grid.Column="1" Text="关闭工作区"
                                            Foreground="{StaticResource ForegroundDimBrush}" FontSize="13" VerticalAlignment="Center" />
 
-                                <!-- Surfaces -->
+                                <!-- 标签页 -->
                                 <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+T" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentBrush}" FontSize="13" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="3" Grid.Column="1" Text="新建标签页"
@@ -787,7 +787,7 @@
                                 <TextBlock Grid.Row="6" Grid.Column="1" Text="上一标签页"
                                            Foreground="{StaticResource ForegroundDimBrush}" FontSize="13" VerticalAlignment="Center" />
 
-                                <!-- Panes -->
+                                <!-- 面板 -->
                                 <TextBlock Grid.Row="7" Grid.Column="0" Text="Ctrl+D" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentBrush}" FontSize="13" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="7" Grid.Column="1" Text="向右分屏"
@@ -808,13 +808,13 @@
                                 <TextBlock Grid.Row="10" Grid.Column="1" Text="切换缩放面板"
                                            Foreground="{StaticResource ForegroundDimBrush}" FontSize="13" VerticalAlignment="Center" />
 
-                                <!-- Terminal -->
+                                <!-- 终端 -->
                                 <TextBlock Grid.Row="11" Grid.Column="0" Text="Ctrl+Backspace" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentBrush}" FontSize="13" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="11" Grid.Column="1" Text="删除前一单词"
                                            Foreground="{StaticResource ForegroundDimBrush}" FontSize="13" VerticalAlignment="Center" />
 
-                                <!-- View -->
+                                <!-- 视图 -->
                                 <TextBlock Grid.Row="12" Grid.Column="0" Text="Ctrl+B" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentBrush}" FontSize="13" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="12" Grid.Column="1" Text="切换侧边栏"
@@ -858,7 +858,7 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- ═══ Agent Section ═══ -->
+                    <!-- ═══ Agent 部分 ═══ -->
                     <StackPanel x:Name="AgentSection" Visibility="Collapsed">
                         <TextBlock Text="Agent" FontSize="18" FontWeight="SemiBold"
                                    Foreground="{StaticResource ForegroundBrush}" Margin="0,0,0,20" />
@@ -870,7 +870,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="启用 Agent" Style="{StaticResource SectionLabel}" />
                             <CheckBox x:Name="AgentEnabledCheck" Grid.Column="1" Style="{StaticResource SettingsCheck}"
-                                      Content="Enable pane handler commands" />
+                                      Content="启用面板 handler 命令" />
                         </Grid>
 
                         <Grid Margin="0,0,0,10">
@@ -948,7 +948,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="API Key" Style="{StaticResource SectionLabel}" />
                                     <PasswordBox x:Name="OpenAiApiKeyBox" Grid.Column="1" Style="{StaticResource SettingsPasswordBox}" />
-                                    <Button Grid.Column="2" Content="Clear" Style="{StaticResource CmuxButton}" Padding="10,5"
+                                    <Button Grid.Column="2" Content="清空" Style="{StaticResource CmuxButton}" Padding="10,5"
                                             Margin="8,0,0,0" Click="ClearOpenAiKey_Click" />
                                 </Grid>
                             </StackPanel>
@@ -984,7 +984,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="API Key" Style="{StaticResource SectionLabel}" />
                                     <PasswordBox x:Name="AnthropicApiKeyBox" Grid.Column="1" Style="{StaticResource SettingsPasswordBox}" />
-                                    <Button Grid.Column="2" Content="Clear" Style="{StaticResource CmuxButton}" Padding="10,5"
+                                    <Button Grid.Column="2" Content="清空" Style="{StaticResource CmuxButton}" Padding="10,5"
                                             Margin="8,0,0,0" Click="ClearAnthropicKey_Click" />
                                 </Grid>
                             </StackPanel>
@@ -1038,7 +1038,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="Exa API Key" Style="{StaticResource SectionLabel}" />
                                     <PasswordBox x:Name="ExaApiKeyBox" Grid.Column="1" Style="{StaticResource SettingsPasswordBox}" />
-                                <Button Grid.Column="2" Content="Clear" Style="{StaticResource CmuxButton}" Padding="10,5"
+                                <Button Grid.Column="2" Content="清空" Style="{StaticResource CmuxButton}" Padding="10,5"
                                             Margin="8,0,0,0" Click="ClearExaKey_Click" />
                                 </Grid>
                             </StackPanel>
@@ -1253,10 +1253,10 @@
                                 <TextBlock Text="命令模板" Style="{StaticResource SectionLabel}" />
                                 <TextBox x:Name="CustomToolCommandTemplateBox" Grid.Column="1" Style="{StaticResource SettingsTextBox}" />
                             </Grid>
-                            <CheckBox x:Name="CustomToolEnabledCheck" Content="Enabled" Style="{StaticResource SettingsCheck}" Margin="0,0,0,6" />
+                            <CheckBox x:Name="CustomToolEnabledCheck" Content="已启用" Style="{StaticResource SettingsCheck}" Margin="0,0,0,6" />
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="Add / Update" Style="{StaticResource CmuxButton}" Padding="12,6" Click="AddOrUpdateCustomTool_Click" />
-                                <Button Content="Remove Selected" Style="{StaticResource CmuxButton}" Padding="12,6" Margin="8,0,0,0"
+                                <Button Content="新增 / 更新" Style="{StaticResource CmuxButton}" Padding="12,6" Click="AddOrUpdateCustomTool_Click" />
+                                <Button Content="删除所选" Style="{StaticResource CmuxButton}" Padding="12,6" Margin="8,0,0,0"
                                         Click="RemoveSelectedCustomTool_Click" />
                             </StackPanel>
                         </StackPanel>
@@ -1318,10 +1318,10 @@
                                 <TextBlock Text="工作目录" Style="{StaticResource SectionLabel}" />
                                 <TextBox x:Name="McpServerWorkingDirectoryBox" Grid.Column="1" Style="{StaticResource SettingsTextBox}" />
                             </Grid>
-                            <CheckBox x:Name="McpServerEnabledCheck" Content="Enabled" Style="{StaticResource SettingsCheck}" Margin="0,0,0,6" />
+                            <CheckBox x:Name="McpServerEnabledCheck" Content="已启用" Style="{StaticResource SettingsCheck}" Margin="0,0,0,6" />
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="Add / Update" Style="{StaticResource CmuxButton}" Padding="12,6" Click="AddOrUpdateMcpServer_Click" />
-                                <Button Content="Remove Selected" Style="{StaticResource CmuxButton}" Padding="12,6" Margin="8,0,0,0"
+                                <Button Content="新增 / 更新" Style="{StaticResource CmuxButton}" Padding="12,6" Click="AddOrUpdateMcpServer_Click" />
+                                <Button Content="删除所选" Style="{StaticResource CmuxButton}" Padding="12,6" Margin="8,0,0,0"
                                         Click="RemoveSelectedMcpServer_Click" />
                             </StackPanel>
                         </StackPanel>
@@ -1335,7 +1335,7 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- ═══ About Section ═══ -->
+                    <!-- ═══ 关于部分 ═══ -->
                     <StackPanel x:Name="AboutSection" Visibility="Collapsed">
                         <TextBlock Text="About" FontSize="18" FontWeight="SemiBold"
                                    Foreground="{StaticResource ForegroundBrush}" Margin="0,0,0,20" />
@@ -1362,16 +1362,16 @@
                 </ScrollViewer>
             </Grid>
 
-            <!-- Bottom Bar -->
+            <!-- 底部操作栏 -->
             <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{StaticResource BorderBrush}"
                     Padding="18,12">
                 <Grid>
-                    <Button Content="Reset to Defaults" Style="{StaticResource CmuxButton}"
+                    <Button Content="恢复为默认值" Style="{StaticResource CmuxButton}"
                             Click="Reset_Click" HorizontalAlignment="Left" Padding="14,7" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Cancel" Style="{StaticResource CmuxButton}"
+                        <Button Content="取消" Style="{StaticResource CmuxButton}"
                                 Click="Cancel_Click" Padding="16,7" Margin="0,0,8,0" />
-                        <Button Content="Save" Style="{StaticResource AccentButton}"
+                        <Button Content="保存" Style="{StaticResource AccentButton}"
                                 Click="Save_Click" Padding="20,7" />
                     </StackPanel>
                 </Grid>

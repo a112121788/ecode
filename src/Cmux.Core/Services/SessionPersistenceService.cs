@@ -4,8 +4,8 @@ using Cmux.Core.Models;
 namespace Cmux.Core.Services;
 
 /// <summary>
-/// Saves and restores the application session state (window layout, workspaces,
-/// surfaces, split pane layout, working directories) to/from a JSON file.
+/// 保存并恢复应用程序会话状态（窗口布局、工作区、Surface、分屏布局、工作目录）
+/// 到 JSON 文件，或从 JSON 文件恢复。
 /// </summary>
 public class SessionPersistenceService
 {
@@ -40,14 +40,14 @@ public class SessionPersistenceService
         {
             Directory.CreateDirectory(StateDir);
             var json = JsonSerializer.Serialize(state, JsonOptions);
-            // Write to temp file then rename for atomicity
+            // 先写入临时文件再重命名，以保证原子性
             var tempPath = StatePath + ".tmp";
             File.WriteAllText(tempPath, json);
             File.Move(tempPath, StatePath, overwrite: true);
         }
         catch
         {
-            // Best effort — don't crash on save failure
+            // 尽力而为 —— 保存失败时不要让程序崩溃
         }
     }
 

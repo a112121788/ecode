@@ -4,10 +4,10 @@ using Cmux.Core.IPC;
 namespace Cmux.Cli;
 
 /// <summary>
-/// cmux CLI tool — Windows equivalent of the cmux macOS CLI.
-/// Communicates with the running cmux app via named pipes.
+/// cmux 命令行工具 —— cmux macOS CLI 的 Windows 等价实现。
+/// 通过命名管道与正在运行的 cmux 应用通信。
 ///
-/// Usage:
+/// 用法：
 ///   cmux notify --title "Title" --body "Body"
 ///   cmux workspace list
 ///   cmux workspace create --name "My Workspace"
@@ -142,7 +142,7 @@ public static class Program
     {
         var response = await NamedPipeClient.SendCommand(command, args);
 
-        // Pretty-print JSON
+        // 美化输出 JSON
         try
         {
             using var doc = JsonDocument.Parse(response);

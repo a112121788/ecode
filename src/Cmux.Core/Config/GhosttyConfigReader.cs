@@ -4,10 +4,10 @@ using Cmux.Core.Terminal;
 namespace Cmux.Core.Config;
 
 /// <summary>
-/// Reads Ghostty configuration files for themes, fonts, and colors.
-/// Ghostty config format: key = value, one per line, # for comments.
-/// Paths: %USERPROFILE%\.config\ghostty\config (primary),
-/// %APPDATA%\ghostty\config (fallback)
+/// 读取 Ghostty 配置文件中的主题、字体和颜色信息。
+/// Ghostty 配置格式：key = value，每行一项，# 为注释。
+/// 路径：%USERPROFILE%\.config\ghostty\config（主路径），
+/// %APPDATA%\ghostty\config（备用路径）
 /// </summary>
 public class GhosttyConfigReader
 {
@@ -18,8 +18,8 @@ public class GhosttyConfigReader
     ];
 
     /// <summary>
-    /// Reads the Ghostty configuration and returns a theme.
-    /// Falls back to defaults if no config file is found.
+    /// 读取 Ghostty 配置并返回主题。
+    /// 若找不到配置文件则回退到默认值。
     /// </summary>
     public static GhosttyTheme ReadConfig()
     {
@@ -36,7 +36,7 @@ public class GhosttyConfigReader
             }
             catch
             {
-                // Continue to next path
+                // 继续尝试下一个路径
             }
         }
 
@@ -101,7 +101,7 @@ public class GhosttyConfigReader
                 break;
 
             default:
-                // Handle palette colors: palette = N=#RRGGBB or palette = N=name
+                // 处理调色板颜色：palette = N=#RRGGBB 或 palette = N=name
                 if (key == "palette")
                 {
                     var parts = value.Split('=', 2);
@@ -118,10 +118,10 @@ public class GhosttyConfigReader
     }
 
     /// <summary>
-    /// Parses a color string. Supports:
-    /// - #RGB, #RRGGBB
+    /// 解析颜色字符串。支持：
+    /// - #RGB、#RRGGBB
     /// - rgb(r, g, b)
-    /// - Named colors (basic set)
+    /// - 命名颜色（基础集合）
     /// </summary>
     private static bool TryParseColor(string value, out TerminalColor color)
     {
@@ -163,7 +163,7 @@ public class GhosttyConfigReader
             }
         }
 
-        // Named colors
+        // 命名颜色
         return value.ToLowerInvariant() switch
         {
             "black" => SetColor(out color, 0x00, 0x00, 0x00),

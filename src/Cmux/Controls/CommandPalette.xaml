@@ -18,7 +18,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Row 0: Search input -->
+            <!-- 第 0 行：搜索输入框 -->
             <Border Grid.Row="0" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -37,7 +37,7 @@
                 </Grid>
             </Border>
 
-            <!-- Row 1: Results list -->
+            <!-- 第 1 行：结果列表 -->
             <ListBox x:Name="ResultsList" Grid.Row="1"
                      Background="Transparent" BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -75,19 +75,19 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <!-- Icon -->
+                            <!-- 图标 -->
                             <TextBlock Grid.Column="0" Text="{Binding Icon}"
                                        FontFamily="Segoe MDL2 Assets" FontSize="14"
                                        Foreground="{StaticResource ForegroundDimBrush}" VerticalAlignment="Center"
                                        Margin="0,0,10,0" />
-                            <!-- Label + Description -->
+                            <!-- 标签与描述 -->
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding Label}" Foreground="{StaticResource ForegroundBrush}" FontSize="13" />
                                 <TextBlock Text="{Binding Description}" Foreground="{StaticResource ForegroundDimBrush}" FontSize="12"
                                            Margin="10,0,0,0" VerticalAlignment="Center"
                                            Visibility="{Binding Description, Converter={StaticResource NullToCollapsed}}" />
                             </StackPanel>
-                            <!-- Shortcut -->
+                            <!-- 快捷键 -->
                             <Border Grid.Column="2" Background="{StaticResource SidebarItemHoverBrush}" CornerRadius="4" Padding="6,2"
                                     VerticalAlignment="Center"
                                     Visibility="{Binding Shortcut, Converter={StaticResource NullToCollapsed}}">
@@ -98,7 +98,7 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <!-- Empty state -->
+            <!-- 空状态 -->
             <TextBlock x:Name="EmptyText" Grid.Row="1"
                        Text="没有匹配的命令" Foreground="{StaticResource ForegroundDimBrush}"
                        FontSize="13" HorizontalAlignment="Center"

@@ -41,15 +41,15 @@ public partial class SettingsWindow : Window
             .ToList();
         FontFamilyCombo.ItemsSource = fontFamilies;
 
-        // Detect available shells
+        // 检测可用的 Shell
         var shells = ShellDetector.DetectShells();
         ShellCombo.ItemsSource = shells;
         ShellCombo.DisplayMemberPath = "Name";
         ShellCombo.SelectedValuePath = "Path";
 
-        // Detect system theme
+        // 检测系统主题
         var isLight = IsSystemLightTheme();
-        SystemThemeText.Text = isLight ? "Light" : "Dark";
+        SystemThemeText.Text = isLight ? "浅色" : "深色";
     }
 
     private void LoadSettings()
@@ -76,7 +76,7 @@ public partial class SettingsWindow : Window
         CursorStyleCombo.SelectedItem = s.CursorStyle;
         CursorBlinkCheck.IsChecked = s.CursorBlink;
 
-        // Shell selection (set after PopulateThemes populates the combo)
+        // Shell 选择（在 PopulateThemes 填充 Combo 之后设置）
         var shellPath = s.DefaultShell;
         var shells = ShellCombo.ItemsSource as List<ShellInfo>;
         var shellIndex = shells?.FindIndex(sh => sh.Path == shellPath) ?? -1;
@@ -363,7 +363,7 @@ public partial class SettingsWindow : Window
         AgentSection.Visibility = section == "Agent" ? Visibility.Visible : Visibility.Collapsed;
         AboutSection.Visibility = section == "About" ? Visibility.Visible : Visibility.Collapsed;
 
-        // Update nav button active state via Tag
+        // 通过 Tag 更新导航按钮的激活状态
         foreach (var btn in new[] { NavAppearance, NavTerminal, NavBehavior, NavKeyboard, NavAgent, NavAbout })
             btn.Tag = btn.Name == $"Nav{section}" ? "active" : null;
     }

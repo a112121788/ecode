@@ -5,7 +5,7 @@ using static Cmux.Core.Terminal.ConPtyInterop;
 namespace Cmux.Core.Terminal;
 
 /// <summary>
-/// Manages a shell process attached to a ConPTY pseudo console.
+/// 管理附加到 ConPTY 伪控制台的 Shell 进程。
 /// </summary>
 public sealed class TerminalProcess : IDisposable
 {
@@ -23,10 +23,10 @@ public sealed class TerminalProcess : IDisposable
     {
         var shellCommand = command ?? DetectShell();
 
-        // Initialize thread attribute list for ConPTY
+        // 初始化 ConPTY 线程属性列表
         _attributeList = CreateAttributeList(console.Handle);
 
-        // Create process with ConPTY
+        // 使用 ConPTY 创建进程
         var startupInfo = new STARTUPINFOEX
         {
             lpAttributeList = _attributeList,
@@ -48,7 +48,7 @@ public sealed class TerminalProcess : IDisposable
         if (!success)
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create process with ConPTY.");
 
-        // Start a background thread to wait for process exit
+        // 启动后台线程等待进程退出
         _waitThread = new Thread(WaitForExitThread)
         {
             IsBackground = true,
@@ -58,12 +58,12 @@ public sealed class TerminalProcess : IDisposable
     }
 
     /// <summary>
-    /// Detects the best available shell on the system.
-    /// Priority: pwsh.exe > powershell.exe > cmd.exe
+    /// 检测系统上可用的最佳 Shell。
+    /// 优先级：pwsh.exe > powershell.exe > cmd.exe
     /// </summary>
     private static string DetectShell()
     {
-        // Check for PowerShell 7+ (pwsh)
+        // 检测 PowerShell 7+ (pwsh)
         var pwshPaths = new[]
         {
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "PowerShell", "7", "pwsh.exe"),
@@ -74,7 +74,7 @@ public sealed class TerminalProcess : IDisposable
         {
             if (path == "pwsh.exe")
             {
-                // Check if it's in PATH
+                // 检测是否在 PATH 中
                 var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
                 foreach (var dir in pathEnv.Split(Path.PathSeparator))
                 {
@@ -89,14 +89,14 @@ public sealed class TerminalProcess : IDisposable
             }
         }
 
-        // Fall back to Windows PowerShell
+        // 回退到 Windows PowerShell
         var winPowerShell = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.System),
             "WindowsPowerShell", "v1.0", "powershell.exe");
         if (File.Exists(winPowerShell))
             return winPowerShell;
 
-        // Last resort: cmd.exe from COMSPEC
+        // 最后手段：从 COMSPEC 获取 cmd.exe
         var comspec = Environment.GetEnvironmentVariable("COMSPEC");
         if (!string.IsNullOrEmpty(comspec) && File.Exists(comspec))
             return comspec;
@@ -106,7 +106,7 @@ public sealed class TerminalProcess : IDisposable
 
     private static IntPtr CreateAttributeList(IntPtr conPtyHandle)
     {
-        // Query the required size
+        // 查询所需大小
         var size = IntPtr.Zero;
         InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref size);
 

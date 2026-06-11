@@ -4,8 +4,7 @@ using Cmux.Core.Models;
 namespace Cmux.Core.Services;
 
 /// <summary>
-/// Manages terminal notifications. Tracks unread state, provides
-/// jump-to-unread functionality, and fires Windows toast notifications.
+/// 管理终端通知。跟踪未读状态，提供跳转到未读消息功能，并触发 Windows 吐司通知。
 /// </summary>
 public class NotificationService
 {
@@ -19,7 +18,7 @@ public class NotificationService
     public event Action? UnreadCountChanged;
 
     /// <summary>
-    /// Adds a new notification.
+    /// 添加新通知。
     /// </summary>
     public void AddNotification(
         string workspaceId,
@@ -46,7 +45,7 @@ public class NotificationService
         {
             _notifications.Insert(0, notification);
 
-            // Keep max 500 notifications
+            // 最多保留 500 条通知
             while (_notifications.Count > 500)
                 _notifications.RemoveAt(_notifications.Count - 1);
         }
@@ -56,7 +55,7 @@ public class NotificationService
     }
 
     /// <summary>
-    /// Marks a notification as read.
+    /// 将通知标记为已读。
     /// </summary>
     public void MarkAsRead(string notificationId)
     {
@@ -72,7 +71,7 @@ public class NotificationService
     }
 
     /// <summary>
-    /// Marks all notifications for a workspace as read.
+    /// 将指定工作区的所有通知标记为已读。
     /// </summary>
     public void MarkWorkspaceAsRead(string workspaceId)
     {
@@ -85,7 +84,7 @@ public class NotificationService
     }
 
     /// <summary>
-    /// Marks all notifications as read.
+    /// 将所有通知标记为已读。
     /// </summary>
     public void MarkAllAsRead()
     {
@@ -98,7 +97,7 @@ public class NotificationService
     }
 
     /// <summary>
-    /// Gets the most recent unread notification.
+    /// 获取最近一条未读通知。
     /// </summary>
     public TerminalNotification? GetLatestUnread()
     {
@@ -109,7 +108,7 @@ public class NotificationService
     }
 
     /// <summary>
-    /// Gets unread count for a specific workspace.
+    /// 获取指定工作区的未读数量。
     /// </summary>
     public int GetUnreadCount(string workspaceId)
     {
@@ -120,7 +119,7 @@ public class NotificationService
     }
 
     /// <summary>
-    /// Gets the latest notification text for a workspace (for sidebar display).
+    /// 获取指定工作区的最新通知文本（用于侧边栏显示）。
     /// </summary>
     public string? GetLatestText(string workspaceId)
     {
@@ -132,7 +131,7 @@ public class NotificationService
     }
 
     /// <summary>
-    /// Clears all notifications.
+    /// 清除所有通知。
     /// </summary>
     public void Clear()
     {

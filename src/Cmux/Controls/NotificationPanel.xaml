@@ -18,7 +18,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Header -->
+            <!-- 头部 -->
             <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" CornerRadius="12,0,0,0" Padding="0">
                 <Grid Margin="16,12">
                     <Grid.ColumnDefinitions>
@@ -45,7 +45,7 @@
                 </Grid>
             </Border>
 
-            <!-- Notification list -->
+            <!-- 通知列表 -->
             <ListBox Grid.Row="1"
                      ItemsSource="{Binding NotificationService.Notifications}"
                      Background="Transparent" BorderThickness="0"
@@ -61,7 +61,7 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
-                                <!-- Title + unread dot -->
+                                <!-- 标题与未读圆点 -->
                                 <StackPanel Grid.Row="0" Orientation="Horizontal">
                                     <Ellipse Width="6" Height="6" Margin="0,0,8,0"
                                              VerticalAlignment="Center">
@@ -82,7 +82,7 @@
                                                FontSize="12" FontWeight="SemiBold" />
                                 </StackPanel>
 
-                                <!-- Body -->
+                                <!-- 正文 -->
                                 <TextBlock Grid.Row="1" Text="{Binding Body}"
                                            Foreground="{StaticResource ForegroundDimBrush}"
                                            FontSize="11" Margin="0,4,0,0"
@@ -90,7 +90,7 @@
                                            TextTrimming="CharacterEllipsis"
                                            LineHeight="16" />
 
-                                <!-- Timestamp -->
+                                <!-- 时间戳 -->
                                 <TextBlock Grid.Row="2" Text="{Binding Timestamp, StringFormat=HH:mm:ss}"
                                            Foreground="{StaticResource ForegroundDimBrush}"
                                            FontSize="10" Margin="0,4,0,0" Opacity="0.6" />
@@ -107,7 +107,7 @@
                 </ListBox.ItemContainerStyle>
             </ListBox>
 
-            <!-- Empty state -->
+            <!-- 空状态 -->
             <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock Text="&#xEA8F;" FontFamily="Segoe MDL2 Assets"
                            FontSize="32" Foreground="{StaticResource ForegroundDimBrush}"

@@ -5,9 +5,9 @@ using System.Text.Json;
 namespace Cmux.Core.IPC;
 
 /// <summary>
-/// Named pipe server for cmux CLI/API communication.
-/// Windows equivalent of the Unix domain socket used by cmux on macOS.
-/// Pipe name: \\.\pipe\cmux (or \\.\pipe\cmux-{tag} for tagged instances).
+/// 用于 cmux CLI/API 通信的命名管道服务器。
+/// 相当于 macOS 上 cmux 使用的 Unix 域套接字的 Windows 版本。
+/// 管道名：\\.\pipe\cmux（或带标签实例 \\.\pipe\cmux-{tag}）。
 /// </summary>
 public sealed class NamedPipeServer : IDisposable
 {
@@ -18,8 +18,8 @@ public sealed class NamedPipeServer : IDisposable
     public string PipeName => _pipeName;
 
     /// <summary>
-    /// Invoked when a command is received. Args: (command, args dictionary).
-    /// Returns the response JSON string.
+    /// 收到命令时调用。参数：(命令, 参数字典)。
+    /// 返回响应 JSON 字符串。
     /// </summary>
     public Func<string, Dictionary<string, string>, Task<string>>? OnCommand { get; set; }
 
@@ -49,7 +49,7 @@ public sealed class NamedPipeServer : IDisposable
 
                 await pipe.WaitForConnectionAsync(ct);
 
-                // Handle each connection on its own task
+                // 在独立任务上处理每个连接
                 _ = Task.Run(() => HandleConnection(pipe, ct), ct);
             }
             catch (OperationCanceledException)
@@ -58,7 +58,7 @@ public sealed class NamedPipeServer : IDisposable
             }
             catch (IOException)
             {
-                // Pipe error, retry
+                // 管道错误，重试
                 await Task.Delay(100, ct);
             }
         }
@@ -76,7 +76,7 @@ public sealed class NamedPipeServer : IDisposable
                 var requestLine = await reader.ReadLineAsync(ct);
                 if (string.IsNullOrEmpty(requestLine)) return;
 
-                // Parse: COMMAND key1=value1 key2=value2 ...
+                // 解析：COMMAND key1=value1 key2=value2 ...
                 var parts = requestLine.Split(' ', 2);
                 var command = parts[0].ToUpperInvariant();
                 var args = new Dictionary<string, string>();
@@ -101,17 +101,17 @@ public sealed class NamedPipeServer : IDisposable
         }
         catch (IOException)
         {
-            // Client disconnected
+            // 客户端断开连接
         }
         catch (OperationCanceledException)
         {
-            // Server shutting down
+            // 服务器关闭
         }
     }
 
     private static void ParseArgs(string argsString, Dictionary<string, string> args)
     {
-        // Support both key=value and JSON formats
+        // 同时支持 key=value 和 JSON 格式
         var trimmed = argsString.Trim();
         if (trimmed.StartsWith('{'))
         {
@@ -127,7 +127,7 @@ public sealed class NamedPipeServer : IDisposable
             }
             catch
             {
-                // Fall through to key=value parsing
+                // 回退到 key=value 解析
             }
         }
 
@@ -142,7 +142,7 @@ public sealed class NamedPipeServer : IDisposable
             }
             else
             {
-                // Positional argument
+                // 位置参数
                 args.TryAdd("_arg" + args.Count, part);
             }
         }
@@ -204,7 +204,7 @@ public sealed class NamedPipeServer : IDisposable
 }
 
 /// <summary>
-/// Client for connecting to the cmux named pipe server (used by the CLI).
+/// 用于连接 cmux 命名管道服务器的客户端（CLI 使用）。
 /// </summary>
 public static class NamedPipeClient
 {

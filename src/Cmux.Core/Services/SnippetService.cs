@@ -4,8 +4,8 @@ using Cmux.Core.Models;
 namespace Cmux.Core.Services;
 
 /// <summary>
-/// Manages command snippets with JSON persistence to <c>%LOCALAPPDATA%/cmux/snippets.json</c>.
-/// Seeds useful defaults on first use.
+/// 管理命令片段，使用 JSON 持久化到 <c>%LOCALAPPDATA%/cmux/snippets.json</c>。
+/// 首次使用时填充有用的默认片段。
 /// </summary>
 public class SnippetService
 {
@@ -84,8 +84,8 @@ public class SnippetService
     }
 
     /// <summary>
-    /// Searches snippets by name, content, category, tags, and description.
-    /// Returns results sorted by favorite status (descending) then use count (descending).
+    /// 按名称、内容、分类、标签和描述搜索代码片段。
+    /// 返回结果按收藏状态（降序）然后使用次数（降序）排序。
     /// </summary>
     public List<Snippet> Search(string query)
     {
@@ -114,7 +114,7 @@ public class SnippetService
     }
 
     /// <summary>
-    /// Returns distinct category names, sorted alphabetically.
+    /// 返回所有不同的分类名称，按字母顺序排序。
     /// </summary>
     public List<string> GetCategories()
     {
@@ -171,7 +171,7 @@ public class SnippetService
         }
         catch
         {
-            // Best effort — don't crash on save failure
+            // 尽力而为 —— 保存失败时不要让程序崩溃
         }
     }
 

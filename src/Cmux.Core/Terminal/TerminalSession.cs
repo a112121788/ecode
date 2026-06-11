@@ -7,8 +7,8 @@ using Microsoft.Win32.SafeHandles;
 namespace Cmux.Core.Terminal;
 
 /// <summary>
-/// A complete terminal session: ConPTY process + VT parser + buffer + OSC handling.
-/// This is the main class that WPF controls interact with.
+/// 完整的终端会话：ConPTY 进程 + VT 解析器 + 缓冲区 + OSC 处理。
+/// 这是 WPF 控件交互的主类。
 /// </summary>
 public sealed class TerminalSession : IDisposable
 {
@@ -31,11 +31,11 @@ public sealed class TerminalSession : IDisposable
     public bool IsRunning => _process != null && !_process.HasExited;
     public int? ProcessId => _process?.ProcessId;
 
-    // Daemon-mode delegates: when set, Write/Resize route through these instead of local ConPTY
+    // 守护进程模式委托：设置后，Write/Resize 通过这些委托转发，而非本地 ConPTY
     public Func<byte[], Task>? DaemonWrite { get; set; }
     public Func<int, int, Task>? DaemonResize { get; set; }
 
-    // Events
+    // 事件
     public event Action? OutputReceived;
     public event Action? ProcessExited;
     public event Action<string>? TitleChanged;
@@ -63,21 +63,21 @@ public sealed class TerminalSession : IDisposable
         {
             switch (b)
             {
-                case 0x07: // BEL
+                case 0x07: // BEL（响铃）
                     BellReceived?.Invoke();
                     break;
-                case 0x08: // BS (Backspace)
+                case 0x08: // BS（退格）
                     Buffer.Backspace();
                     break;
-                case 0x09: // HT (Tab)
+                case 0x09: // HT（水平制表符）
                     Buffer.Tab();
                     break;
-                case 0x0A: // LF (Line Feed)
-                case 0x0B: // VT (Vertical Tab)
-                case 0x0C: // FF (Form Feed)
+                case 0x0A: // LF（换行）
+                case 0x0B: // VT（垂直制表符）
+                case 0x0C: // FF（换页）
                     Buffer.LineFeed();
                     break;
-                case 0x0D: // CR (Carriage Return)
+                case 0x0D: // CR（回车）
                     Buffer.CarriageReturn();
                     break;
             }
@@ -92,22 +92,22 @@ public sealed class TerminalSession : IDisposable
         {
             switch ((char)b)
             {
-                case '7': // DECSC — Save Cursor
+                case '7': // DECSC — 保存光标
                     Buffer.SaveCursor();
                     break;
-                case '8': // DECRC — Restore Cursor
+                case '8': // DECRC — 恢复光标
                     Buffer.RestoreCursor();
                     break;
-                case 'M': // RI — Reverse Index
+                case 'M': // RI — 反向索引
                     Buffer.ReverseLineFeed();
                     break;
-                case 'D': // IND — Index (line feed)
+                case 'D': // IND — 索引（换行）
                     Buffer.LineFeed();
                     break;
-                case 'E': // NEL — Next Line
+                case 'E': // NEL — 下一行
                     Buffer.NewLine();
                     break;
-                case 'c': // RIS — Full Reset
+                case 'c': // RIS — 全部重置
                     Buffer.Clear();
                     Buffer.CurrentAttribute = TerminalAttribute.Default;
                     Buffer.ResetScrollRegion();
@@ -145,7 +145,7 @@ public sealed class TerminalSession : IDisposable
     }
 
     /// <summary>
-    /// Starts the terminal process.
+    /// 启动终端进程。
     /// </summary>
     public void Start(string? command = null, string? workingDirectory = null)
     {
@@ -204,7 +204,7 @@ public sealed class TerminalSession : IDisposable
                     }
                     catch (Exception ex)
                     {
-                        // Never let malformed/edge VT sequences crash the app.
+                        // 不允许畸形/边界 VT 序列导致应用崩溃
                         Debug.WriteLine($"[TerminalSession:{PaneId}] VT parse error: {ex}");
                     }
                 }
@@ -216,16 +216,16 @@ public sealed class TerminalSession : IDisposable
         }
         catch (IOException) when (_disposed)
         {
-            // Expected on shutdown
+            // 关闭时预期会抛出
         }
         catch (ObjectDisposedException)
         {
-            // Expected on shutdown
+            // 关闭时预期会抛出
         }
     }
 
     /// <summary>
-    /// Writes raw input (keyboard data) to the terminal process.
+    /// 向终端进程写入原始输入（键盘数据）。
     /// </summary>
     public void Write(string text)
     {
@@ -235,13 +235,13 @@ public sealed class TerminalSession : IDisposable
     }
 
     /// <summary>
-    /// Writes raw bytes to the terminal process.
+    /// 向终端进程写入原始字节。
     /// </summary>
     public void Write(byte[] data)
     {
         if (_disposed) return;
 
-        // Daemon mode: forward to daemon instead of local ConPTY
+        // 守护进程模式：转发到守护进程而非本地 ConPTY
         if (DaemonWrite != null)
         {
             if (!_daemonWriteLogged)
@@ -269,12 +269,12 @@ public sealed class TerminalSession : IDisposable
         }
         catch (IOException) when (_disposed)
         {
-            // Expected during shutdown
+            // 关闭时预期会抛出
         }
     }
 
     /// <summary>
-    /// Resizes the terminal.
+    /// 调整终端尺寸。
     /// </summary>
     public void Resize(int cols, int rows)
     {
@@ -287,7 +287,7 @@ public sealed class TerminalSession : IDisposable
         {
             Buffer.Resize(cols, rows);
 
-            // Daemon mode: forward resize to daemon
+            // 守护进程模式：将调整尺寸请求转发到守护进程
             if (DaemonResize != null)
                 _ = DaemonResize(cols, rows);
             else
@@ -298,8 +298,8 @@ public sealed class TerminalSession : IDisposable
     }
 
     /// <summary>
-    /// Feeds raw VT output bytes through the parser into the buffer.
-    /// Used by daemon-backed sessions to receive output from the daemon.
+    /// 将原始 VT 输出字节送入解析器并写入缓冲区。
+    /// 用于守护进程会话从守护进程接收输出。
     /// </summary>
     public void FeedOutput(byte[] data)
     {
@@ -350,73 +350,73 @@ public sealed class TerminalSession : IDisposable
 
         switch (final)
         {
-            // Cursor movement
-            case 'A': // CUU — Cursor Up
+            // 光标移动
+            case 'A': // CUU — 光标上移
                 Buffer.MoveCursorUp(Param(0, 1));
                 break;
-            case 'B': // CUD — Cursor Down
+            case 'B': // CUD — 光标下移
                 Buffer.MoveCursorDown(Param(0, 1));
                 break;
-            case 'C': // CUF — Cursor Forward
+            case 'C': // CUF — 光标前移
                 Buffer.MoveCursorForward(Param(0, 1));
                 break;
-            case 'D': // CUB — Cursor Backward
+            case 'D': // CUB — 光标后移
                 Buffer.MoveCursorBackward(Param(0, 1));
                 break;
-            case 'E': // CNL — Cursor Next Line
+            case 'E': // CNL — 光标下一行
                 Buffer.CarriageReturn();
                 Buffer.MoveCursorDown(Param(0, 1));
                 break;
-            case 'F': // CPL — Cursor Previous Line
+            case 'F': // CPL — 光标上一行
                 Buffer.CarriageReturn();
                 Buffer.MoveCursorUp(Param(0, 1));
                 break;
-            case 'G': // CHA — Cursor Horizontal Absolute
+            case 'G': // CHA — 光标水平绝对定位
                 Buffer.MoveCursorTo(Buffer.CursorRow, Param(0, 1) - 1);
                 break;
-            case 'H': // CUP — Cursor Position
-            case 'f': // HVP — Horizontal Vertical Position
+            case 'H': // CUP — 光标位置
+            case 'f': // HVP — 水平垂直位置
                 Buffer.MoveCursorTo(Param(0, 1) - 1, Param(1, 1) - 1);
                 break;
-            case 'd': // VPA — Vertical Position Absolute
+            case 'd': // VPA — 垂直位置绝对定位
                 Buffer.MoveCursorTo(Param(0, 1) - 1, Buffer.CursorCol);
                 break;
 
-            // Erase
-            case 'J': // ED — Erase in Display
+            // 擦除
+            case 'J': // ED — 擦除显示
                 Buffer.EraseInDisplay(Param(0));
                 break;
-            case 'K': // EL — Erase in Line
+            case 'K': // EL — 擦除行
                 Buffer.EraseInLine(Param(0));
                 break;
-            case 'X': // ECH — Erase Characters
+            case 'X': // ECH — 擦除字符
                 Buffer.EraseChars(Param(0, 1));
                 break;
 
-            // Insert/Delete
-            case 'L': // IL — Insert Lines
+            // 插入/删除
+            case 'L': // IL — 插入行
                 Buffer.InsertLines(Param(0, 1));
                 break;
-            case 'M': // DL — Delete Lines
+            case 'M': // DL — 删除行
                 Buffer.DeleteLines(Param(0, 1));
                 break;
-            case '@': // ICH — Insert Characters
+            case '@': // ICH — 插入字符
                 Buffer.InsertChars(Param(0, 1));
                 break;
-            case 'P': // DCH — Delete Characters
+            case 'P': // DCH — 删除字符
                 Buffer.DeleteChars(Param(0, 1));
                 break;
 
-            // Scroll
-            case 'S': // SU — Scroll Up
+            // 滚动
+            case 'S': // SU — 向上滚动
                 Buffer.ScrollUp(Param(0, 1));
                 break;
-            case 'T': // SD — Scroll Down
+            case 'T': // SD — 向下滚动
                 Buffer.ScrollDown(Param(0, 1));
                 break;
 
-            // Scroll region
-            case 'r': // DECSTBM — Set Top and Bottom Margins
+            // 滚动区域
+            case 'r': // DECSTBM — 设置上下边界
                 if (parameters.Count == 0)
                 {
                     Buffer.ResetScrollRegion();
@@ -428,12 +428,12 @@ public sealed class TerminalSession : IDisposable
                 Buffer.MoveCursorTo(0, 0);
                 break;
 
-            // SGR — Select Graphic Rendition
+            // SGR — 选择图形渲染
             case 'm':
                 HandleSgr(parameters);
                 break;
 
-            // Mode set/reset
+            // 模式设置/重置
             case 'h': // SM / DECSET
                 HandleMode(parameters, true, isPrivate);
                 break;
@@ -441,26 +441,26 @@ public sealed class TerminalSession : IDisposable
                 HandleMode(parameters, false, isPrivate);
                 break;
 
-            // Cursor save/restore
-            case 's': // SCOSC — Save Cursor Position
+            // 光标保存/恢复
+            case 's': // SCOSC — 保存光标位置
                 if (!isPrivate)
                     Buffer.SaveCursor();
                 break;
-            case 'u': // SCORC — Restore Cursor Position
+            case 'u': // SCORC — 恢复光标位置
                 if (!isPrivate)
                     Buffer.RestoreCursor();
                 break;
 
-            // Device status
-            case 'n': // DSR — Device Status Report
+            // 设备状态
+            case 'n': // DSR — 设备状态报告
                 if (Param(0) == 6)
                 {
-                    // CPR — Cursor Position Report
+                    // CPR — 光标位置报告
                     Write($"\x1b[{Buffer.CursorRow + 1};{Buffer.CursorCol + 1}R");
                 }
                 break;
 
-            case 'c': // DA — Device Attributes
+            case 'c': // DA — 设备属性
                 if (!isPrivate)
                     Write("\x1b[?1;0c");
                 break;
@@ -500,32 +500,32 @@ public sealed class TerminalSession : IDisposable
                 case 28: attr.Flags &= ~CellFlags.Hidden; break;
                 case 29: attr.Flags &= ~CellFlags.Strikethrough; break;
 
-                // Foreground colors
+                // 前景色
                 case >= 30 and <= 37:
                     attr.Foreground = TerminalColor.FromIndex(code - 30);
                     break;
-                case 38: // Extended foreground
+                case 38: // 扩展前景色
                     i = ParseExtendedColor(parameters, i, out var fg);
                     attr.Foreground = fg;
                     continue;
                 case 39: attr.Foreground = TerminalColor.Default; break;
 
-                // Background colors
+                // 背景色
                 case >= 40 and <= 47:
                     attr.Background = TerminalColor.FromIndex(code - 40);
                     break;
-                case 48: // Extended background
+                case 48: // 扩展背景色
                     i = ParseExtendedColor(parameters, i, out var bg);
                     attr.Background = bg;
                     continue;
                 case 49: attr.Background = TerminalColor.Default; break;
 
-                // Bright foreground
+                // 高亮前景色
                 case >= 90 and <= 97:
                     attr.Foreground = TerminalColor.FromIndex(code - 90 + 8);
                     break;
 
-                // Bright background
+                // 高亮背景色
                 case >= 100 and <= 107:
                     attr.Background = TerminalColor.FromIndex(code - 100 + 8);
                     break;
@@ -544,7 +544,7 @@ public sealed class TerminalSession : IDisposable
         int type = parameters[index + 1];
         switch (type)
         {
-            case 5: // 256-color: 38;5;N
+            case 5: // 256 色：38;5;N
                 if (index + 2 < parameters.Count)
                 {
                     color = TerminalColor.FromIndex(parameters[index + 2]);
@@ -552,7 +552,7 @@ public sealed class TerminalSession : IDisposable
                 }
                 return index + 2;
 
-            case 2: // Truecolor: 38;2;R;G;B
+            case 2: // 真彩色：38;2;R;G;B
                 if (index + 4 < parameters.Count)
                 {
                     color = TerminalColor.FromRgb(
@@ -576,19 +576,19 @@ public sealed class TerminalSession : IDisposable
             {
                 switch (param)
                 {
-                    case 1: // DECCKM -- Cursor Keys Mode
+                    case 1: // DECCKM — 光标键模式
                         Buffer.ApplicationCursorKeys = set;
                         break;
-                    case 6: // DECOM — Origin Mode
+                    case 6: // DECOM — 原点模式
                         Buffer.OriginMode = set;
                         break;
-                    case 7: // DECAWM — Auto-wrap Mode
+                    case 7: // DECAWM — 自动换行模式
                         Buffer.AutoWrapMode = set;
                         break;
-                    case 25: // DECTCEM — Text Cursor Enable Mode
+                    case 25: // DECTCEM — 文本光标启用模式
                         Buffer.CursorVisible = set;
                         break;
-                    case 1049: // Alternate screen buffer
+                    case 1049: // 备用屏幕缓冲区
                         if (set)
                         {
                             Buffer.SwitchToAlternateScreen();
@@ -598,26 +598,26 @@ public sealed class TerminalSession : IDisposable
                             Buffer.SwitchToMainScreen();
                         }
                         break;
-                    case 47: // Alternate screen (older)
-                    case 1047: // Alternate screen (xterm)
+                    case 47: // 备用屏幕（旧版）
+                    case 1047: // 备用屏幕（xterm）
                         if (set)
                             Buffer.SwitchToAlternateScreen();
                         else
                             Buffer.SwitchToMainScreen();
                         break;
-                    case 2004: // Bracketed paste mode
+                    case 2004: // 括号粘贴模式
                         Buffer.BracketedPasteMode = set;
                         break;
-                    case 1000: // Normal mouse tracking
+                    case 1000: // 普通鼠标追踪
                         Buffer.MouseTrackingNormal = set;
                         break;
-                    case 1002: // Button-event mouse tracking
+                    case 1002: // 按键事件鼠标追踪
                         Buffer.MouseTrackingButton = set;
                         break;
-                    case 1003: // Any-event mouse tracking
+                    case 1003: // 任意事件鼠标追踪
                         Buffer.MouseTrackingAny = set;
                         break;
-                    case 1006: // SGR extended mouse reporting
+                    case 1006: // SGR 扩展鼠标报告
                         Buffer.MouseSgrExtended = set;
                         break;
                 }
@@ -626,7 +626,7 @@ public sealed class TerminalSession : IDisposable
             {
                 switch (param)
                 {
-                    case 4: // IRM — Insert/Replace Mode
+                    case 4: // IRM — 插入/替换模式
                         Buffer.InsertMode = set;
                         break;
                 }

@@ -49,13 +49,13 @@ public partial class MainViewModel : ObservableObject
             UpdateWorkspaceNotificationCounts();
         };
 
-        // Wire up the named pipe command handler
+        // 连接命名管道的命令处理程序
         if (App.PipeServer != null)
         {
             App.PipeServer.OnCommand = HandlePipeCommand;
         }
 
-        // Restore session or create default workspace
+        // 恢复会话或创建默认工作区
         var session = SessionPersistenceService.Load();
         if (session != null && session.Workspaces.Count > 0)
         {
@@ -232,7 +232,7 @@ public partial class MainViewModel : ObservableObject
         var latest = _notificationService.GetLatestUnread();
         if (latest == null) return;
 
-        // Find the workspace and surface
+        // 找到对应的工作区和 Surface
         var workspace = Workspaces.FirstOrDefault(w => w.Workspace.Id == latest.WorkspaceId);
         if (workspace != null)
         {
@@ -267,7 +267,7 @@ public partial class MainViewModel : ObservableObject
 
     public void SaveSession(double windowX, double windowY, double windowWidth, double windowHeight, bool isMaximized)
     {
-        // Capture terminal transcripts and in-memory terminal context before serializing.
+        // 在序列化前，先捕获终端脚本和内存中的终端上下文。
         foreach (var workspace in Workspaces)
         {
             foreach (var surface in workspace.Surfaces)

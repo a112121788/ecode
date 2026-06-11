@@ -6,8 +6,8 @@ using Cmux.Core.Models;
 namespace Cmux.Core.Services;
 
 /// <summary>
-/// Tracks shell commands via OSC 133 prompt markers and maintains a searchable log.
-/// Completed commands are persisted to daily JSONL files under %LOCALAPPDATA%/cmux/logs.
+/// 通过 OSC 133 提示符标记追踪 Shell 命令，并维护可搜索的日志。
+/// 已完成的命令持久化到 %LOCALAPPDATA%/cmux/logs 下的按日 JSONL 文件。
 /// </summary>
 public class CommandLogService
 {
@@ -26,7 +26,7 @@ public class CommandLogService
     private readonly object _lock = new();
 
     /// <summary>
-    /// The currently active (unfinished) command per pane.
+    /// 每个面板当前活动（未完成）的命令。
     /// </summary>
     private readonly Dictionary<string, CommandLogEntry> _activeCommands = [];
 
@@ -188,7 +188,7 @@ public class CommandLogService
         }
         catch
         {
-            // Best effort scrub.
+            // 尽力而为的脱敏。
         }
     }
 
@@ -244,7 +244,7 @@ public class CommandLogService
         }
         catch
         {
-            // Best effort scrub.
+            // 尽力而为的脱敏。
         }
     }
 
@@ -281,7 +281,7 @@ public class CommandLogService
         }
         catch
         {
-            // Best effort cleanup.
+            // 尽力而为的清理。
         }
     }
 
@@ -316,7 +316,7 @@ public class CommandLogService
         }
         catch
         {
-            // Best effort cleanup.
+            // 尽力而为的清理。
         }
     }
 
@@ -361,7 +361,7 @@ public class CommandLogService
                 }
                 catch
                 {
-                    // Ignore malformed lines
+                    // 忽略格式错误的行
                 }
             }
         }
@@ -385,7 +385,7 @@ public class CommandLogService
 
         var sanitized = command.Trim();
 
-        // Safety net for manual fallback: password prompts often produce a lone token.
+        // 手动回退的安全网：密码提示通常只产生一个独立 token。
         if (LooksLikeSecretInput(sanitized))
             return null;
 
@@ -433,14 +433,14 @@ public class CommandLogService
     }
 
     /// <summary>
-    /// Handles an OSC 133 prompt marker.
+    /// 处理 OSC 133 提示符标记。
     /// </summary>
-    /// <param name="paneId">The pane that emitted the marker.</param>
-    /// <param name="workspaceId">The workspace the pane belongs to.</param>
-    /// <param name="surfaceId">The surface the pane belongs to.</param>
-    /// <param name="marker">One of 'A' (prompt start), 'B' (command start), 'C' (output start), 'D' (command finished).</param>
-    /// <param name="payload">Optional payload; for 'B' usually command text, for 'D' exit code.</param>
-    /// <param name="workingDirectory">Current working directory at time of marker, if known.</param>
+    /// <param name="paneId">发出该标记的面板。</param>
+    /// <param name="workspaceId">面板所属工作区。</param>
+    /// <param name="surfaceId">面板所属 Surface。</param>
+    /// <param name="marker">'A'（提示符开始）、'B'（命令开始）、'C'（输出开始）、'D'（命令完成）之一。</param>
+    /// <param name="payload">可选负载：'B' 通常是命令文本，'D' 是退出码。</param>
+    /// <param name="workingDirectory">标记时的当前工作目录（若已知）。</param>
     public void HandlePromptMarker(string paneId, string workspaceId, string surfaceId, char marker, string? payload, string? workingDirectory)
     {
         lock (_lock)
@@ -479,7 +479,7 @@ public class CommandLogService
                     break;
 
                 case 'C':
-                    // Informational — output has started; no state change needed.
+                    // 通知类 — 输出已开始；无需改变状态。
                     break;
 
                 case 'D':
@@ -493,7 +493,7 @@ public class CommandLogService
     }
 
     /// <summary>
-    /// Searches log entries where Command or WorkingDirectory contains the query (case-insensitive).
+    /// 搜索 Command 或 WorkingDirectory 包含查询词的日志项（不区分大小写）。
     /// </summary>
     public IReadOnlyList<CommandLogEntry> Search(string query)
     {
@@ -507,7 +507,7 @@ public class CommandLogService
     }
 
     /// <summary>
-    /// Returns all log entries for the given pane.
+    /// 返回指定面板的所有日志项。
     /// </summary>
     public IReadOnlyList<CommandLogEntry> GetForPane(string paneId)
     {
@@ -518,8 +518,8 @@ public class CommandLogService
     }
 
     /// <summary>
-    /// Clears only in-memory log and active command tracking.
-    /// Files on disk are left intact.
+    /// 仅清空内存中的日志和活动命令跟踪。
+    /// 磁盘上的文件保持不变。
     /// </summary>
     public void ClearInMemory()
     {
@@ -559,7 +559,7 @@ public class CommandLogService
         }
         catch
         {
-            // Best effort persistence
+            // 尽力而为的持久化
         }
     }
 
@@ -597,7 +597,7 @@ public class CommandLogService
                     }
                     catch
                     {
-                        // Ignore malformed line
+                        // 忽略格式错误的行
                     }
                 }
             }
@@ -607,7 +607,7 @@ public class CommandLogService
         }
         catch
         {
-            // Best effort load
+            // 尽力而为的加载
         }
     }
 

@@ -1,14 +1,14 @@
 namespace Cmux.Core.Terminal;
 
 /// <summary>
-/// A fixed-capacity circular buffer for terminal scrollback lines.
-/// Provides O(1) Add and RemoveOldest operations, avoiding the O(n)
-/// cost of List&lt;T&gt;.RemoveAt(0).
+/// 固定容量的循环缓冲区，用于终端回滚行。
+/// 提供 O(1) 的 Add 和 RemoveOldest 操作，避免
+/// List&lt;T&gt;.RemoveAt(0) 的 O(n) 开销。
 /// </summary>
 public sealed class ScrollbackBuffer<T>
 {
     private T[] _items;
-    private int _head; // Index of the oldest item
+    private int _head; // 最旧项的索引
     private int _count;
 
     public int Count => _count;
@@ -30,7 +30,7 @@ public sealed class ScrollbackBuffer<T>
     }
 
     /// <summary>
-    /// Adds an item to the end. If at capacity, the oldest item is overwritten.
+    /// 在末尾添加项。若已达容量，覆盖最旧的项。
     /// </summary>
     public void Add(T item)
     {
@@ -43,13 +43,13 @@ public sealed class ScrollbackBuffer<T>
         }
         else
         {
-            // Buffer is full — advance head (oldest item is overwritten)
+            // 缓冲区已满 — 推进 head（最旧项被覆盖）
             _head = (_head + 1) % _items.Length;
         }
     }
 
     /// <summary>
-    /// Adds all items from the given list.
+    /// 添加给定列表中的所有项。
     /// </summary>
     public void AddRange(IEnumerable<T> items)
     {
@@ -65,7 +65,7 @@ public sealed class ScrollbackBuffer<T>
     }
 
     /// <summary>
-    /// Copies all items to a new list (in order from oldest to newest).
+    /// 将所有项复制到新列表（按从最旧到最新的顺序）。
     /// </summary>
     public List<T> ToList()
     {

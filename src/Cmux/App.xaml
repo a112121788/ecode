@@ -9,7 +9,7 @@
                 <ResourceDictionary Source="Themes/DarkTheme.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Value converters -->
+            <!-- 值转换器 -->
             <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" />
             <conv:IntToVisibilityConverter x:Key="IntToVisibility" />
             <conv:NullToCollapsedConverter x:Key="NullToCollapsed" />

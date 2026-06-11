@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace Cmux.Core.Services;
 
 /// <summary>
-/// Stores secrets encrypted with Windows DPAPI in %LOCALAPPDATA%/cmux/secrets.json.
+/// 使用 Windows DPAPI 加密存储密钥到 %LOCALAPPDATA%/cmux/secrets.json。
 /// </summary>
 public static class SecretStoreService
 {
@@ -65,7 +65,7 @@ public static class SecretStoreService
         }
         catch
         {
-            // Ignore secret persistence errors to avoid crashing the app.
+            // 忽略密钥持久化错误以避免应用崩溃。
         }
     }
 

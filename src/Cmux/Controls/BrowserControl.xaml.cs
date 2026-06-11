@@ -6,8 +6,8 @@ using Microsoft.Web.WebView2.Core;
 namespace Cmux.Controls;
 
 /// <summary>
-/// In-app browser control using WebView2. Provides a toolbar (back/forward/reload/address bar)
-/// and a scriptable API for agents to interact with web pages.
+/// 基于 WebView2 的应用内浏览器控件。提供工具栏（后退/前进/刷新/地址栏），
+/// 以及供 Agent 与网页交互的可脚本化 API。
 /// </summary>
 public partial class BrowserControl : UserControl
 {
@@ -34,7 +34,7 @@ public partial class BrowserControl : UserControl
         }
     }
 
-    /// <summary>Navigate to a URL.</summary>
+    /// <summary>导航到指定 URL。</summary>
     public void Navigate(string url)
     {
         if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
@@ -50,18 +50,18 @@ public partial class BrowserControl : UserControl
         }
         catch
         {
-            // Invalid URL
+            // 无效的 URL
         }
     }
 
-    /// <summary>Execute JavaScript and return the result.</summary>
+    /// <summary>执行 JavaScript 并返回结果。</summary>
     public async Task<string> EvaluateJavaScript(string script)
     {
         if (WebView.CoreWebView2 == null) return "";
         return await WebView.CoreWebView2.ExecuteScriptAsync(script);
     }
 
-    /// <summary>Get the accessibility tree snapshot (simplified).</summary>
+    /// <summary>获取无障碍树快照（简化版）。</summary>
     public async Task<string> GetAccessibilitySnapshot()
     {
         const string script = @"
@@ -83,14 +83,14 @@ public partial class BrowserControl : UserControl
         return await EvaluateJavaScript(script);
     }
 
-    /// <summary>Click an element by CSS selector.</summary>
+    /// <summary>通过 CSS 选择器点击元素。</summary>
     public async Task ClickElement(string selector)
     {
         var escapedSelector = selector.Replace("'", "\\'");
         await EvaluateJavaScript($"document.querySelector('{escapedSelector}')?.click()");
     }
 
-    /// <summary>Fill a form field by CSS selector.</summary>
+    /// <summary>通过 CSS 选择器填充表单字段。</summary>
     public async Task FillElement(string selector, string value)
     {
         var escapedSelector = selector.Replace("'", "\\'");
@@ -107,13 +107,13 @@ public partial class BrowserControl : UserControl
         ");
     }
 
-    /// <summary>Get the current page URL.</summary>
+    /// <summary>获取当前页面 URL。</summary>
     public string GetCurrentUrl()
     {
         return WebView.CoreWebView2?.Source ?? "";
     }
 
-    // Event handlers
+    // 事件处理器
 
     private void Back_Click(object sender, RoutedEventArgs e)
     {

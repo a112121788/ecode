@@ -2181,7 +2181,7 @@ Available tools:
         if (string.IsNullOrWhiteSpace(text))
             return 0;
 
-        // Rough estimate: most LLM tokenizers average around ~4 chars/token for English text.
+        // 粗略估算：大多数 LLM 分词器对英文文本平均约 4 字符/token。
         return Math.Max(1, (int)Math.Ceiling(text.Length / 4.0));
     }
 
@@ -2357,7 +2357,7 @@ Available tools:
             }
             catch
             {
-                // Ignore malformed stream chunk lines.
+                // 忽略格式异常的流式数据块行。
             }
             finally
             {

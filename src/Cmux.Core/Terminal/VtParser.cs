@@ -3,11 +3,10 @@ using System.Text;
 namespace Cmux.Core.Terminal;
 
 /// <summary>
-/// State machine VT100/xterm parser. Processes a stream of bytes and
-/// dispatches events for printable characters, C0 controls, CSI sequences,
-/// ESC sequences, and OSC strings.
+/// 状态机式 VT100/xterm 解析器。处理字节流并为可打印字符、
+/// C0 控制符、CSI 序列、ESC 序列和 OSC 字符串分派事件。
 ///
-/// Based on Paul Flo Williams' VT parser state machine:
+/// 基于 Paul Flo Williams 的 VT 解析器状态机：
 /// https://vt100.net/emu/dec_ansi_parser
 /// </summary>
 public class VtParser
@@ -37,11 +36,11 @@ public class VtParser
     private readonly List<int> _csiParams = [];
     private byte _collectChar;
 
-    // UTF-8 decoder state
+    // UTF-8 解码器状态
     private int _utf8Remaining;
     private int _utf8Codepoint;
 
-    // Callbacks
+    // 回调
     public Action<char>? OnPrint { get; set; }
     public Action<byte>? OnExecute { get; set; }
     public Action<List<int>, char, string>? OnCsiDispatch { get; set; }
@@ -49,7 +48,7 @@ public class VtParser
     public Action<string>? OnOscDispatch { get; set; }
 
     /// <summary>
-    /// Feed raw bytes into the parser.
+    /// 将原始字节送入解析器。
     /// </summary>
     public void Feed(ReadOnlySpan<byte> data)
     {
@@ -58,7 +57,7 @@ public class VtParser
     }
 
     /// <summary>
-    /// Feed a string into the parser (convenience for UTF-16 text).
+    /// 将字符串送入解析器（UTF-16 文本的便捷方法）。
     /// </summary>
     public void Feed(string text)
     {
@@ -67,7 +66,7 @@ public class VtParser
 
     private void ProcessByte(byte b)
     {
-        // Handle UTF-8 continuation bytes
+        // 处理 UTF-8 续字节
         if (_utf8Remaining > 0)
         {
             if ((b & 0xC0) == 0x80)
@@ -81,11 +80,11 @@ public class VtParser
                 }
                 return;
             }
-            // Invalid continuation — reset and reprocess
+            // 无效续字节 — 重置并重新处理
             _utf8Remaining = 0;
         }
 
-        // Start of multi-byte UTF-8
+        // 多字节 UTF-8 起始
         if (_state == State.Ground && b >= 0xC0 && b <= 0xF7)
         {
             if (b < 0xE0)
@@ -106,16 +105,16 @@ public class VtParser
             return;
         }
 
-        // Anywhere transitions (apply in any state)
+        // 任意状态转换（在任意状态下生效）
         switch (b)
         {
-            case 0x1B: // ESC
+            case 0x1B: // ESC（转义）
                 _state = State.Escape;
                 _intermediates.Clear();
                 _params.Clear();
                 _collectChar = 0;
                 return;
-            case 0x18 or 0x1A: // CAN, SUB — cancel current sequence
+            case 0x18 or 0x1A: // CAN、SUB — 取消当前序列
                 _state = State.Ground;
                 return;
         }
@@ -167,7 +166,7 @@ public class VtParser
         }
         else if (b == 0x7F)
         {
-            // DEL — ignore in ground
+            // DEL — 在 Ground 状态中忽略
         }
         else
         {
@@ -222,14 +221,14 @@ public class VtParser
             return;
         }
 
-        if (b is >= 0x30 and <= 0x7E) // Final
+        if (b is >= 0x30 and <= 0x7E) // 终结字节
         {
             OnEscDispatch?.Invoke(b);
             _state = State.Ground;
             return;
         }
 
-        // Ignore anything else and return to ground
+        // 忽略其他内容并返回 Ground 状态
         _state = State.Ground;
     }
 
@@ -253,14 +252,14 @@ public class VtParser
 
     private void ProcessCsiEntry(byte b)
     {
-        if (b is >= 0x30 and <= 0x39 or (byte)';') // Param
+        if (b is >= 0x30 and <= 0x39 or (byte)';') // 参数
         {
             _params.Append((char)b);
             _state = State.CsiParam;
             return;
         }
 
-        if (b is (byte)'?' or (byte)'>' or (byte)'!' or (byte)'=') // Private modifier
+        if (b is (byte)'?' or (byte)'>' or (byte)'!' or (byte)'=') // 私有修饰符
         {
             _collectChar = b;
             _state = State.CsiParam;
@@ -274,14 +273,14 @@ public class VtParser
             return;
         }
 
-        if (b is >= 0x40 and <= 0x7E) // Final — immediate dispatch
+        if (b is >= 0x40 and <= 0x7E) // 终结字节 — 立即分派
         {
             ParseCsiParams();
             DispatchCsi(b);
             return;
         }
 
-        if (b < 0x20) // C0 control in CSI
+        if (b < 0x20) // CSI 中的 C0 控制符
         {
             OnExecute?.Invoke(b);
             return;
@@ -347,30 +346,30 @@ public class VtParser
 
     private void ProcessOscString(byte b)
     {
-        if (b == 0x07) // BEL terminates OSC
+        if (b == 0x07) // BEL 终止 OSC
         {
             OnOscDispatch?.Invoke(_oscString.ToString());
             _state = State.Ground;
             return;
         }
 
-        if (b == 0x9C) // ST (8-bit)
+        if (b == 0x9C) // ST（8 位）
         {
             OnOscDispatch?.Invoke(_oscString.ToString());
             _state = State.Ground;
             return;
         }
 
-        if (b == 0x1B) // Possible ST (ESC \)
+        if (b == 0x1B) // 可能的 ST（ESC \）
         {
-            // Will be handled on next byte — peek ahead not needed,
-            // the ESC handler will fire. But we need to dispatch first.
+            // 将在下一个字节处理 — 不需要前探，
+            // ESC 处理器会触发。但需要先分派。
             OnOscDispatch?.Invoke(_oscString.ToString());
             _state = State.Escape;
             return;
         }
 
-        if (b >= 0x20 || b == 0x09) // Printable or tab
+        if (b >= 0x20 || b == 0x09) // 可打印字符或制表符
         {
             _oscString.Append((char)b);
         }
@@ -378,14 +377,14 @@ public class VtParser
 
     private void ProcessDcs(byte b)
     {
-        // Simplified DCS handling — just consume until ST
+        // 简化的 DCS 处理 — 直接消耗直到 ST
         if (b == 0x9C || b == 0x1B)
             _state = b == 0x1B ? State.Escape : State.Ground;
     }
 
     private void ProcessSosPmApc(byte b)
     {
-        // Consume until ST
+        // 消耗直到 ST
         if (b == 0x9C || b == 0x1B)
             _state = b == 0x1B ? State.Escape : State.Ground;
     }
@@ -410,7 +409,7 @@ public class VtParser
         char prefix = _collectChar != 0 ? (char)_collectChar : '\0';
         string intermediates = _intermediates.ToString();
 
-        // Build a qualifier string for the dispatch
+        // 为分派构建限定符字符串
         string qualifier = "";
         if (prefix != '\0') qualifier += prefix;
         qualifier += intermediates;
@@ -420,7 +419,7 @@ public class VtParser
     }
 
     /// <summary>
-    /// Resets the parser to its initial state.
+    /// 将解析器重置为初始状态。
     /// </summary>
     public void Reset()
     {

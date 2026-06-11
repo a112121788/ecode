@@ -1,25 +1,25 @@
 namespace Cmux.Core.Terminal;
 
 /// <summary>
-/// Handles OSC (Operating System Command) terminal sequences.
-/// Specifically detects notification sequences (OSC 9, 99, 777)
-/// used by AI coding agents like Claude Code and Codex.
+/// 处理 OSC（操作系统命令）终端序列。
+/// 专门检测 Claude Code、Codex 等 AI 编码代理使用的
+/// 通知序列（OSC 9、99、777）。
 /// </summary>
 public class OscHandler
 {
     public event Action<string>? TitleChanged;
     public event Action<string>? WorkingDirectoryChanged;
-    public event Action<string, string?, string>? NotificationReceived; // title, subtitle, body
+    public event Action<string, string?, string>? NotificationReceived; // 标题、副标题、正文
     public event Action<char, string?>? ShellPromptMarker;
 
     /// <summary>
-    /// Processes an OSC string (without the ESC ] prefix and BEL/ST terminator).
+    /// 处理 OSC 字符串（不含 ESC ] 前缀和 BEL/ST 终止符）。
     /// </summary>
     public void Handle(string oscString)
     {
         if (string.IsNullOrEmpty(oscString)) return;
 
-        // Split on first ';' to get the OSC code
+        // 按第一个 ';' 分割以获取 OSC 代码
         int semicolonIndex = oscString.IndexOf(';');
         string codeStr;
         string payload;
@@ -40,30 +40,30 @@ public class OscHandler
 
         switch (code)
         {
-            case 0: // Set icon name and window title
-            case 2: // Set window title
+            case 0: // 设置图标名称和窗口标题
+            case 2: // 设置窗口标题
                 TitleChanged?.Invoke(payload);
                 break;
 
-            case 7: // Set working directory (file://host/path)
+            case 7: // 设置工作目录（file://host/path）
                 HandleWorkingDirectory(payload);
                 break;
 
-            case 9: // Terminal notification (body text)
+            case 9: // 终端通知（正文文本）
                 // OSC 9 ; <body> ST
-                // Used by many terminal emulators for simple notifications
+                // 许多终端模拟器用它发送简单通知
                 NotificationReceived?.Invoke("Terminal", null, payload);
                 break;
 
-            case 99: // Extended notification (key=value pairs)
+            case 99: // 扩展通知（key=value 键值对）
                 HandleOsc99(payload);
                 break;
 
-            case 777: // Custom notification (notify;title;body)
+            case 777: // 自定义通知（notify;title;body）
                 HandleOsc777(payload);
                 break;
 
-            case 133: // Shell integration (prompt markers)
+            case 133: // Shell 集成（提示符标记）
                 if (payload.Length > 0)
                 {
                     var marker = payload[0];
@@ -84,7 +84,7 @@ public class OscHandler
 
     private void HandleWorkingDirectory(string payload)
     {
-        // Format: file://hostname/path or just a path
+        // 格式：file://hostname/path 或纯路径
         if (payload.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
         {
             try
@@ -96,7 +96,7 @@ public class OscHandler
             }
             catch (UriFormatException)
             {
-                // Try as plain path
+                // 尝试按纯路径处理
                 var path = payload["file://".Length..];
                 int slashIndex = path.IndexOf('/');
                 if (slashIndex >= 0)
@@ -113,14 +113,14 @@ public class OscHandler
     }
 
     /// <summary>
-    /// OSC 99: Extended notification format.
-    /// Format: key=value;key=value
-    /// Keys: i (id), d (icon), t (title), b (body), p (progress)
-    /// Some implementations use: OSC 99 ; title ; body
+    /// OSC 99：扩展通知格式。
+    /// 格式：key=value;key=value
+    /// 键：i（id）、d（图标）、t（标题）、b（正文）、p（进度）
+    /// 部分实现使用：OSC 99 ; title ; body
     /// </summary>
     private void HandleOsc99(string payload)
     {
-        // Try key=value format first
+        // 先尝试 key=value 格式
         if (payload.Contains('='))
         {
             string? title = null;
@@ -152,14 +152,14 @@ public class OscHandler
         }
         else
         {
-            // Simpler format: OSC 99 ; body
+            // 更简单的格式：OSC 99 ; body
             NotificationReceived?.Invoke("Terminal", null, payload);
         }
     }
 
     /// <summary>
-    /// OSC 777: notify;title;body format.
-    /// Used by rxvt-unicode and adopted by other terminals.
+    /// OSC 777：notify;title;body 格式。
+    /// 由 rxvt-unicode 使用，并被其他终端采纳。
     /// </summary>
     private void HandleOsc777(string payload)
     {

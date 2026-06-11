@@ -24,7 +24,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        // Add global exception handlers to diagnose crashes
+        // 添加全局异常处理器以便诊断崩溃问题
         DispatcherUnhandledException += (s, args) =>
         {
             System.Diagnostics.Debug.WriteLine($"[CRASH] DispatcherUnhandledException: {args.Exception}");
@@ -39,13 +39,13 @@ public partial class App : Application
             System.Windows.MessageBox.Show($"严重错误：{ex?.Message}\n\n{ex?.StackTrace}", "严重错误", MessageBoxButton.OK, MessageBoxImage.Error);
         };
 
-        // Start the named pipe server for CLI communication
+        // 启动用于 CLI 通信的命名管道服务器
         _pipeServer = new NamedPipeServer();
         PipeServer = _pipeServer;
         _pipeServer.Start();
 
-        // Daemon connect: try existing daemon first, then start one if needed.
-        // Sessions wait for this task before deciding local vs daemon mode.
+        // 守护进程连接：先尝试已有守护进程，必要时再启动一个。
+        // 会话在决定本地模式还是守护进程模式之前会等待此任务。
         DaemonConnectTask = Task.Run(() =>
         {
             DaemonLog("[App] Phase 1: Quick daemon check (300ms)...");
@@ -65,14 +65,14 @@ public partial class App : Application
             return connected;
         });
 
-        // Wire up Windows toast notifications
+        // 接入 Windows Toast 通知
         NotificationService.NotificationAdded += notification =>
         {
-            // Only show toast when the app window is not focused
+            // 仅当应用窗口未获得焦点时才显示 Toast
             var mainWindow = Current.MainWindow;
             if (mainWindow != null && !mainWindow.IsActive)
             {
-                var workspaceName = "终端"; // Will be enriched by MainViewModel
+                var workspaceName = "终端"; // 将由 MainViewModel 补充完善
                 Services.ToastNotificationHelper.ShowToast(notification, workspaceName);
             }
         };

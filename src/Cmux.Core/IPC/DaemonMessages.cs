@@ -43,7 +43,7 @@ public class DaemonSessionInfo
     public string WorkingDirectory { get; set; } = "";
     public string? Title { get; set; }
     public bool IsRunning { get; set; }
-    /// <summary>True when the session already existed on the daemon (reconnect/attach).</summary>
+    /// <summary>当会话在守护进程上已存在时为 true（重连/附加）。</summary>
     public bool IsExisting { get; set; }
 }
 

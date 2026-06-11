@@ -15,9 +15,8 @@ public struct SelectionPoint
 }
 
 /// <summary>
-/// Manages text selection in the terminal buffer.
-/// Supports click-to-start, drag-to-extend, double-click word select,
-/// triple-click line select, and copy-to-clipboard.
+/// 管理终端缓冲区中的文本选择。
+/// 支持点击开始、拖动扩展、双击选词、三击选行和复制到剪贴板。
 /// </summary>
 public class TerminalSelection
 {
@@ -52,7 +51,7 @@ public class TerminalSelection
     }
 
     /// <summary>
-    /// Gets the normalized selection range (start before end).
+    /// 获取归一化的选择范围（起始在结束之前）。
     /// </summary>
     public (SelectionPoint start, SelectionPoint end)? GetNormalizedRange()
     {
@@ -68,7 +67,7 @@ public class TerminalSelection
     }
 
     /// <summary>
-    /// Tests whether a cell is within the current selection.
+    /// 测试指定单元格是否在当前选择范围内。
     /// </summary>
     public bool IsSelected(int row, int col)
     {
@@ -85,8 +84,8 @@ public class TerminalSelection
     }
 
     /// <summary>
-    /// Extracts selected text from the terminal buffer.
-    /// scrollOffset is negative when scrolled back into history, 0 at bottom.
+    /// 从终端缓冲区提取选中文本。
+    /// scrollOffset 为负值表示回滚到历史中，0 表示在底部。
     /// </summary>
     public string GetSelectedText(TerminalBuffer buffer, int scrollOffset = 0)
     {
@@ -126,7 +125,7 @@ public class TerminalSelection
                 sb.Append(ch == '\0' ? ' ' : ch);
             }
 
-            // Trim trailing spaces on each line
+            // 去除每行尾部空格
             if (visRow < e.Row)
             {
                 while (sb.Length > 0 && sb[^1] == ' ')
@@ -139,8 +138,8 @@ public class TerminalSelection
     }
 
     /// <summary>
-    /// Selects the word at the given position (double-click behavior).
-    /// row is a visual screen row; scrollOffset converts to buffer/scrollback coordinates.
+    /// 选中指定位置的单词（双击行为）。
+    /// row 是可视屏幕行；scrollOffset 用于转换为缓冲区/回滚坐标。
     /// </summary>
     public void SelectWord(TerminalBuffer buffer, int row, int col, int scrollOffset = 0)
     {
@@ -188,7 +187,7 @@ public class TerminalSelection
     }
 
     /// <summary>
-    /// Selects the entire line (triple-click behavior).
+    /// 选中整行（三击行为）。
     /// </summary>
     public void SelectLine(int row, int cols)
     {
@@ -198,7 +197,7 @@ public class TerminalSelection
     }
 
     /// <summary>
-    /// Selects all content in the terminal buffer.
+    /// 选中终端缓冲区中的所有内容。
     /// </summary>
     public void SelectAll(int rows, int cols)
     {

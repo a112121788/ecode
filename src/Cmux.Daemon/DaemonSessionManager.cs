@@ -20,7 +20,7 @@ public sealed class DaemonSessionManager : IDisposable
 
     public DaemonSessionInfo CreateSession(string paneId, int cols, int rows, string? workingDirectory, string? command)
     {
-        // If session already exists, return its info (attach/reconnect semantics)
+        // 如果会话已存在，则返回其信息（attach/重连语义）
         if (_sessions.TryGetValue(paneId, out var existing))
         {
             LogDaemon($"[SessionMgr] Reconnecting to existing session: {paneId} (running={existing.IsRunning}, cwd={existing.WorkingDirectory})");

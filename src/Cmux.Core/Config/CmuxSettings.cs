@@ -1,12 +1,12 @@
 namespace Cmux.Core.Config;
 
 /// <summary>
-/// Application-wide settings with sensible defaults.
-/// Serialized to/from settings.json via <see cref="SettingsService"/>.
+/// 应用级设置，提供合理的默认值。
+/// 通过 <see cref="SettingsService"/> 与 settings.json 互相序列化。
 /// </summary>
 public class CmuxSettings
 {
-    // ── Appearance ──────────────────────────────────────────────
+    // ── 外观 ──────────────────────────────────────────────
 
     public string FontFamily { get; set; } = "Cascadia Code";
     public int FontSize { get; set; } = 14;
@@ -23,7 +23,7 @@ public class CmuxSettings
     public double LineHeight { get; set; } = 1.0;
     public int Padding { get; set; } = 0;
 
-    // ── Terminal ────────────────────────────────────────────────
+    // ── 终端 ────────────────────────────────────────────────
 
     public string DefaultShell { get; set; } = "";
     public string DefaultShellArgs { get; set; } = "";
@@ -33,7 +33,7 @@ public class CmuxSettings
     public bool BracketedPaste { get; set; } = true;
     public string WordSeparators { get; set; } = " \t\n{}[]()\"'`,:;<>";
 
-    // ── Behavior ────────────────────────────────────────────────
+    // ── 行为 ────────────────────────────────────────────────
 
     public bool RestoreSessionOnStartup { get; set; } = true;
     public bool ConfirmOnClose { get; set; } = true;
@@ -42,12 +42,12 @@ public class CmuxSettings
     public int AutoSaveIntervalSeconds { get; set; } = 30;
     public bool CaptureTranscriptsOnClose { get; set; } = true;
     public bool CaptureTranscriptsOnClear { get; set; } = true;
-    // 0 = keep logs forever (no cleanup)
+    // 0 = 永久保留日志（不清理）
     public int CommandLogRetentionDays { get; set; } = 90;
-    // 0 = keep captures forever (no cleanup)
+    // 0 = 永久保留捕获内容（不清理）
     public int TranscriptRetentionDays { get; set; } = 90;
 
-    // ── Collections ─────────────────────────────────────────────
+    // ── 集合 ─────────────────────────────────────────────
 
     public List<ShellProfile> ShellProfiles { get; set; } = [];
     public Dictionary<string, string> KeyBindings { get; set; } = [];
@@ -56,7 +56,7 @@ public class CmuxSettings
 }
 
 /// <summary>
-/// A named shell profile used to launch terminal sessions.
+/// 用于启动终端会话的命名 Shell 配置。
 /// </summary>
 public class ShellProfile
 {

@@ -5,13 +5,13 @@ using System.Net.NetworkInformation;
 namespace Cmux.Core.Services;
 
 /// <summary>
-/// Scans for TCP ports being listened on by child processes of a terminal pane.
-/// Used to show listening ports in the sidebar (like cmux's PortScanner.swift).
+/// 扫描终端面板的子进程正在监听的 TCP 端口。
+/// 用于在侧边栏显示正在监听的端口（类似 cmux 的 PortScanner.swift）。
 /// </summary>
 public static class PortScanner
 {
     /// <summary>
-    /// Gets all TCP ports in LISTEN state for a given process and its children.
+    /// 获取指定进程及其子进程中所有处于 LISTEN 状态的 TCP 端口。
     /// </summary>
     public static List<int> GetListeningPorts(int processId)
     {
@@ -23,8 +23,8 @@ public static class PortScanner
             var properties = IPGlobalProperties.GetIPGlobalProperties();
             var listeners = properties.GetActiveTcpListeners();
 
-            // netstat approach: match ports to PIDs via PowerShell
-            // This is faster than iterating all connections
+            // netstat 方法：通过 PowerShell 匹配端口与 PID
+            // 比遍历所有连接更快
             var pidPorts = GetPidPortMap();
 
             foreach (var (pid, port) in pidPorts)
@@ -35,21 +35,21 @@ public static class PortScanner
         }
         catch
         {
-            // Port scanning is best-effort
+            // 端口扫描是尽力而为的
         }
 
         return ports.OrderBy(p => p).ToList();
     }
 
     /// <summary>
-    /// Gets all process IDs in the process tree (parent + all descendants).
+    /// 获取进程树中的所有进程 ID（父进程 + 所有后代）。
     /// </summary>
     private static HashSet<int> GetProcessTree(int rootPid)
     {
         var tree = new HashSet<int> { rootPid };
         try
         {
-            // Build parent->children map using WMI
+            // 使用 WMI 构建父->子映射
             using var searcher = new System.Management.ManagementObjectSearcher(
                 "SELECT ProcessId, ParentProcessId FROM Win32_Process");
             var parentMap = new Dictionary<int, List<int>>();
@@ -61,7 +61,7 @@ public static class PortScanner
                     parentMap[ppid] = [];
                 parentMap[ppid].Add(pid);
             }
-            // BFS to find all descendants
+            // BFS 查找所有后代
             var queue = new Queue<int>();
             queue.Enqueue(rootPid);
             while (queue.Count > 0)
@@ -79,13 +79,13 @@ public static class PortScanner
         }
         catch
         {
-            // Best effort — WMI may not be available
+            // 尽力而为 — WMI 可能不可用
         }
         return tree;
     }
 
     /// <summary>
-    /// Gets a mapping of PID to listening TCP ports using netstat.
+    /// 使用 netstat 获取 PID 到监听 TCP 端口的映射。
     /// </summary>
     private static List<(int pid, int port)> GetPidPortMap()
     {
@@ -108,7 +108,7 @@ public static class PortScanner
                 var line = process.StandardOutput.ReadLine();
                 if (line == null) continue;
 
-                // Parse lines like: TCP    0.0.0.0:3000    0.0.0.0:0    LISTENING    12345
+                // 解析行如：TCP    0.0.0.0:3000    0.0.0.0:0    LISTENING    12345
                 var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length >= 5 &&
                     parts[0] == "TCP" &&
@@ -128,7 +128,7 @@ public static class PortScanner
         }
         catch
         {
-            // Best effort
+            // 尽力而为
         }
 
         return results;

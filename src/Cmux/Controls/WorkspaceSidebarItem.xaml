@@ -62,7 +62,7 @@
                         <TextBlock Text="●" Foreground="#FFEC4899" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Accent: Custom..." Click="SetCustomColor_Click">
+                <MenuItem Header="主题色：自定义..." Click="SetCustomColor_Click">
                     <MenuItem.Icon>
                         <TextBlock Text="＋" Foreground="{StaticResource ForegroundBrush}" FontSize="12" FontWeight="Bold" />
                     </MenuItem.Icon>

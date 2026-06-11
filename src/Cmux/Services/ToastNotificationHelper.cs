@@ -4,13 +4,13 @@ using Cmux.Core.Models;
 namespace Cmux.Services;
 
 /// <summary>
-/// Sends Windows toast notifications when AI coding agents need attention.
-/// Uses the Windows 10/11 notification system via Microsoft.Toolkit.Uwp.Notifications.
+/// 当 AI 编码代理需要关注时发送 Windows 吐司通知。
+/// 通过 Microsoft.Toolkit.Uwp.Notifications 使用 Windows 10/11 通知系统。
 /// </summary>
 public static class ToastNotificationHelper
 {
     /// <summary>
-    /// Shows a Windows toast notification for a terminal notification.
+    /// 为终端通知显示 Windows 吐司通知。
     /// </summary>
     public static void ShowToast(TerminalNotification notification, string workspaceName)
     {
@@ -28,13 +28,13 @@ public static class ToastNotificationHelper
         }
         catch
         {
-            // Toast notifications may fail in certain environments
-            // (no UWP support, sandboxed, etc). Non-critical.
+            // 吐司通知在某些环境下可能失败
+            // （无 UWP 支持、沙盒等）。不关键。
         }
     }
 
     /// <summary>
-    /// Clears all cmux toast notifications from the notification center.
+    /// 从通知中心清除所有 cmux 吐司通知。
     /// </summary>
     public static void ClearAll()
     {
@@ -44,7 +44,7 @@ public static class ToastNotificationHelper
         }
         catch
         {
-            // Best effort
+            // 尽力而为
         }
     }
 }

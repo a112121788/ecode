@@ -10,28 +10,28 @@ public sealed class DaemonClient : IDisposable
     private const string PipeName = "cmux-daemon";
     private NamedPipeClientStream? _pipe;
     private StreamReader? _reader;
-    private volatile bool _connected; // set after pipe + reader are ready
+    private volatile bool _connected; // 在管道和读取器就绪后设置
     private CancellationTokenSource? _listenCts;
     private volatile bool _disposed;
 
-    // Synchronization: only one request at a time, listen loop feeds response back via TCS
+    // 同步：同一时间只允许一个请求，监听循环通过 TCS 回传响应
     private readonly SemaphoreSlim _requestLock = new(1, 1);
     private TaskCompletionSource<DaemonResponse?>? _pendingResponse;
 
     public bool IsConnected => _pipe?.IsConnected == true && _connected;
 
-    public event Action<string, byte[]>? RawOutputReceived;  // paneId, VT bytes
-    public event Action<string, int>? SessionExited;          // paneId, exitCode
-    public event Action<string, string>? TitleChanged;        // paneId, title
-    public event Action<string, string>? CwdChanged;          // paneId, directory
+    public event Action<string, byte[]>? RawOutputReceived;  // paneId，VT 字节
+    public event Action<string, int>? SessionExited;          // paneId，退出码
+    public event Action<string, string>? TitleChanged;        // paneId，标题
+    public event Action<string, string>? CwdChanged;          // paneId，目录
     public event Action<string>? BellReceived;                // paneId
     public event Action? Connected;
     public event Action? Disconnected;
 
     /// <summary>
-    /// Tries to connect to the daemon pipe synchronously.
-    /// Must be called from a background thread (not the UI thread).
-    /// Returns true if connected.
+    /// 同步尝试连接到守护进程管道。
+    /// 必须从后台线程调用（非 UI 线程）。
+    /// 连接成功返回 true。
     /// </summary>
     public bool TryConnect(int timeoutMs = 300)
     {
@@ -39,10 +39,9 @@ public sealed class DaemonClient : IDisposable
 
         try
         {
-            // Use PipeOptions.Asynchronous (overlapped I/O) so that reads and writes
-            // can proceed concurrently on the same handle. With PipeOptions.None, Windows
-            // serializes all I/O on non-overlapped handles — the listen loop's blocking
-            // Read prevents WriteToPipe from completing, causing a deadlock.
+            // 使用 PipeOptions.Asynchronous（重叠 I/O），使读写可以在同一句柄上并发进行。
+            // 若使用 PipeOptions.None，Windows 会在非重叠句柄上序列化所有 I/O —
+            // 监听循环的阻塞 Read 会阻止 WriteToPipe 完成，导致死锁。
             var pipe = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             LogDaemon($"[Connect] Calling pipe.Connect({timeoutMs})...");
             pipe.Connect(timeoutMs);
@@ -67,12 +66,12 @@ public sealed class DaemonClient : IDisposable
         }
     }
 
-    /// <summary>Fires the Connected event. Call after TryConnect succeeds.</summary>
+    /// <summary>触发 Connected 事件。TryConnect 成功后调用。</summary>
     public void RaiseConnected() => Connected?.Invoke();
 
     /// <summary>
-    /// Starts the daemon process and waits for it to become available.
-    /// Must be called from a background thread.
+    /// 启动守护进程并等待其可用。
+    /// 必须从后台线程调用。
     /// </summary>
     public bool StartDaemonAndConnect(int maxRetries = 20, int retryDelayMs = 500)
     {
@@ -99,17 +98,17 @@ public sealed class DaemonClient : IDisposable
                 return false;
             }
 
-            // Retry connecting until daemon is ready
+            // 重试连接直到守护进程就绪
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                // Try connecting first, then sleep (daemon might be ready already)
+                // 先尝试连接，再休眠（守护进程可能已就绪）
                 if (TryConnect(1000))
                 {
                     LogDaemon($"[TryStart] Connected on attempt {attempt + 1}");
                     return true;
                 }
 
-                // Check if daemon process crashed
+                // 检查守护进程是否崩溃
                 if (proc.HasExited)
                 {
                     LogDaemon($"[TryStart] Daemon process exited with code {proc.ExitCode}");
@@ -135,13 +134,13 @@ public sealed class DaemonClient : IDisposable
         var appDir = AppContext.BaseDirectory;
         LogDaemon($"[FindDaemon] AppContext.BaseDirectory: {appDir}");
 
-        // 1. Look next to the current executable (deployed/published scenario)
+        // 1. 在当前可执行文件旁查找（部署/发布场景）
         var candidate = Path.Combine(appDir, "cmux-daemon.exe");
         if (File.Exists(candidate)) return candidate;
 
-        // 2. Look in sibling project build output (dev build scenario)
-        //    appDir is e.g. .../src/Cmux/bin/Debug/net10.0-windows10.0.17763.0/
-        //    daemon is at   .../src/Cmux.Daemon/bin/Debug/net10.0-windows/cmux-daemon.exe
+        // 2. 在兄弟项目构建输出中查找（开发构建场景）
+        //    appDir 例如 .../src/Cmux/bin/Debug/net10.0-windows10.0.17763.0/
+        //    守护进程位于 .../src/Cmux.Daemon/bin/Debug/net10.0-windows/cmux-daemon.exe
         try
         {
             var dir = new DirectoryInfo(appDir);
@@ -173,7 +172,7 @@ public sealed class DaemonClient : IDisposable
         }
         catch
         {
-            // Filesystem errors during search — not critical
+            // 搜索期间的文件系统错误 — 不关键
         }
 
         return null;
@@ -182,8 +181,8 @@ public sealed class DaemonClient : IDisposable
     private void StartListening()
     {
         _listenCts = new CancellationTokenSource();
-        // Use a dedicated background thread for reading — not Task.Run —
-        // because ReadLine blocks the calling thread.
+        // 使用专用后台线程读取 — 不用 Task.Run —
+        // 因为 ReadLine 会阻塞调用线程。
         var thread = new Thread(() => ListenLoop(_listenCts.Token))
         {
             IsBackground = true,
@@ -201,7 +200,7 @@ public sealed class DaemonClient : IDisposable
                 var line = _reader.ReadLine();
                 if (line == null) break;
 
-                // Try to parse as a DaemonResponse first (if a request is pending)
+                // 先尝试解析为 DaemonResponse（若有待处理请求）
                 if (_pendingResponse != null)
                 {
                     try
@@ -209,8 +208,8 @@ public sealed class DaemonClient : IDisposable
                         var response = JsonSerializer.Deserialize<DaemonResponse>(line);
                         if (response != null && _pendingResponse != null)
                         {
-                            // Responses have Success property; events have Type property
-                            // Check if this looks like a response (has Success field)
+                            // 响应有 Success 属性；事件有 Type 属性
+                            // 检查是否像响应（包含 Success 字段）
                             if (line.Contains("\"Success\"", StringComparison.OrdinalIgnoreCase))
                             {
                                 var tcs = _pendingResponse;
@@ -223,7 +222,7 @@ public sealed class DaemonClient : IDisposable
                     catch { }
                 }
 
-                // Try as event
+                // 尝试作为事件解析
                 try
                 {
                     var evt = JsonSerializer.Deserialize<DaemonEvent>(line);
@@ -239,7 +238,7 @@ public sealed class DaemonClient : IDisposable
         catch (OperationCanceledException) { }
         finally
         {
-            _connected = false; // Prevent new requests from entering SendRequestAsync
+            _connected = false; // 阻止新请求进入 SendRequestAsync
             _pendingResponse?.TrySetResult(null);
             Disconnected?.Invoke();
         }
@@ -280,9 +279,9 @@ public sealed class DaemonClient : IDisposable
     }
 
     /// <summary>
-    /// Writes a JSON line directly to the pipe as raw bytes.
-    /// This avoids StreamWriter.Flush() → FlushFileBuffers which blocks on synchronous pipes.
-    /// Stream.Write() puts data in the pipe buffer immediately without blocking.
+    /// 将 JSON 行作为原始字节直接写入管道。
+    /// 避免 StreamWriter.Flush() → FlushFileBuffers 在同步管道上阻塞。
+    /// Stream.Write() 立即将数据放入管道缓冲区而不阻塞。
     /// </summary>
     private void WriteToPipe(string line)
     {
@@ -320,7 +319,7 @@ public sealed class DaemonClient : IDisposable
                 return null;
             }
 
-            // Wait for listen loop to deliver the response (3s timeout)
+            // 等待监听循环传递响应（3 秒超时）
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
             timeoutCts.Token.Register(() => tcs.TrySetResult(null));
 
@@ -348,8 +347,8 @@ public sealed class DaemonClient : IDisposable
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "cmux");
             Directory.CreateDirectory(logDir);
             var logPath = Path.Combine(logDir, "daemon-debug.log");
-            // Use FileShare.ReadWrite so daemon and client can write concurrently
-            // without blocking each other (File.AppendAllText uses FileShare.Read which blocks).
+            // 使用 FileShare.ReadWrite 使守护进程和客户端可以并发写入
+            // 而不互相阻塞（File.AppendAllText 使用 FileShare.Read 会阻塞）。
             using var fs = new FileStream(logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
             using var sw = new StreamWriter(fs);
             sw.Write($"[{DateTime.Now:HH:mm:ss.fff}] {message}\n");
