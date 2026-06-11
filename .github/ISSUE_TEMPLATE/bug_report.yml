@@ -1,0 +1,120 @@
+name: Bug Report
+description: 报告 ECode 缺陷。终端渲染、IPC、CLI、ConPTY、守护进程、WebView2、Toast、发布产物等任何不符合预期行为。
+title: "[Bug] <一句话描述>"
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢提交 bug。提交前请确认：
+        - 已阅读 `spec/README.md` 与对应章节的现状描述。
+        - 已在 `latest` / `main` 上复现。
+        - 已搜索过现有 issue，没有重复。
+
+  - type: input
+    id: ecode_version
+    attributes:
+      label: ECode 版本
+      description: |
+        `ecode version` 或 `STATUS.version` 的输出（roadmap 已从 0.1.x 起步）。
+      placeholder: "0.1.0 (commit 44154c5)"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统
+      description: Windows 10 / 11，内置版本号（`winver`）。
+      placeholder: "Windows 11 23H2 (build 22631.3737)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_flavor
+    attributes:
+      label: 安装/运行形态
+      description: 选最接近的一种；开发场景选“源码 dotnet run”。
+      options:
+        - Framework-dependent (zip / installer)
+        - Self-contained
+        - CLI only
+        - 源码 dotnet run / IDE
+        - 其他（请在描述中说明）
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: 重现步骤
+      description: |
+        编号列出操作步骤；可附带 ecode CLI 命令。
+        例如：
+        1. 启动 ecodew.exe
+        2. `ecode workspace create --name demo`
+        3. 在终端中执行 `pwsh -c "1..200 | ForEach-Object { Write-Output $_ }"`
+        4. 观察 scrollback 渲染
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 与 spec/ 中描述的预期一致的行为。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 包括异常消息、错误码、栈追踪（请脱敏）。
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 关键日志
+      description: |
+        优先附 `%LOCALAPPDATA%/ecode/daemon-debug.log` 关键行；
+        旧版 `cmux` 数据目录下日志可作为对照附在下方，注意脱敏 API key / token。
+      placeholder: |
+        [HH:mm:ss.fff] [component] event=pane.write paneId=...
+
+  - type: textarea
+    id: severity
+    attributes:
+      label: 严重度自评与影响范围
+      description: |
+        - P0：崩溃 / 数据丢失 / 静默命令执行 / 不可恢复状态。
+        - P1：核心功能不可用但有 workaround。
+        - P2：边缘场景或 UI 小问题。
+        - P3：纯外观 / 文案。
+      placeholder: "P1；影响 Windows 11 arm64 用户"
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前自检
+      options:
+        - label: 我已搜索过现有 issue，未发现重复
+        - label: 我已确认在 `main` 分支上能复现
+        - label: 我已附上日志，且已脱敏密钥 / token
+        - label: 如属回归，我已说明最早出现的版本（可选）
+
+  - type: input
+    id: related
+    attributes:
+      label: 关联 backlog / spec 章节
+      description: |
+        形如 `M2-A-02` 或 `spec/04-build-deploy.md §9`；无明显关联时填 N/A。
+      placeholder: "M2-A-02"

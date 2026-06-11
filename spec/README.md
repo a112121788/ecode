@@ -1,12 +1,14 @@
-# cmux-windows 设计文档（`spec/`）
+# ECode 设计文档（`spec/`）
 
-本目录收录 cmux-windows 项目的工程内部设计文档。它不同于面向最终用户的 `README.md` / `docs/`，目标是：
+本目录收录 ECode 项目的工程内部设计文档。它不同于面向最终用户的 `README.md` / `docs/`，目标是：
 
 - 让新贡献者在 30 分钟内理解项目结构、关键模块、数据契约与发布流程。
 - 为规划、能力对齐与技术决策提供单一可信来源。
 - 让每次架构 / 协议 / 数据模型变更先在此处收敛，再落到代码。
 
 > 范围：本仓库仅做 **Windows 原生版**（WPF + ConPTY + WebView2 + Named Pipe + .NET 10）。本文不规划 macOS / Linux 端实现。
+>
+> 品牌：项目代号 **ECode**（旧称 `cmux-windows`，参见 `CHANGELOG.md` 的 “Breaking changes” 段）。`cmux` 一词在 spec/ 中仅作为上游 macOS 原版（`manaflow-ai/cmux`）的引用、协议 v1 命令名（`WORKSPACE.* / PANE.*`）与配置文件兼容名（`cmux.json`）出现。
 
 ---
 
@@ -16,7 +18,7 @@
 2. [`02-modules.md`](02-modules.md) — 按模块 / 类梳理职责、关键方法、协作链路。
 3. [`03-data-and-ipc.md`](03-data-and-ipc.md) — 数据模型、命名管道协议、JSON 形状、错误码。
 4. [`04-build-deploy.md`](04-build-deploy.md) — 解决方案布局、构建脚本、发布形态、运行依赖、故障排查。
-5. [`05-cli-commands.md`](05-cli-commands.md) — `cmux.exe` CLI 与 IPC 命令参考。
+5. [`05-cli-commands.md`](05-cli-commands.md) — `ecode.exe` CLI 与 IPC 命令参考。
 6. [`06-roadmap.md`](06-roadmap.md) — 详细开发规划（M0-M7）、依赖关系、风险与指标。
 7. [`07-implementation-backlog.md`](07-implementation-backlog.md) — 可执行的 GitHub Issue / PR backlog（按里程碑和依赖排序）。
 

@@ -1,0 +1,70 @@
+name: Session Restore / Resume
+description: 报告会话恢复、resume binding、`%LOCALAPPDATA%/ecode/resume.json`、自动 / 手动恢复相关的行为问题。
+title: "[Resume] <一句话描述>"
+labels: ["resume", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        参考 `spec/06-roadmap.md` M2 与 `spec/03-data-and-ipc.md` 持久化章节。
+        提交时务必注明：是否为可信 binding、是否设置了 `AutoResumeAgentSessions`。
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及能力
+      options:
+        - layout / cwd / scrollback 恢复
+        - resume binding 写入 / 读取
+        - 敏感环境剔除
+        - ECODE_WORKSPACE_ID 注入
+        - '`ecode surface resume set/show/clear`'
+        - '`AutoResumeAgentSessions` 开关'
+        - 恢复确认 UI
+        - agent session id 映射
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    id: agent
+    attributes:
+      label: 相关 Agent（如有）
+      placeholder: "Claude Code / Codex / OpenCode / 无"
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 重现步骤与期望行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为与日志
+      description: |
+        可附 `%LOCALAPPDATA%/ecode/resume.json` 脱敏片段；
+        可附 `daemon-debug.log` 关键行。
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: trust
+    attributes:
+      label: 信任与自动执行
+      options:
+        - label: "binding 是 `trusted: true`（用户已批准 prefix）"
+        - label: "binding 是 `trusted: false`（希望仅显示待恢复项）"
+        - label: "我已关闭 `AutoResumeAgentSessions`"
+        - label: "我希望它自动执行"
+
+  - type: input
+    id: related
+    attributes:
+      label: 关联 spec 章节
+      placeholder: "spec/06-roadmap.md M2-A-01 / M2-T05"
+    validations:
+      required: true

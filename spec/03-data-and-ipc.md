@@ -1,6 +1,6 @@
 # 数据模型与 IPC 协议
 
-> 描述 cmux 在 IPC 与持久化层面的所有"线缆级"约定：消息类型、JSON 形状、字节边界、错误码。
+> 描述 ecode 在 IPC 与持久化层面的所有"线缆级"约定：消息类型、JSON 形状、字节边界、错误码。
 
 ---
 
@@ -8,14 +8,14 @@
 
 | 管道 | 端点 | 消息形态 | 用途 |
 |---|---|---|---|
-| `\\.\pipe\cmux`（或 `\\.\pipe\cmux-{tag}`） | WPF 端 `NamedPipeServer` ↔ CLI 端 `NamedPipeClient` | 单行文本请求 + 单行 JSON 响应 | CLI 自动化与外部 hook |
-| `\\.\pipe\cmux-daemon` | WPF 端 `DaemonClient` ↔ 守护进程 `DaemonPipeServer` | 多行 JSON（请求 / 响应 / 事件共享同一字节流） | 终端会话托管与事件订阅 |
+| `\\.\pipe\ecode`（或 `\\.\pipe\ecode-{tag}`） | WPF 端 `NamedPipeServer` ↔ CLI 端 `NamedPipeClient` | 单行文本请求 + 单行 JSON 响应 | CLI 自动化与外部 hook |
+| `\\.\pipe\ecode-daemon` | WPF 端 `DaemonClient` ↔ 守护进程 `DaemonPipeServer` | 多行 JSON（请求 / 响应 / 事件共享同一字节流） | 终端会话托管与事件订阅 |
 
 两份协议均要求 `PipeOptions.Asynchronous`（重叠 I/O），否则同一句柄上同步读写会死锁。
 
 ---
 
-## 2. 主应用 ↔ CLI 协议（`\\.\pipe\cmux`）
+## 2. 主应用 ↔ CLI 协议（`\\.\pipe\ecode`）
 
 ### 2.1 请求行格式
 
@@ -33,7 +33,7 @@ COMMAND [key1=value1] [key2=value2] ...
 
 服务端返回一行 JSON（任意自定义形状）。CLI 收到后若能解析则 `JsonSerializer` 美化输出，否则原样打印。
 
-CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超时抛 `TimeoutException`，CLI 打印 `"Error: Could not connect to cmux. Is it running?"`。
+CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超时抛 `TimeoutException`，CLI 打印 `"Error: Could not connect to ecode. Is it running?"`。
 
 ### 2.3 命令清单
 
@@ -60,24 +60,24 @@ CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超
 
 ### 2.4 CLI 顶层命令
 
-`cmux.exe`（即 `Cmux.Cli`）的 argv 入口：
+`ecode.exe`（即 `ECode.Cli`）的 argv 入口：
 
 ```text
-cmux notify       --title <text> --body <text> --subtitle <text>
-cmux workspace    list | create [--name <text>] | select [--index <n>|--id <id>|--name <text>]
+ecode notify       --title <text> --body <text> --subtitle <text>
+ecode workspace    list | create [--name <text>] | select [--index <n>|--id <id>|--name <text>]
                   | next | previous | prev
-cmux surface      create | next | previous | prev
-cmux split        right | vertical | v | down | horizontal | h
-cmux status
-cmux help | --help | -h
-cmux version | --version | -v
+ecode surface      create | next | previous | prev
+ecode split        right | vertical | v | down | horizontal | h
+ecode status
+ecode help | --help | -h
+ecode version | --version | -v
 ```
 
 退出码：`0` 成功，`1` 失败（连接超时 / 参数错误 / 未知命令）。
 
 ---
 
-## 3. 主应用 ↔ 守护进程协议（`\\.\pipe\cmux-daemon`）
+## 3. 主应用 ↔ 守护进程协议（`\\.\pipe\ecode-daemon`）
 
 ### 3.1 字节流
 
@@ -177,7 +177,7 @@ public class DaemonSessionInfo {
 
 ```text
 启动
-  ├─ 命名互斥体 Global\CmuxDaemon 单实例
+  ├─ 命名互斥体 Global\ECodeDaemon 单实例
   ├─ 创建 DaemonSessionManager + DaemonPipeServer
   ├─ 后台线程 PipeServer-Accept 持续 AcceptNewConnection
   └─ 主线程每 5 分钟轮询：
@@ -187,7 +187,7 @@ public class DaemonSessionInfo {
 
 ---
 
-## 4. 会话持久化（`%LOCALAPPDATA%/cmux/session.json`）
+## 4. 会话持久化（`%LOCALAPPDATA%/ecode/session.json`）
 
 ### 4.1 Schema（`SessionState`）
 
@@ -264,7 +264,7 @@ public class DaemonSessionInfo {
 
 ---
 
-## 5. 命令日志（`%LOCALAPPDATA%/cmux/logs/`）
+## 5. 命令日志（`%LOCALAPPDATA%/ecode/logs/`）
 
 ### 5.1 文件结构
 
@@ -282,7 +282,7 @@ logs/
 ### 5.2 终端脚本文件（`.log`）
 
 ```text
-# cmux terminal transcript
+# ecode terminal transcript
 # captured-at: 2026-06-11T14:32:05.0000000Z
 # workspace-id: …
 # surface-id: …
@@ -312,10 +312,10 @@ Shell 写入 `\e]133;A` / `\e]133;B;<command>` / `\e]133;C` / `\e]133;D;<exitcod
 
 | 字段 | 含义 |
 |---|---|
-| `CmuxSettings.CommandLogRetentionDays` | 命令日志按日清理（默认 90，`0` = 永久保留） |
-| `CmuxSettings.TranscriptRetentionDays` | 脚本日志按文件 `LastWriteTime` 清理（默认 90，`0` = 永久保留） |
-| `CmuxSettings.CaptureTranscriptsOnClose` | Surface/Pane 关闭 / 清理时是否落盘脚本 |
-| `CmuxSettings.CaptureTranscriptsOnClear` | 清屏时是否落盘脚本 |
+| `ECodeSettings.CommandLogRetentionDays` | 命令日志按日清理（默认 90，`0` = 永久保留） |
+| `ECodeSettings.TranscriptRetentionDays` | 脚本日志按文件 `LastWriteTime` 清理（默认 90，`0` = 永久保留） |
+| `ECodeSettings.CaptureTranscriptsOnClose` | Surface/Pane 关闭 / 清理时是否落盘脚本 |
+| `ECodeSettings.CaptureTranscriptsOnClear` | 清屏时是否落盘脚本 |
 
 应用启动 + `SettingsChanged` 时调用 `ApplyRetentionPolicy / ApplyTranscriptRetentionPolicy / ScrubSensitiveData…`。
 
@@ -344,7 +344,7 @@ public NotificationSource Source; // Osc9 / Osc99 / Osc777 / Cli
 
 ---
 
-## 7. 代码片段（`%LOCALAPPDATA%/cmux/snippets.json`）
+## 7. 代码片段（`%LOCALAPPDATA%/ecode/snippets.json`）
 
 `List<Snippet>` JSON 数组；`Snippet.Content` 支持 `{{key}}` 占位符：
 
@@ -355,7 +355,7 @@ public NotificationSource Source; // Osc9 / Osc99 / Osc777 / Cli
 
 ---
 
-## 8. Agent 会话（`%LOCALAPPDATA%/cmux/agent/`）
+## 8. Agent 会话（`%LOCALAPPDATA%/ecode/agent/`）
 
 ```
 agent/
@@ -373,7 +373,7 @@ agent/
 
 ---
 
-## 9. 加密存储（`%LOCALAPPDATA%/cmux/secrets.json`）
+## 9. 加密存储（`%LOCALAPPDATA%/ecode/secrets.json`）
 
 ```jsonc
 {
@@ -393,7 +393,7 @@ agent/
 
 ## 10. 守护进程诊断日志
 
-`%LOCALAPPDATA%/cmux/daemon-debug.log`：
+`%LOCALAPPDATA%/ecode/daemon-debug.log`：
 
 - 由 `DaemonClient.LogDaemon` 写入（共享追加 `FileShare.ReadWrite`，避免客户端与守护进程互锁）
 - 行格式：`[HH:mm:ss.fff] <message>`

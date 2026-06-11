@@ -1,0 +1,108 @@
+name: Feature / 能力请求
+description: 提议 ECode 新增能力。强烈建议先在 backlog（`spec/07-implementation-backlog.md`）中查找是否已有对应 ID，再决定开新 issue。
+title: "[Feature] <一句话描述>"
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请确认：
+        - 已阅读 `spec/06-roadmap.md` 当前里程碑范围与 `spec/07-implementation-backlog.md`。
+        - 该能力不属于“非目标”：替代 IDE、跨平台、完整 remote daemon、商业版特性等。
+        - 不与 macOS 原版能力重复但已规划在更高里程碑的实现冲突。
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及领域
+      multiple: true
+      options:
+        - 终端引擎（ConPTY / Vt / Buffer / Scrollback）
+        - 布局（Workspace / Surface / Pane / 拖拽）
+        - 通知（OSC / Toast / 蓝环 / 面板）
+        - 命令面板 / Snippet / ecode.json
+        - 会话恢复（Resume binding / Snapshot）
+        - 浏览器面板（WebView2 / 脚本化）
+        - v2 IPC / CLI / 短 ID / 多窗口
+        - Hooks / Agent 集成
+        - 安装 / 更新 / Velopack / MSIX
+        - 文档 / CI / 性能 / 遥测
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 场景与痛点
+      description: 用 1-3 段描述用户场景与现有方案的不足；最好附一段当前 CLI / 快捷键 / 屏幕描述。
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: |
+        - 数据模型 / 协议 / UI 行为要点。
+        - 与 spec/ 哪一节有重叠或冲突。
+        - 若涉及 ecode.json schema，请给出 JSON 片段。
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 替代方案与对比
+      description: 至少列一个替代方案，并说明你推荐当前方案的原因。
+
+  - type: dropdown
+    id: target_milestone
+    attributes:
+      label: 目标里程碑
+      description: 参见 `spec/06-roadmap.md`。
+      options:
+        - M0 - 工程基线
+        - M1 - UI/UX 与 cmux.json 基础
+        - M2 - 会话恢复增强
+        - M3 - 浏览器面板基础
+        - M4 - 浏览器脚本化 API
+        - M5 - v2 协议、多窗口、短 ID
+        - M6 - Hooks、集成、安装与更新
+        - M7 - 生态、文档与 1.0 收敛
+        - 暂未确定
+    validations:
+      required: true
+
+  - type: input
+    id: backlog_id
+    attributes:
+      label: 关联 backlog ID
+      description: 已存在则填 `M{里程碑}-{包}-{序号}`；否则填 N/A，会由维护者指派。
+      placeholder: "M1-A-01"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: |
+        - 单元 / contract / 集成测试覆盖范围。
+        - 性能预算（冷启动、内存、命令面板打开时长等）。
+        - 文档更新点。
+
+  - type: textarea
+    id: risk
+    attributes:
+      label: 风险与兼容
+      description: 命名管道、ecode.json 兼容、WSL 路径、ConPTY、WebView2、MSIX 沙箱、locale 等。
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前自检
+      options:
+        - label: 我已阅读 `spec/06-roadmap.md` 与 `spec/07-implementation-backlog.md`
+        - label: 我已确认该能力不在“非目标”范围
+        - label: 我已给出至少一个替代方案
+        - label: 我已列出验收标准与潜在风险

@@ -1,10 +1,10 @@
 # CLI 与 IPC 命令参考
 
-> 这份清单汇总 `cmux`（CLI）、`\\.\pipe\cmux`（主应用通道）、`\\.\pipe\cmux-daemon`（守护进程通道）三处对外暴露的命令与消息。字段名、默认值、约束均来自源码（`src/Cmux.Cli/Program.cs`、`src/Cmux/ViewModels/MainViewModel.cs`、`src/Cmux.Daemon/DaemonPipeServer.cs`、`src/Cmux.Core/IPC/*`）。
+> 这份清单汇总 `ecode`（CLI）、`\\.\pipe\ecode`（主应用通道）、`\\.\pipe\ecode-daemon`（守护进程通道）三处对外暴露的命令与消息。字段名、默认值、约束均来自源码（`src/ECode.Cli/Program.cs`、`src/ECode/ViewModels/MainViewModel.cs`、`src/ECode.Daemon/DaemonPipeServer.cs`、`src/ECode.Core/IPC/*`）。
 
 ---
 
-## 1. `cmux.exe`（Cmux.Cli）
+## 1. `ecode.exe`（ECode.Cli）
 
 ### 1.1 全局参数约定
 
@@ -13,7 +13,7 @@
   - 长选项 `--key value` / `--key`（后者等价于 `--key true`）
   - 短选项 `-k value`
   - 位置参数 `_arg0 / _arg1 / …`
-- 值含空格时需加引号（`Cmux.Cli` 自动用 `"…"` 包裹）
+- 值含空格时需加引号（`ECode.Cli` 自动用 `"…"` 包裹）
 
 ### 1.2 命令
 
@@ -63,7 +63,7 @@
 
 #### `version` / `--version` / `-v`
 
-打印 `cmux 1.0.6 (Windows)`。
+打印 `ecode 1.0.6 (Windows)`。
 
 ### 1.3 退出码
 
@@ -72,7 +72,7 @@
 | `0` | 成功 |
 | `1` | 解析错误 / 连接超时 / 服务端返回 `error` / 未知命令 |
 
-## 2. `\\.\pipe\cmux` 主应用通道
+## 2. `\\.\pipe\ecode` 主应用通道
 
 ### 2.1 请求行
 
@@ -115,7 +115,7 @@ COMMAND [k=v [k=v ...]]
 
 未知命令 / 未找到目标 / 缺少必填参数 → `{error:"…"}`；成功 → `{ok:true, ...}` 或直接返回对象数组。
 
-## 3. `\\.\pipe\cmux-daemon` 守护进程通道
+## 3. `\\.\pipe\ecode-daemon` 守护进程通道
 
 ### 3.1 消息格式
 
@@ -178,7 +178,7 @@ COMMAND [k=v [k=v ...]]
 
 ```text
 启动
- ├─ 单实例互斥体 Global\CmuxDaemon
+ ├─ 单实例互斥体 Global\ECodeDaemon
  ├─ 后台 Accept 线程（PipeServer-Accept）
  └─ 主线程每 5 分钟轮询：
      if 客户端==0 && 会话==0 && 距 lastActivity > 24h → 优雅退出
@@ -189,31 +189,31 @@ COMMAND [k=v [k=v ...]]
 ### 4.1 Agent hook 触发通知
 
 ```powershell
-cmux notify --title "Claude Code" --body "等待输入"
+ecode notify --title "Claude Code" --body "等待输入"
 ```
 
 ### 4.2 自动化建会话并写入命令
 
 ```powershell
 # 创建工作区
-cmux workspace create --name "My Project"
+ecode workspace create --name "My Project"
 
 # 新建 Surface
-cmux surface create
+ecode surface create
 
 # 在当前聚焦面板写入 + 提交（当前 CLI 顶层仅支持 status/notify/workspace/surface/split；pane 写入请直接通过 IPC 或 M5 v2 协议）
-cmux status
+ecode status
 # 等价于 PANE.WRITE / PANE.READ（用 PowerShell 调 NamedPipe 客户端；详见 spec/03-data-and-ipc.md §2）：
 [script:pane-write] ...
 
 # 读取最近 50 行输出
-cmux pane read --lines 50
+ecode pane read --lines 50
 ```
 
 ### 4.3 编程方式直接调 IPC（PowerShell）
 
 ```powershell
-$pipe = New-Object System.IO.Pipes.NamedPipeClientStream('.', 'cmux', 'InOut')
+$pipe = New-Object System.IO.Pipes.NamedPipeClientStream('.', 'ecode', 'InOut')
 $pipe.Connect(3000)
 $writer = New-Object System.IO.StreamWriter($pipe, [System.Text.Encoding]::UTF8)
 $reader = New-Object System.IO.StreamReader($pipe, [System.Text.Encoding]::UTF8)
@@ -240,8 +240,8 @@ $pipe.Close()
 
 | 来源 | 触发 | 结果 |
 |---|---|---|
-| `cmux.exe` | 连接超时 | stderr `Error: Could not connect to cmux. Is it running?` 退出码 1 |
-| `cmux.exe` | 命令未知 | stderr `Error: Unknown command: …` 退出码 1 |
+| `ecode.exe` | 连接超时 | stderr `Error: Could not connect to ecode. Is it running?` 退出码 1 |
+| `ecode.exe` | 命令未知 | stderr `Error: Unknown command: …` 退出码 1 |
 | `NamedPipeServer` | 未注册 `OnCommand` | 响应 `{"error":"No handler registered"}` |
 | `MainViewModel.HandlePipeCommand` | 未知命令 / 未找到目标 | 响应 `{"error":"…"}` |
 | `DaemonPipeServer.ProcessRequest` | 异常 | 响应 `{success:false, error:<ex.Message>}` |

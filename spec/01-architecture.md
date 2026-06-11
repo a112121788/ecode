@@ -1,18 +1,18 @@
-# Cmux 架构设计文档
+# ECode 架构设计文档
 
-> 本文档基于源码（`src/Cmux`、`src/Cmux.Core`、`src/Cmux.Cli`、`src/Cmux.Daemon`）与 `README.md` 实际行为撰写。
-> 项目代号：cmux（Windows 版），主程序集名 `cmuxw`，CLI `cmux`，守护进程 `cmux-daemon`。
+> 本文档基于源码（`src/ECode`、`src/ECode.Core`、`src/ECode.Cli`、`src/ECode.Daemon`）与 `README.md` 实际行为撰写。
+> 项目代号：ECode（Windows 版），主程序集名 `ecodew`，CLI `ecode`，守护进程 `ecode-daemon`。
 
 ## 1. 项目概述
 
-cmux 是面向 Windows 的深色、键盘优先的终端复用器，灵感来自 tmux/cmux 工作流，底层使用 **WPF + ConPTY** 原生构建。
+ecode 是面向 Windows 的深色、键盘优先的终端复用器，灵感来自 tmux/ecode 工作流，底层使用 **WPF + ConPTY** 原生构建。
 
 **核心价值**：
 - 工作区（Workspace）+ 标签页（Surface）+ 二叉树分屏（SplitNode），实现多项目/多任务上下文隔离
 - 终端持久化（守护进程 + 缓冲区快照双模式），崩溃/重启后可恢复
 - AI Agent 友好：OSC 通知（9/99/777）、命令日志、脚本捕获、Agent 会话记录
 - 键盘优先：命令面板 + 快捷键 + 命令片段（Snippet）
-- 自动化集成：`cmux` CLI + 命名管道 IPC，可被 agent/脚本调用
+- 自动化集成：`ecode` CLI + 命名管道 IPC，可被 agent/脚本调用
 
 ---
 
@@ -23,14 +23,14 @@ cmux 是面向 Windows 的深色、键盘优先的终端复用器，灵感来自
 | **UI 框架** | WPF (.NET 10, `net10.0-windows10.0.17763.0`) | 桌面应用，XAML + MVVM |
 | **MVVM** | CommunityToolkit.Mvvm 8.3.2 | `[ObservableProperty]` / `[RelayCommand]` |
 | **终端引擎** | ConPTY（`kernel32!CreatePseudoConsole`） | Windows 原生伪终端 |
-| **IPC — 主↔守护** | Named Pipe（`\\.\pipe\cmux-daemon`，JSON over line） | 双工 + 事件订阅 |
-| **IPC — 主↔CLI** | Named Pipe（`\\.\pipe\cmux` 或 `\\.\pipe\cmux-{tag}`） | 单请求单响应 |
+| **IPC — 主↔守护** | Named Pipe（`\\.\pipe\ecode-daemon`，JSON over line） | 双工 + 事件订阅 |
+| **IPC — 主↔CLI** | Named Pipe（`\\.\pipe\ecode` 或 `\\.\pipe\ecode-{tag}`） | 单请求单响应 |
 | **持久化** | JSON 文件 | 原子写（先 `.tmp` 再 `File.Move`） |
 | **进程信息** | System.Management 9.0.3（WMI） | git 探测、端口扫描、Agent 探测 |
 | **加密** | System.Security.Cryptography.ProtectedData 10.0.0（DPAPI） | API 密钥加密 |
 | **浏览器集成** | Microsoft.Web.WebView2 1.0.2651.64 | Session Vault 浏览器视图 |
 | **Toast** | Microsoft.Toolkit.Uwp.Notifications 7.1.3 | Windows Toast 通知 |
-| **测试** | xUnit 2.9.3 + FluentAssertions 7.2.0 | CoreTests 单元测试 + Cmux.Smoke ConPTY 烟雾测试 |
+| **测试** | xUnit 2.9.3 + FluentAssertions 7.2.0 | CoreTests 单元测试 + ECode.Smoke ConPTY 烟雾测试 |
 
 > 全局编译开关（`Directory.Build.props`）：`LangVersion=14`、`Nullable=enable`、`ImplicitUsings=enable`、`TreatWarningsAsErrors=true`、`WarningLevel=7`。
 
@@ -39,28 +39,28 @@ cmux 是面向 Windows 的深色、键盘优先的终端复用器，灵感来自
 ## 3. 解决方案结构
 
 ```text
-Cmux.sln
+ECode.sln
 ├── src/
-│   ├── Cmux/                # WPF 主程序（cmuxw.exe），UI / 控件 / 视图模型
-│   ├── Cmux.Core/           # 跨进程复用库：终端引擎、模型、服务、IPC、配置
-│   ├── Cmux.Cli/            # CLI 客户端（cmux.exe）
-│   └── Cmux.Daemon/         # 守护进程（cmux-daemon.exe）
+│   ├── ECode/                # WPF 主程序（ecodew.exe），UI / 控件 / 视图模型
+│   ├── ECode.Core/           # 跨进程复用库：终端引擎、模型、服务、IPC、配置
+│   ├── ECode.Cli/            # CLI 客户端（ecode.exe）
+│   └── ECode.Daemon/         # 守护进程（ecode-daemon.exe）
 └── tests/
-    ├── Cmux.Tests/          # xUnit 单元测试（针对 Cmux.Core）
-    └── Cmux.Smoke/          # ConPTY 集成烟雾测试
+    ├── ECode.Tests/          # xUnit 单元测试（针对 ECode.Core）
+    └── ECode.Smoke/          # ConPTY 集成烟雾测试
 ```
 
 依赖关系（项目引用）：
 
 ```text
-Cmux  ──▶  Cmux.Core
-Cmux.Cli ──▶  Cmux.Core
-Cmux.Daemon ──▶  Cmux.Core
-Cmux.Tests ──▶  Cmux.Core
-Cmux.Smoke ──▶  Cmux.Core
+ECode  ──▶  ECode.Core
+ECode.Cli ──▶  ECode.Core
+ECode.Daemon ──▶  ECode.Core
+ECode.Tests ──▶  ECode.Core
+ECode.Smoke ──▶  ECode.Core
 ```
 
-`Cmux.Core.csproj` 额外声明 `AllowUnsafeBlocks=true`（Interop 用）。
+`ECode.Core.csproj` 额外声明 `AllowUnsafeBlocks=true`（Interop 用）。
 
 ---
 
@@ -70,7 +70,7 @@ Cmux.Smoke ──▶  Cmux.Core
 
 ```text
 ┌───────────────────────────────────────────────────────────────┐
-│                Cmux (WPF · cmuxw.exe)                         │
+│                ECode (WPF · ecodew.exe)                         │
 │ ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐    │
 │ │ Views (XAML) │ │ Controls     │ │ Themes / Converters  │    │
 │ │ MainWindow … │ │ TerminalCtl  │ │                      │    │
@@ -88,7 +88,7 @@ Cmux.Smoke ──▶  Cmux.Core
                               │ 项目引用
                               ▼
 ┌───────────────────────────────────────────────────────────────┐
-│              Cmux.Core (类库)                                 │
+│              ECode.Core (类库)                                 │
 │ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────────┐    │
 │ │ Terminal │ │   IPC    │ │ Services │ │    Config     │    │
 │ │ 引擎     │ │          │ │          │ │               │    │
@@ -100,8 +100,8 @@ Cmux.Smoke ──▶  Cmux.Core
           ▲                            ▲
           │                            │
 ┌─────────────────────┐      ┌─────────────────────┐
-│   Cmux.Daemon       │      │     Cmux.Cli        │
-│  (cmux-daemon.exe)  │      │     (cmux.exe)      │
+│   ECode.Daemon       │      │     ECode.Cli        │
+│  (ecode-daemon.exe)  │      │     (ecode.exe)      │
 │  会话托管 / 事件分发 │      │  通过命名管道调用    │
 └─────────────────────┘      └─────────────────────┘
 ```
@@ -110,19 +110,19 @@ Cmux.Smoke ──▶  Cmux.Core
 
 | 进程 | 可执行文件 | 生命周期 | 主要职责 |
 |---|---|---|---|
-| **主应用** | `cmuxw.exe` | 用户启动 / 关闭 | WPF UI、用户交互、终端渲染、IPC 服务端（CLI 通道） |
-| **守护进程** | `cmux-daemon.exe` | 按需启动、空闲 24h 退出 | 终端会话托管、IPC 事件分发（OUTPUT/EXITED/CWD/TITLE/BELL） |
-| **CLI** | `cmux.exe` | 单次执行 | 解析 argv、连接命名管道并请求 |
+| **主应用** | `ecodew.exe` | 用户启动 / 关闭 | WPF UI、用户交互、终端渲染、IPC 服务端（CLI 通道） |
+| **守护进程** | `ecode-daemon.exe` | 按需启动、空闲 24h 退出 | 终端会话托管、IPC 事件分发（OUTPUT/EXITED/CWD/TITLE/BELL） |
+| **CLI** | `ecode.exe` | 单次执行 | 解析 argv、连接命名管道并请求 |
 | **Shell** | `pwsh.exe` / `powershell.exe` / `cmd.exe` / `wsl.exe` / Git Bash | 终端生命周期 | 用户实际操作的目标进程（嵌入 ConPTY） |
 
-> 守护进程单实例：`Global\CmuxDaemon` 命名互斥体；日志统一写入 `%LOCALAPPDATA%/cmux/daemon-debug.log`。
+> 守护进程单实例：`Global\ECodeDaemon` 命名互斥体；日志统一写入 `%LOCALAPPDATA%/ecode/daemon-debug.log`。
 
 ### 4.3 启动序列
 
 ```text
-用户启动 cmuxw.exe
+用户启动 ecodew.exe
   ├─ App.OnStartup
-  │   ├─ 启动命名管道服务器 \\.\pipe\cmux（CLI 通道）
+  │   ├─ 启动命名管道服务器 \\.\pipe\ecode（CLI 通道）
   │   └─ 异步任务：先 300ms TryConnect() 守护进程，失败则 StartDaemonAndConnect()
   │
   ├─ MainViewModel 构造
@@ -178,7 +178,7 @@ WPF TerminalSession.Write(bytes)
 DaemonClient.WriteAsync(paneId, bytes)
    │  JSON: { type:"SESSION_WRITE", paneId, data:Base64 }
    ▼
-\\.\pipe\cmux-daemon (字节流 + "\n")
+\\.\pipe\ecode-daemon (字节流 + "\n")
    │
    ▼
 DaemonPipeServer.HandleConnection
@@ -204,13 +204,13 @@ VtParser → TerminalBuffer → 渲染
 ### 5.3 CLI → 主应用
 
 ```text
-$ cmux notify --title "Claude Code" --body "等待输入"
+$ ecode notify --title "Claude Code" --body "等待输入"
    │
-   ▼ Cmux.Cli 解析 argv
+   ▼ ECode.Cli 解析 argv
 NamedPipeClient.SendCommand("NOTIFY", { title, body })
    │
-   ▼ \\.\pipe\cmux  →  "NOTIFY title=\"...\" body=\"...\"\n"
-Cmux.WPF NamedPipeServer.HandleConnection
+   ▼ \\.\pipe\ecode  →  "NOTIFY title=\"...\" body=\"...\"\n"
+ECode.WPF NamedPipeServer.HandleConnection
    ▼ OnCommand(command, args)
 MainViewModel.HandlePipeCommand (在 UI Dispatcher 上 Invoke)
    │  NOTIFY → NotificationService.AddNotification(...)
@@ -230,7 +230,7 @@ JSON 响应返回 CLI → 控制台打印
 
 **问题**：WPF 应用崩溃 / 重启 / 切换用户时，本地 ConPTY 会话随之终止，无法"真正"持久化终端。
 
-**方案**：将 ConPTY 会话托管到独立的 `cmux-daemon.exe`；WPF 通过命名管道订阅 `OUTPUT` / `EXITED` / `CWD_CHANGED` / `TITLE_CHANGED` / `BELL` 事件，并在重连时通过 `SESSION_SNAPSHOT` 拉回缓冲区。
+**方案**：将 ConPTY 会话托管到独立的 `ecode-daemon.exe`；WPF 通过命名管道订阅 `OUTPUT` / `EXITED` / `CWD_CHANGED` / `TITLE_CHANGED` / `BELL` 事件，并在重连时通过 `SESSION_SNAPSHOT` 拉回缓冲区。
 
 **权衡**：
 - ✅ 真正的会话持久化、进程隔离（Daemon 独立于 WPF 生命周期）
@@ -289,7 +289,7 @@ SosPmApc
 
 ### 6.5 命名管道的同步 I/O 与防死锁
 
-`\\.\pipe\cmux-daemon` 与 `\\.\pipe\cmux` 均使用 `PipeOptions.Asynchronous`（重叠 I/O），原因：若使用同步 I/O，Windows 会在同一句柄上串行化所有操作，监听循环的阻塞 `Read` 会阻塞 `Write`，导致死锁。`DaemonPipeServer` 还为每个客户端分配独立写线程 + `Channel<string>`，保证事件与响应在管道上的写入严格串行。
+`\\.\pipe\ecode-daemon` 与 `\\.\pipe\ecode` 均使用 `PipeOptions.Asynchronous`（重叠 I/O），原因：若使用同步 I/O，Windows 会在同一句柄上串行化所有操作，监听循环的阻塞 `Read` 会阻塞 `Write`，导致死锁。`DaemonPipeServer` 还为每个客户端分配独立写线程 + `Channel<string>`，保证事件与响应在管道上的写入严格串行。
 
 ### 6.6 命令日志脱敏
 
@@ -314,12 +314,12 @@ SosPmApc
 
 ### 7.1 存储根目录
 
-所有用户态数据位于 `%LOCALAPPDATA%/cmux/`：
+所有用户态数据位于 `%LOCALAPPDATA%/ecode/`：
 
 | 文件 / 目录 | 作用 | 写入策略 |
 |---|---|---|
 | `session.json` | 会话状态（窗口 + 工作区 + Surface + 分屏 + 面板快照） | 原子写 |
-| `settings.json` | `CmuxSettings`（含 `AgentSettings`） | 原子写 |
+| `settings.json` | `ECodeSettings`（含 `AgentSettings`） | 原子写 |
 | `snippets.json` | 代码片段 | 原子写；首次启动播种 10 条默认 |
 | `secrets.json` | DPAPI 加密的 API Key 字典 | 原子写 |
 | `logs/YYYY-MM-DD.jsonl` | 命令日志（按日 JSONL） | `File.AppendAllText` |
@@ -413,13 +413,13 @@ SosPmApc
 | 项 | 默认 / 行为 |
 |---|---|
 | 主程序默认 Shell | pwsh → powershell → cmd |
-| 守护进程单实例 | `Global\CmuxDaemon` Mutex |
+| 守护进程单实例 | `Global\ECodeDaemon` Mutex |
 | 守护进程空闲退出 | 24 小时无客户端 / 无活动会话 |
 | 守护进程连接超时 | 初始 `TryConnect` 300ms；`StartDaemonAndConnect` 最多 20 次，每次连接超时 1000ms，尝试间隔 500ms |
 | 守护进程请求超时 | 3 秒（`SendRequestAsync` 内置 `CancellationTokenSource`） |
 | 命令日志条数上限 | 内存中 5000；磁盘按日 JSONL |
 | 通知条数上限 | 内存中 500 |
-| 回滚行数 | `CmuxSettings.ScrollbackLines`（默认 10000） |
+| 回滚行数 | `ECodeSettings.ScrollbackLines`（默认 10000） |
 | 快照回滚 | 保存 3000 行 |
 | 缓冲区快照范围 | 恢复时 20000 行可导出 |
 | `PANE.READ` 单次返回 | `lines ∈ [1, 5000]`、`maxChars ∈ [512, 200000]` |
@@ -429,17 +429,17 @@ SosPmApc
 ## 10. 性能要点
 
 - **终端渲染**：WPF `DrawingVisual` + 自管理 `Typeface`/画刷缓存；单元格脏标记驱动局部重绘
-- **光标闪烁**：`DispatcherTimer` 周期 530ms（`CmuxSettings.CursorBlinkMs`）
+- **光标闪烁**：`DispatcherTimer` 周期 530ms（`ECodeSettings.CursorBlinkMs`）
 - **回滚缓冲**：`ScrollbackBuffer<T>` 循环数组（O(1) `Add`，避免 `List.RemoveAt(0)` 的 O(n)）
 - **IPC**：单客户端一个 `Channel<string>` + 写线程，避免多个事件并发写管道
-- **诊断日志**：`%LOCALAPPDATA%/cmux/daemon-debug.log` 共享追加（`FileShare.ReadWrite`）
+- **诊断日志**：`%LOCALAPPDATA%/ecode/daemon-debug.log` 共享追加（`FileShare.ReadWrite`）
 
 ---
 
 ## 11. 安全考虑
 
 - **DPAPI 加密**：API Key 通过 `ProtectedData.Protect(..., CurrentUser)` 存于 `secrets.json`
-- **命名管道**：使用当前用户上下文；`cmux` 与 `cmux-daemon` 两套管道名（默认均无 `tag`）
+- **命名管道**：使用当前用户上下文；`ecode` 与 `ecode-daemon` 两套管道名（默认均无 `tag`）
 - **命令白名单**：`MainViewModel.HandlePipeCommand` 仅分派已知命令（`NOTIFY / WORKSPACE.* / SURFACE.* / SPLIT.* / PANE.* / STATUS`）；未知命令返回 JSON `{ error }`
 - **命令日志脱敏**：见 §6.6
 - **崩溃处理**：`App.OnStartup` 注册 `DispatcherUnhandledException` 与 `AppDomain.UnhandledException`，仅显示错误并继续
@@ -453,7 +453,7 @@ SosPmApc
 | Framework-dependent | `dotnet publish … --self-contained false` | 最小 | 需要 .NET 10 Desktop Runtime |
 | Self-contained | `dotnet publish … --self-contained true` | 较大 | 无（自带运行时） |
 | Single-file | （README 提及，publish.ps1 注释指 WPF + ConPTY 与单文件配合不佳，故脚本未生成） | 较大 | 无 |
-| CLI | `dotnet publish src/Cmux.Cli … --self-contained true -o publish/cmux-cli` | 较大 | 无；可放入 `PATH` |
+| CLI | `dotnet publish src/ECode.Cli … --self-contained true -o publish/ecode-cli` | 较大 | 无；可放入 `PATH` |
 
 `scripts/publish.ps1` 一键产出 Framework / Self-contained / CLI 三种产物到 `<repo>/publish/`。
 
@@ -462,17 +462,17 @@ SosPmApc
 ## 13. 已规划但暂未实现 / 已知技术债
 
 - 单文件发布与 WPF 资源 / ConPTY 互操作不完全兼容，README 提及但 `publish.ps1` 已规避
-- 单元测试集中在 `Cmux.Core`（`tests/Cmux.Tests`），UI 层暂无单元测试
-- ConPTY 烟雾测试 `tests/Cmux.Smoke` 仅做集成级最小验证（环境注入）
+- 单元测试集中在 `ECode.Core`（`tests/ECode.Tests`），UI 层暂无单元测试
+- ConPTY 烟雾测试 `tests/ECode.Smoke` 仅做集成级最小验证（环境注入）
 - `AgentRuntimeService` 体积大（110KB+），承担 Agent / 工具调用 / 流式响应等逻辑，详见 `02-modules.md`
 
 ---
 
 ## 14. 参考
 
-- `src/Cmux.Core/Terminal/ConPtyInterop.cs` — ConPTY P/Invoke 绑定
-- `src/Cmux.Core/Terminal/VtParser.cs` — VT 解析器实现
-- `src/Cmux.Core/Models/SplitNode.cs` — 二叉树分屏模型
-- `src/Cmux.Daemon/DaemonPipeServer.cs` — 守护进程命名管道服务器
-- `src/Cmux.Core/IPC/DaemonMessages.cs` — IPC 协议定义
+- `src/ECode.Core/Terminal/ConPtyInterop.cs` — ConPTY P/Invoke 绑定
+- `src/ECode.Core/Terminal/VtParser.cs` — VT 解析器实现
+- `src/ECode.Core/Models/SplitNode.cs` — 二叉树分屏模型
+- `src/ECode.Daemon/DaemonPipeServer.cs` — 守护进程命名管道服务器
+- `src/ECode.Core/IPC/DaemonMessages.cs` — IPC 协议定义
 - `README.md` / `README.en.md` — 用户视角说明

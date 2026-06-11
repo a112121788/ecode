@@ -1,4 +1,4 @@
-# cmux-windows 实施 Backlog
+# ECode 实施 Backlog
 
 > 本文档是 `06-roadmap.md` 的“可执行切片”。每条 backlog 都可以作为一张 GitHub Issue 或一个 PR 单独跟踪。
 >
@@ -14,8 +14,8 @@
 - 复杂功能必须拆成 Core 层 PR、UI 层 PR、CLI/API 层 PR、测试/文档 PR。
 - 同一个 backlog 不应同时跨 2 个里程碑；如发现跨里程碑，先拆。
 - 合并前必须通过：
-  - `dotnet build Cmux.sln -c Debug` 零警告（`TreatWarningsAsErrors=true`）。
-  - `dotnet test tests/Cmux.Tests/Cmux.Tests.csproj` 全绿。
+  - `dotnet build ECode.sln -c Debug` 零警告（`TreatWarningsAsErrors=true`）。
+  - `dotnet test tests/ECode.Tests/ECode.Tests.csproj` 全绿。
   - 对 UI 类 backlog：截图或录屏。
   - 对协议类 backlog：至少 1 个 contract 测试。
 
@@ -29,7 +29,7 @@
 |---|---|---|---|
 | `M0-A-01` | 新增 `scripts/ci.ps1`（restore + build + test + smoke dry-run + publish dry-run） | `scripts/ci.ps1` | `pwsh scripts/ci.ps1` 本地通过 |
 | `M0-A-02` | 新增 GitHub Actions CI（windows-latest） | `.github/workflows/ci.yml` | PR 自动校验；徽章可加 |
-| `M0-A-03` | 统一版本源：`Cmux.csproj` Version → `cmux version` → `STATUS` | `src/Cmux.Cli/Program.cs`、`MainViewModel.cs` | `cmux version` 与 `STATUS.version` 一致 |
+| `M0-A-03` | 统一版本源：`ECode.csproj` Version → `ecode version` → `STATUS` | `src/ECode.Cli/Program.cs`、`MainViewModel.cs` | `ecode version` 与 `STATUS.version` 一致 |
 | `M0-A-04` | 发布产物校验：SHA256 + 文件存在 + 大小阈值 + exe 版本 | `scripts/publish.ps1` | 产物末尾输出校验表 |
 | `M0-A-05` | `docs/` 与 `spec/` 互相引用检查脚本 | `scripts/ci.ps1` | 缺链时 CI 失败 |
 
@@ -37,7 +37,7 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M0-B-01` | 增补 VtParser tests（UTF-8 跨包、OSC ST、CSI private modes、invalid sequence） | `tests/Cmux.Tests/CoreTests.cs` | 新增 ≥20 个 parser 测试 |
+| `M0-B-01` | 增补 VtParser tests（UTF-8 跨包、OSC ST、CSI private modes、invalid sequence） | `tests/ECode.Tests/CoreTests.cs` | 新增 ≥20 个 parser 测试 |
 | `M0-B-02` | 增补 TerminalBuffer tests（宽字符、alternate screen、scroll region、snapshot roundtrip） | 同上 | 新增 ≥20 个 buffer 测试 |
 | `M0-B-03` | 增补 SplitNode tests（remove/swap/resize/equalize/factory layout） | 同上 | 覆盖所有 public method |
 | `M0-B-04` | 增补 IPC DTO tests（`DaemonRequest/Response/Event` roundtrip） | 同上 | DTO 序列化兼容 |
@@ -59,7 +59,7 @@
 
 ---
 
-## M1 - UI/UX 与 cmux.json 基础
+## M1 - UI/UX 与 ecode.json 基础
 
 ### 包 A：通知视觉闭环
 
@@ -83,15 +83,15 @@
 | `M1-B-05` | Close active tab 按钮常显 | `Controls/SurfaceTabBar.xaml` | 视觉对比 macOS 截图 |
 | `M1-B-06` | 设置面板按"外观 / 终端 / 行为 / 集合 / Agent / 高级"重排 | `Views/SettingsWindow.xaml` | 新增“自定义命令”页 |
 
-### 包 C：`cmux.json` 基础
+### 包 C：`ecode.json` 基础
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M1-C-01` | `CmuxJsonConfig / CmuxCommand / CmuxAction` DTO | `Cmux.Core/Models/CmuxJsonConfig.cs` | Core 单元测试通过 |
-| `M1-C-02` | `CmuxJsonService` 解析（路径搜索 / 全局本地合并 / schema 错误） | `Cmux.Core/Services/CmuxJsonService.cs` | 含 `MergesLocalOverGlobal`、`InvalidSchema_ReturnsDiagnostic` 测试 |
+| `M1-C-01` | `EcodeJsonConfig / EcodeCommand / EcodeAction` DTO | `ECode.Core/Models/EcodeJsonConfig.cs` | Core 单元测试通过 |
+| `M1-C-02` | `EcodeJsonService` 解析（路径搜索 / 全局本地合并 / schema 错误） | `ECode.Core/Services/EcodeJsonService.cs` | 含 `MergesLocalOverGlobal`、`InvalidSchema_ReturnsDiagnostic` 测试 |
 | `M1-C-03` | CommandPalette 接入 custom commands | `Controls/CommandPalette.xaml.cs` | 命令出现在面板 |
 | `M1-C-04` | `currentTerminal` / `newTabInCurrentPane` 目标执行 | `SurfaceViewModel.cs` | 含 confirm 弹窗路径 |
-| `M1-C-05` | CLI `cmux reload-config` + `Ctrl+Shift+,` | `Cmux.Cli/Program.cs`、`MainWindow.xaml.cs` | 重载后命令面板刷新 |
+| `M1-C-05` | CLI `ecode reload-config` + `Ctrl+Shift+,` | `ECode.Cli/Program.cs`、`MainWindow.xaml.cs` | 重载后命令面板刷新 |
 
 ---
 
@@ -101,24 +101,24 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M2-A-01` | `ResumeBinding` DTO + JSON | `Cmux.Core/Models/ResumeBinding.cs` | roundtrip 测试 |
-| `M2-A-02` | `ResumeBindingService`（Load/Save/Add/Remove/FindForSurface/TrustPrefix） | `Cmux.Core/Services/ResumeBindingService.cs` | 覆盖所有 public method |
+| `M2-A-01` | `ResumeBinding` DTO + JSON | `ECode.Core/Models/ResumeBinding.cs` | roundtrip 测试 |
+| `M2-A-02` | `ResumeBindingService`（Load/Save/Add/Remove/FindForSurface/TrustPrefix） | `ECode.Core/Services/ResumeBindingService.cs` | 覆盖所有 public method |
 | `M2-A-03` | 敏感环境剔除（TOKEN / PASSWORD / SECRET / API_KEY 等） | 同上 | `DropsSensitiveEnv` 测试通过 |
-| `M2-A-04` | `CMUX_WORKSPACE_ID` 启动注入 | `TerminalProcess.cs` | `GetEnvironmentVariable("CMUX_WORKSPACE_ID")` 非空 |
+| `M2-A-04` | `ECODE_WORKSPACE_ID` 启动注入 | `TerminalProcess.cs` | `GetEnvironmentVariable("ECODE_WORKSPACE_ID")` 非空 |
 
 ### 包 B：UI 与开关
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
 | `M2-B-01` | 恢复确认 UI（未信任 binding 提示条） | `Controls/SplitPaneContainer.cs` 或 `TerminalControl.cs` | 红框 + “可恢复” 按钮 |
-| `M2-B-02` | `AutoResumeAgentSessions` 设置项 | `CmuxSettings.cs`、`SettingsWindow.xaml` | 关闭后所有 agent resume 不自动执行 |
-| `M2-B-03` | 进程检测（tasklist 解析 tmux） | `Cmux.Core/Services/ResumeProcessDetector.cs` | 单元测试：含/不含 tmux 路径 |
+| `M2-B-02` | `AutoResumeAgentSessions` 设置项 | `ECodeSettings.cs`、`SettingsWindow.xaml` | 关闭后所有 agent resume 不自动执行 |
+| `M2-B-03` | 进程检测（tasklist 解析 tmux） | `ECode.Core/Services/ResumeProcessDetector.cs` | 单元测试：含/不含 tmux 路径 |
 
 ### 包 C：CLI
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M2-C-01` | CLI `surface resume {set,show,clear}` | `Cmux.Cli/Program.cs`、`MainViewModel.cs` | contract 测试通过 |
+| `M2-C-01` | CLI `surface resume {set,show,clear}` | `ECode.Cli/Program.cs`、`MainViewModel.cs` | contract 测试通过 |
 | `M2-C-02` | CLI `restore-session` / `Ctrl+Shift+O` 入口 | `MainWindow.xaml.cs` | UI 入口可用 |
 
 ### 包 D：Agent hook 预留
@@ -142,17 +142,17 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M3-B-01` | `BrowserPaneViewModel` | `src/Cmux/ViewModels/BrowserPaneViewModel.cs` | URL / Title / Loading / CanGoBack 等属性变更广播 |
+| `M3-B-01` | `BrowserPaneViewModel` | `src/ECode/ViewModels/BrowserPaneViewModel.cs` | URL / Title / Loading / CanGoBack 等属性变更广播 |
 | `M3-B-02` | `BrowserControl` 升级（地址栏、back/forward/reload/devtools） | `Controls/BrowserControl.xaml(.cs)` | 视觉与 macOS 截图接近 |
 | `M3-B-03` | `SplitPaneContainer` 支持 browser leaf | `Controls/SplitPaneContainer.cs` | `BuildLeaf` 分支渲染 BrowserControl |
 | `M3-B-04` | WebView2 缺失时的友好提示 | `BrowserControl.xaml.cs` | 不崩溃，提示下载链接 |
 
-### 包 C：CLI / cmux.json
+### 包 C：CLI / ecode.json
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M3-C-01` | `cmux browser open|open-split|new <url>` | `Cmux.Cli/Program.cs`、`MainViewModel.cs` | contract 测试 |
-| `M3-C-02` | `.cmux/cmux.json` workspace 中 `type:"browser"` surface 解析 | `CmuxJsonService.cs` | 在 layout 中可创建 |
+| `M3-C-01` | `ecode browser open|open-split|new <url>` | `ECode.Cli/Program.cs`、`MainViewModel.cs` | contract 测试 |
+| `M3-C-02` | `.ecode/ecode.json` workspace 中 `type:"browser"` surface 解析 | `EcodeJsonService.cs` | 在 layout 中可创建 |
 | `M3-C-03` | v1 IPC `BROWSER.OPEN_SPLIT` 文本参数 | `MainViewModel.HandlePipeCommand` | 端到端 smoke 通过 |
 
 ---
@@ -163,14 +163,14 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M4-A-01` | v2 协议层基础（先做 v2 框架；具体 method 在 M4 落地） | `Cmux.Core/IPC/v2/*` | `protocol:cmux.v2` 请求可被解析 |
+| `M4-A-01` | v2 协议层基础（先做 v2 框架；具体 method 在 M4 落地） | `ECode.Core/IPC/v2/*` | `protocol:ecode.v2` 请求可被解析 |
 | `M4-A-02` | 稳定错误码：`invalid_ref / not_found / stale_ref / not_supported / timeout / internal_error` | 同上 | contract 测试覆盖所有错误码 |
 
 ### 包 B：脚本化服务
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M4-B-01` | `BrowserScriptingService` 框架（refs / diagnostics / surfaceRef 路由） | `Cmux/Services/BrowserScriptingService.cs` | 单测：refs 失效后返回 `stale_ref` |
+| `M4-B-01` | `BrowserScriptingService` 框架（refs / diagnostics / surfaceRef 路由） | `ECode/Services/BrowserScriptingService.cs` | 单测：refs 失效后返回 `stale_ref` |
 | `M4-B-02` | `snapshot / find.role / find.text / find.testid / find.first / find.last / find.nth` | 同上 | P0 locator 测试 |
 | `M4-B-03` | `click / fill / hover / press / eval / screenshot` | 同上 | 含空字符串 fill 清空 input |
 | `M4-B-04` | `cookies.get/set/clear` 与 `storage.get/set/clear` | 同上 | 状态测试 |
@@ -182,13 +182,13 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M4-C-01` | `cmux browser snapshot/click/fill/eval/screenshot/...` | `Cmux.Cli/Program.cs` | E2E smoke：打开 localhost → snapshot → click → fill → eval |
+| `M4-C-01` | `ecode browser snapshot/click/fill/eval/screenshot/...` | `ECode.Cli/Program.cs` | E2E smoke：打开 localhost → snapshot → click → fill → eval |
 
 ### 包 D：测试
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M4-D-01` | 浏览器脚本化 xUnit（依赖 WebView2 + 本地测试页） | `tests/Cmux.Tests/BrowserScriptingTests.cs` | P0 全绿；CI 标记 Windows-only integration |
+| `M4-D-01` | 浏览器脚本化 xUnit（依赖 WebView2 + 本地测试页） | `tests/ECode.Tests/BrowserScriptingTests.cs` | P0 全绿；CI 标记 Windows-only integration |
 
 ---
 
@@ -198,15 +198,15 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M5-A-01` | 同一 `\\.\pipe\cmux` 上 v1/v2 协商（首行 JSON 判 v2） | `NamedPipeServer.cs`、`NamedPipeClient.cs` | v1 / v2 并存可运行 |
-| `M5-A-02` | 短 ID 引用（`window:N / workspace:N / surface:N / pane:N`） | `Cmux.Core/Models/ShortRef.cs` | UUID↔ref 双向解析 |
-| `M5-A-03` | `--id-format refs|uuids|both` 全局参数 | `Cmux.Cli/Program.cs` | 默认行为与 `06-roadmap.md` §5.3 一致 |
+| `M5-A-01` | 同一 `\\.\pipe\ecode` 上 v1/v2 协商（首行 JSON 判 v2） | `NamedPipeServer.cs`、`NamedPipeClient.cs` | v1 / v2 并存可运行 |
+| `M5-A-02` | 短 ID 引用（`window:N / workspace:N / surface:N / pane:N`） | `ECode.Core/Models/ShortRef.cs` | UUID↔ref 双向解析 |
+| `M5-A-03` | `--id-format refs|uuids|both` 全局参数 | `ECode.Cli/Program.cs` | 默认行为与 `06-roadmap.md` §5.3 一致 |
 
 ### 包 B：多窗口
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M5-B-01` | `WindowManagerService` | `Cmux/Services/WindowManagerService.cs` | 多窗口独立生命周期 |
+| `M5-B-01` | `WindowManagerService` | `ECode/Services/WindowManagerService.cs` | 多窗口独立生命周期 |
 | `M5-B-02` | `window.list/current/focus/create/close` v2 API | `MainViewModel`、v2 协议层 | contract 测试 |
 | `M5-B-03` | `surface.{move,reorder}` | 同上 | contract 测试 |
 
@@ -228,19 +228,19 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M6-A-01` | `cmux hooks setup` 框架（写注册表 / wrapper / PowerShell profile） | `Cmux.Cli/Commands/HooksSetup.cs` | uninstall 可逆 |
+| `M6-A-01` | `ecode hooks setup` 框架（写注册表 / wrapper / PowerShell profile） | `ECode.Cli/Commands/HooksSetup.cs` | uninstall 可逆 |
 | `M6-A-02` | Claude Code adapter | 同上 | setup 后通知触发 |
 | `M6-A-03` | Codex adapter | 同上 | setup 后通知触发 |
 | `M6-A-04` | OpenCode adapter | 同上 | setup 后通知触发 |
-| `M6-A-05` | `cmux hooks status` / `cmux hooks uninstall <agent>` | 同上 | diff 输出可读 |
+| `M6-A-05` | `ecode hooks status` / `ecode hooks uninstall <agent>` | 同上 | diff 输出可读 |
 
 ### 包 B：安装与更新
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M6-B-01` | Velopack 集成（installer + feed） | `src/Cmux.Updater`（新增）、`scripts/publish.ps1` | 新版本自动检测 |
-| `M6-B-02` | `cmux update check/install` CLI | `Cmux.Cli/Program.cs` | 可后台静默更新 |
-| `M6-B-03` | Inno Setup 安装器（fallback 路径） | `installer/cmux.iss` | 卸载干净 |
+| `M6-B-01` | Velopack 集成（installer + feed） | `src/ECode.Updater`（新增）、`scripts/publish.ps1` | 新版本自动检测 |
+| `M6-B-02` | `ecode update check/install` CLI | `ECode.Cli/Program.cs` | 可后台静默更新 |
+| `M6-B-03` | Inno Setup 安装器（fallback 路径） | `installer/ecode.iss` | 卸载干净 |
 | `M6-B-04` | MSIX 打包（可选 enterprise） | `installer/AppXManifest.xml` | `Add-AppxPackage` 成功 |
 | `M6-B-05` | 多 RID CI（`win-x64 / win-x86 / win-arm64`） | `.github/workflows/release.yml` | nightly 出 4 个产物 |
 | `M6-B-06` | `CHANGELOG.md` 自动生成（git-cliff 或 release-drafter） | `.github/release.yml` | release 触发自动更新 |
@@ -285,10 +285,10 @@
 
 | ID | 标题 | 关联里程碑 | 关联文件 | 验收 |
 |---|---|---|---|---|
-| `X-01` | Windows 路径 / 中文路径 smoke | M0 起 | `tests/Cmux.Smoke` | CI 中含 `中文 目录/项目/` |
+| `X-01` | Windows 路径 / 中文路径 smoke | M0 起 | `tests/ECode.Smoke` | CI 中含 `中文 目录/项目/` |
 | `X-02` | 性能预算监控（冷启动 / status / snapshot / save session） | M1 起 | `scripts/perf/*` | 报告产出并入 release |
 | `X-03` | 风险登记刷新 | 持续 | `06-roadmap.md` §7 | 每迭代更新 |
-| `X-04` | 与上游 `manaflow-ai/cmux` 对齐检查 | M2 起 | `scripts/upstream-sync.md` | 月度报告 |
+| `X-04` | 与上游 `manaflow-ai/ecode` 对齐检查 | M2 起 | `scripts/upstream-sync.md` | 月度报告 |
 
 ---
 
@@ -297,7 +297,7 @@
 1. `M0-A-01` + `M0-A-02`（建立 CI 安全网）
 2. `M0-A-03`（版本号统一）
 3. `M0-B-01` ~ `M0-B-05`（核心测试补齐）
-4. `M1-C-01` + `M1-C-02`（`cmux.json` 纯 Core 部分）
+4. `M1-C-01` + `M1-C-02`（`ecode.json` 纯 Core 部分）
 5. `M1-C-03` ~ `M1-C-05`（CommandPalette 接入）
 6. `M1-A-01`（Pane 蓝环，macOS 核心体验首块拼图）
 7. `M2-A-01` ~ `M2-A-03`（ResumeBinding 数据与服务）

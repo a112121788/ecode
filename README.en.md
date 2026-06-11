@@ -1,6 +1,8 @@
-# cmux for Windows
+# ECode for Windows
 
 A dark, keyboard-first terminal multiplexer for Windows, inspired by tmux/cmux workflows but built natively with WPF + ConPTY.
+
+> Formerly `cmux-windows`. This repository has been migrated to the `ECode` brand; main binary is `ecodew.exe`, CLI tool is `ecode.exe`, daemon is `ecode-daemon.exe`. See `CHANGELOG.md` and `spec/06-roadmap.md` for migration details.
 
 ---
 
@@ -16,7 +18,7 @@ A dark, keyboard-first terminal multiplexer for Windows, inspired by tmux/cmux w
 | You want searchable output history like Termius vault | Anyone reviewing terminal sessions | **Session Vault browser** | Open vault, filter captures, preview transcript, copy/open file |
 | You need dark theme consistency and personalization | Users who care about UX/readability | **Dark UI + terminal theme customization** | Settings (`Ctrl+,`) for colors/font/cursor + workspace accents |
 | You want quick actions without mouse hunting | Keyboard-first power users | **Command palette + shortcuts** | `Ctrl+Shift+P` command palette, menu mirrors key flows |
-| You need automation from scripts/tools | Integrators/agent hooks | **Named pipe CLI API** (`cmux`) | `cmux notify`, `cmux workspace`, `cmux split`, `cmux status` |
+| You need automation from scripts/tools | Integrators/agent hooks | **Named pipe CLI API** (`ecode`) | `ecode notify`, `ecode workspace`, `ecode split`, `ecode status` |
 
 ---
 
@@ -39,13 +41,13 @@ A dark, keyboard-first terminal multiplexer for Windows, inspired by tmux/cmux w
   <summary>Open screenshots</summary>
 
   <p><strong>Main workspace view</strong></p>
-  <img src="assets/screenshots/1.jpg" alt="cmux main workspace" width="1000" />
+  <img src="assets/screenshots/1.jpg" alt="ECode main workspace" width="1000" />
 
   <p><strong>Snippets panel</strong></p>
-  <img src="assets/screenshots/2.jpg" alt="cmux snippets panel" width="700" />
+  <img src="assets/screenshots/2.jpg" alt="ECode snippets panel" width="700" />
 
   <p><strong>Command logs window</strong></p>
-  <img src="assets/screenshots/3.jpg" alt="cmux command logs" width="1000" />
+  <img src="assets/screenshots/3.jpg" alt="ECode command logs" width="1000" />
 </details>
 
 ---
@@ -61,15 +63,15 @@ A dark, keyboard-first terminal multiplexer for Windows, inspired by tmux/cmux w
 ### Clone
 
 ```powershell
-git clone <repo-url> cmux-windows
-cd cmux-windows
+git clone <repo-url> ECode
+cd ECode
 ```
 
 ### Dev run
 
 ```powershell
-dotnet build Cmux.sln -c Debug
-dotnet run --project src/Cmux/Cmux.csproj -c Debug
+dotnet build ECode.sln -c Debug
+dotnet run --project src/ECode/ECode.csproj -c Debug
 ```
 
 ---
@@ -79,47 +81,47 @@ dotnet run --project src/Cmux/Cmux.csproj -c Debug
 ### 1) Framework-dependent `.exe` (smallest output)
 
 ```powershell
-dotnet publish src/Cmux/Cmux.csproj -c Release -r win-x64 --self-contained false -o publish/cmux-win-x64
+dotnet publish src/ECode/ECode.csproj -c Release -r win-x64 --self-contained false -o publish/ecode-win-x64
 ```
 
 Output:
-- `publish/cmux-win-x64/cmuxw.exe`
+- `publish/ecode-win-x64/ecodew.exe`
 
 Use this when target machines already have .NET runtime installed.
 
 ### 2) Self-contained `.exe` (no runtime install needed)
 
 ```powershell
-dotnet publish src/Cmux/Cmux.csproj -c Release -r win-x64 --self-contained true -o publish/cmux-win-x64-sc
+dotnet publish src/ECode/ECode.csproj -c Release -r win-x64 --self-contained true -o publish/ecode-win-x64-sc
 ```
 
 Output:
-- `publish/cmux-win-x64-sc/cmuxw.exe`
+- `publish/ecode-win-x64-sc/ecodew.exe`
 
 ### 3) Single-file self-contained `.exe` (portable artifact)
 
 ```powershell
-dotnet publish src/Cmux/Cmux.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false -o publish/cmux-win-x64-single
+dotnet publish src/ECode/ECode.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false -o publish/ecode-win-x64-single
 ```
 
 Output:
-- `publish/cmux-win-x64-single/cmuxw.exe`
+- `publish/ecode-win-x64-single/ecodew.exe`
 
 > Note: WebView2-backed features may require WebView2 Runtime depending on target system state.
 
 ### Build CLI executable
 
 ```powershell
-dotnet publish src/Cmux.Cli/Cmux.Cli.csproj -c Release -r win-x64 --self-contained true -o publish/cmux-cli
+dotnet publish src/ECode.Cli/ECode.Cli.csproj -c Release -r win-x64 --self-contained true -o publish/ecode-cli
 ```
 
-Add `publish/cmux-cli` to `PATH` to use `cmux` globally.
+Add `publish/ecode-cli` to `PATH` to use `ecode` globally.
 
 ---
 
 ## First 5 minutes (how to use)
 
-1. Launch `cmuxw.exe`
+1. Launch `ecodew.exe`
 2. `Ctrl+N` to create a workspace for your repo
 3. `Ctrl+T` to create additional surfaces (tabs)
 4. Split panes with `Ctrl+D` / `Ctrl+Shift+D`
@@ -179,20 +181,20 @@ Add `publish/cmux-cli` to `PATH` to use `cmux` globally.
 
 ```powershell
 # Send a notification (e.g., from agent hooks)
-cmux notify --title "Claude Code" --body "Waiting for input"
+ecode notify --title "Claude Code" --body "Waiting for input"
 
 # Workspace management
-cmux workspace list
-cmux workspace create --name "My Project"
-cmux workspace select --index 0
+ecode workspace list
+ecode workspace create --name "My Project"
+ecode workspace select --index 0
 
 # Surface/pane actions
-cmux surface create
-cmux split right
-cmux split down
+ecode surface create
+ecode split right
+ecode split down
 
 # Inspect status
-cmux status
+ecode status
 ```
 
 ---
@@ -201,11 +203,11 @@ cmux status
 
 ```text
 src/
-  Cmux/         WPF desktop app (views, controls, themes)
-  Cmux.Core/    terminal engine, models, services, persistence, IPC
-  Cmux.Cli/     command-line client for automation
+  ECode/         WPF desktop app (views, controls, themes)
+  ECode.Core/    terminal engine, models, services, persistence, IPC
+  ECode.Cli/     command-line client for automation
 tests/
-  Cmux.Tests/   unit tests
+  ECode.Tests/   unit tests
 ```
 
 ---

@@ -1,8 +1,10 @@
 > English version: [README.en.md](README.en.md)
 
-# cmux（Windows 版）
+# ECode（Windows 版）
 
 一款运行在 Windows 上的深色、键盘优先的终端复用器，灵感来自 tmux/cmux 的工作流，但底层使用 WPF + ConPTY 原生构建。
+
+> 旧称 `cmux-windows`。本仓库已迁移到 `ECode` 品牌；CLI 主二进制为 `ecodew.exe`，CLI 工具为 `ecode.exe`，守护进程为 `ecode-daemon.exe`。详细迁移与兼容说明见 `CHANGELOG.md` 与 `spec/06-roadmap.md`。
 
 ---
 
@@ -18,7 +20,7 @@
 | 像 Termius vault 一样可搜索历史输出 | 需要复盘终端会话的同学 | **Session Vault 浏览器** | 打开 vault，过滤捕获记录，预览脚本，复制/打开文件 |
 | 希望深色主题统一且可定制 | 在意交互/可读性的同学 | **深色 UI + 终端主题定制** | 设置（`Ctrl+,`）调整颜色/字体/光标 + 工作区配色 |
 | 不想反复找鼠标触发操作 | 键盘优先的进阶用户 | **命令面板 + 快捷键** | `Ctrl+Shift+P` 打开命令面板，菜单镜像主快捷键 |
-| 需要脚本/工具自动化 | 集成方/agent hook | **命名管道 CLI API**（`cmux`） | `cmux notify`、`cmux workspace`、`cmux split`、`cmux status` |
+| 需要脚本/工具自动化 | 集成方/agent hook | **命名管道 CLI API**（`ecode`） | `ecode notify`、`ecode workspace`、`ecode split`、`ecode status` |
 
 ---
 
@@ -41,13 +43,13 @@
   <summary>展开截图</summary>
 
   <p><strong>主工作区视图</strong></p>
-  <img src="assets/screenshots/1.jpg" alt="cmux 主工作区" width="1000" />
+  <img src="assets/screenshots/1.jpg" alt="ECode 主工作区" width="1000" />
 
   <p><strong>代码片段面板</strong></p>
-  <img src="assets/screenshots/2.jpg" alt="cmux 代码片段面板" width="700" />
+  <img src="assets/screenshots/2.jpg" alt="ECode 代码片段面板" width="700" />
 
   <p><strong>命令日志窗口</strong></p>
-  <img src="assets/screenshots/3.jpg" alt="cmux 命令日志" width="1000" />
+  <img src="assets/screenshots/3.jpg" alt="ECode 命令日志" width="1000" />
 </details>
 
 ---
@@ -63,15 +65,15 @@
 ### 克隆
 
 ```powershell
-git clone <repo-url> cmux-windows
-cd cmux-windows
+git clone <repo-url> ECode
+cd ECode
 ```
 
 ### 开发模式运行
 
 ```powershell
-dotnet build Cmux.sln -c Debug
-dotnet run --project src/Cmux/Cmux.csproj -c Debug
+dotnet build ECode.sln -c Debug
+dotnet run --project src/ECode/ECode.csproj -c Debug
 ```
 
 ---
@@ -81,47 +83,47 @@ dotnet run --project src/Cmux/Cmux.csproj -c Debug
 ### 1) 依赖框架的 `.exe`（体积最小）
 
 ```powershell
-dotnet publish src/Cmux/Cmux.csproj -c Release -r win-x64 --self-contained false -o publish/cmux-win-x64
+dotnet publish src/ECode/ECode.csproj -c Release -r win-x64 --self-contained false -o publish/ecode-win-x64
 ```
 
 产物：
-- `publish/cmux-win-x64/cmuxw.exe`
+- `publish/ecode-win-x64/ecodew.exe`
 
 适用场景：目标机器上已经装好 .NET 运行时。
 
 ### 2) 自包含 `.exe`（无需安装运行时）
 
 ```powershell
-dotnet publish src/Cmux/Cmux.csproj -c Release -r win-x64 --self-contained true -o publish/cmux-win-x64-sc
+dotnet publish src/ECode/ECode.csproj -c Release -r win-x64 --self-contained true -o publish/ecode-win-x64-sc
 ```
 
 产物：
-- `publish/cmux-win-x64-sc/cmuxw.exe`
+- `publish/ecode-win-x64-sc/ecodew.exe`
 
 ### 3) 单文件自包含 `.exe`（便携产物）
 
 ```powershell
-dotnet publish src/Cmux/Cmux.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false -o publish/cmux-win-x64-single
+dotnet publish src/ECode/ECode.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false -o publish/ecode-win-x64-single
 ```
 
 产物：
-- `publish/cmux-win-x64-single/cmuxw.exe`
+- `publish/ecode-win-x64-single/ecodew.exe`
 
 > 注意：依赖 WebView2 的功能可能需要目标系统已安装 WebView2 运行时，具体取决于系统状态。
 
 ### 构建 CLI 可执行文件
 
 ```powershell
-dotnet publish src/Cmux.Cli/Cmux.Cli.csproj -c Release -r win-x64 --self-contained true -o publish/cmux-cli
+dotnet publish src/ECode.Cli/ECode.Cli.csproj -c Release -r win-x64 --self-contained true -o publish/ecode-cli
 ```
 
-把 `publish/cmux-cli` 加入 `PATH` 后即可全局使用 `cmux`。
+把 `publish/ecode-cli` 加入 `PATH` 后即可全局使用 `ecode`。
 
 ---
 
 ## 前 5 分钟上手
 
-1. 启动 `cmuxw.exe`
+1. 启动 `ecodew.exe`
 2. 用 `Ctrl+N` 为你的仓库创建一个工作区
 3. 用 `Ctrl+T` 新增更多标签页
 4. 用 `Ctrl+D` / `Ctrl+Shift+D` 分屏
@@ -181,20 +183,20 @@ dotnet publish src/Cmux.Cli/Cmux.Cli.csproj -c Release -r win-x64 --self-contain
 
 ```powershell
 # 发送一条通知（例如，来自 agent hook）
-cmux notify --title "Claude Code" --body "等待输入"
+ecode notify --title "Claude Code" --body "等待输入"
 
 # 工作区管理
-cmux workspace list
-cmux workspace create --name "My Project"
-cmux workspace select --index 0
+ecode workspace list
+ecode workspace create --name "My Project"
+ecode workspace select --index 0
 
 # 标签页/面板操作
-cmux surface create
-cmux split right
-cmux split down
+ecode surface create
+ecode split right
+ecode split down
 
 # 查看状态
-cmux status
+ecode status
 ```
 
 ---
@@ -203,11 +205,11 @@ cmux status
 
 ```text
 src/
-  Cmux/         WPF 桌面应用（视图、控件、主题）
-  Cmux.Core/    终端引擎、模型、服务、持久化、IPC
-  Cmux.Cli/     用于自动化的命令行客户端
+  ECode/         WPF 桌面应用（视图、控件、主题）
+  ECode.Core/    终端引擎、模型、服务、持久化、IPC
+  ECode.Cli/     用于自动化的命令行客户端
 tests/
-  Cmux.Tests/   单元测试
+  ECode.Tests/   单元测试
 ```
 
 ---

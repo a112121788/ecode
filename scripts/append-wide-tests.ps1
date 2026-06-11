@@ -1,4 +1,5 @@
-﻿$path = "C:\Users\ATPX4869\Downloads\cmux-windows\tests\Cmux.Tests\CoreTests.cs"
+﻿$RepoRoot = Resolve-Path (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) '..')
+$path = Join-Path $RepoRoot 'tests/ECode.Tests/CoreTests.cs'
 $src = [System.IO.File]::ReadAllText($path, [System.Text.UTF8Encoding]::new($false))
 
 # 锚点：TerminalBufferTests 类的结尾，紧靠 OscHandlerTests 之前

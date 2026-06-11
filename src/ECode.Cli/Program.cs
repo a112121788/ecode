@@ -1,0 +1,277 @@
+using System.Text.Json;
+using ECode.Core.Config;
+using ECode.Core.IPC;
+
+namespace ECode.Cli;
+
+/// <summary>
+/// ecode 命令行工具 —— ecode macOS CLI 的 Windows 等价实现。
+/// 通过命名管道与正在运行的 ecode 应用通信。
+///
+/// 用法：
+///   ecode notify --title "Title" --body "Body"
+///   ecode workspace list
+///   ecode workspace create --name "My Workspace"
+///   ecode workspace select --index 0
+///   ecode surface create
+///   ecode split right
+///   ecode split down
+///   ecode status
+/// </summary>
+public static class Program
+{
+    public static async Task<int> Main(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            PrintHelp();
+            return 0;
+        }
+
+        // 兼容期：若用户在 CompatAcceptLegacyCliCommand=true 时仍然以
+        // `cmux ...` 形式调用，把首参重写为 `ecode` 之后再走分派。
+        if (CompatibilityOptions.ShouldAcceptLegacyCliCommand()
+            && string.Equals(args[0], "cmux", StringComparison.Ordinal))
+        {
+            args = new[] { "ecode" }.Concat(args.Skip(1)).ToArray();
+        }
+
+        var command = args[0].ToLowerInvariant();
+
+        try
+        {
+            return command switch
+            {
+                "notify" => await HandleNotify(args[1..]),
+                "workspace" => await HandleWorkspace(args[1..]),
+                "surface" => await HandleSurface(args[1..]),
+                "split" => await HandleSplit(args[1..]),
+                "status" => await HandleStatus(),
+                "help" or "--help" or "-h" => PrintHelp(),
+                "version" or "--version" or "-v" => PrintVersion(),
+                _ => Error($"Unknown command: {command}"),
+            };
+        }
+        catch (TimeoutException)
+        {
+            Console.Error.WriteLine("Error: Could not connect to ecode. Is it running?");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static async Task<int> HandleNotify(string[] args)
+    {
+        var parsed = ParseArgs(args);
+        var title = parsed.GetValueOrDefault("title", parsed.GetValueOrDefault("_arg0", "Terminal"));
+        var body = parsed.GetValueOrDefault("body", parsed.GetValueOrDefault("_arg1", ""));
+        var subtitle = parsed.GetValueOrDefault("subtitle");
+
+        var cmdArgs = new Dictionary<string, string>
+        {
+            ["title"] = title,
+            ["body"] = body,
+        };
+        if (subtitle != null) cmdArgs["subtitle"] = subtitle;
+
+        var response = await NamedPipeClient.SendCommand("NOTIFY", cmdArgs);
+        Console.WriteLine(response);
+        return 0;
+    }
+
+    private static async Task<int> HandleWorkspace(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            Console.Error.WriteLine("Usage: ecode workspace <list|create|select>");
+            return 1;
+        }
+
+        var subcommand = args[0].ToLowerInvariant();
+        var parsed = ParseArgs(args[1..]);
+
+        return subcommand switch
+        {
+            "list" or "ls" => await SendAndPrint("WORKSPACE.LIST"),
+            "create" or "new" => await SendAndPrint("WORKSPACE.CREATE", parsed),
+            "select" => await SendAndPrint("WORKSPACE.SELECT", parsed),
+            "next" => await SendAndPrint("WORKSPACE.NEXT"),
+            "previous" or "prev" => await SendAndPrint("WORKSPACE.PREVIOUS"),
+            _ => Error($"Unknown workspace command: {subcommand}"),
+        };
+    }
+
+    private static async Task<int> HandleSurface(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            Console.Error.WriteLine("Usage: ecode surface <create>");
+            return 1;
+        }
+
+        var subcommand = args[0].ToLowerInvariant();
+
+        return subcommand switch
+        {
+            "create" or "new" => await SendAndPrint("SURFACE.CREATE"),
+            "next" => await SendAndPrint("SURFACE.NEXT"),
+            "previous" or "prev" => await SendAndPrint("SURFACE.PREVIOUS"),
+            _ => Error($"Unknown surface command: {subcommand}"),
+        };
+    }
+
+    private static async Task<int> HandleSplit(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            Console.Error.WriteLine("Usage: ecode split <right|down>");
+            return 1;
+        }
+
+        var direction = args[0].ToLowerInvariant();
+
+        return direction switch
+        {
+            "right" or "vertical" or "v" => await SendAndPrint("SPLIT.RIGHT"),
+            "down" or "horizontal" or "h" => await SendAndPrint("SPLIT.DOWN"),
+            _ => Error($"Unknown split direction: {direction}"),
+        };
+    }
+
+    private static async Task<int> HandleStatus()
+    {
+        return await SendAndPrint("STATUS");
+    }
+
+    private static async Task<int> SendAndPrint(string command, Dictionary<string, string>? args = null)
+    {
+        var response = await NamedPipeClient.SendCommand(command, args);
+
+        // 美化输出 JSON
+        try
+        {
+            using var doc = JsonDocument.Parse(response);
+            var pretty = JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
+            Console.WriteLine(pretty);
+        }
+        catch
+        {
+            Console.WriteLine(response);
+        }
+
+        return 0;
+    }
+
+    private static Dictionary<string, string> ParseArgs(string[] args)
+    {
+        var result = new Dictionary<string, string>();
+        int positional = 0;
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            var arg = args[i];
+
+            if (arg.StartsWith("--"))
+            {
+                var key = arg[2..];
+                if (i + 1 < args.Length && !args[i + 1].StartsWith("--"))
+                {
+                    result[key] = args[i + 1];
+                    i++;
+                }
+                else
+                {
+                    result[key] = "true";
+                }
+            }
+            else if (arg.StartsWith('-') && arg.Length == 2)
+            {
+                var key = arg[1..];
+                if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                {
+                    result[key] = args[i + 1];
+                    i++;
+                }
+                else
+                {
+                    result[key] = "true";
+                }
+            }
+            else
+            {
+                result[$"_arg{positional}"] = arg;
+                positional++;
+            }
+        }
+
+        return result;
+    }
+
+    private static int PrintHelp()
+    {
+        Console.WriteLine("""
+            ecode - Terminal multiplexer for AI coding agents (Windows)
+
+            Usage:
+              ecode <command> [options]
+
+            Commands:
+              notify                Send a notification
+                --title <text>      Notification title (default: "Terminal")
+                --body <text>       Notification body
+                --subtitle <text>   Notification subtitle
+
+              workspace             Manage workspaces
+                list                List all workspaces
+                create              Create a new workspace
+                  --name <text>     Workspace name
+                select              Select a workspace
+                  --index <n>       Workspace index (0-based)
+                  --id <id>         Workspace ID
+                next                Switch to next workspace
+                previous            Switch to previous workspace
+
+              surface               Manage surfaces (tabs within workspace)
+                create              Create a new surface
+                next                Switch to next surface
+                previous            Switch to previous surface
+
+              split                 Split the focused pane
+                right               Split vertically (left/right)
+                down                Split horizontally (top/bottom)
+
+              status                Show ecode status
+
+            Keyboard Shortcuts (in the app):
+              Ctrl+N                New workspace
+              Ctrl+1-8              Jump to workspace 1-8
+              Ctrl+9                Jump to last workspace
+              Ctrl+Shift+W          Close workspace
+              Ctrl+B                Toggle sidebar
+              Ctrl+T                New surface (tab)
+              Ctrl+W                Close surface
+              Ctrl+D                Split right
+              Ctrl+Shift+D          Split down
+              Ctrl+Alt+Arrow        Focus pane directionally
+              Ctrl+I                Toggle notification panel
+              Ctrl+Shift+U          Jump to latest unread
+            """);
+        return 0;
+    }
+
+    private static int PrintVersion()
+    {
+        Console.WriteLine("ecode 0.1.0 (Windows)");
+        return 0;
+    }
+
+    private static int Error(string message)
+    {
+        Console.Error.WriteLine($"Error: {message}");
+        return 1;
+    }
+}

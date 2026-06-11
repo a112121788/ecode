@@ -1,0 +1,12 @@
+using ECode.Core.Terminal;
+
+namespace ECode.Core.Models;
+
+public class PaneStateSnapshot
+{
+    public DateTime CapturedAt { get; set; } = DateTime.UtcNow;
+    public string? WorkingDirectory { get; set; }
+    public string? Shell { get; set; }
+    public List<string> CommandHistory { get; set; } = [];
+    public TerminalBufferSnapshot? BufferSnapshot { get; set; }
+}

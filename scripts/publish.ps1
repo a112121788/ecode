@@ -1,12 +1,12 @@
 ﻿<#
 .SYNOPSIS
-  为 Windows 构建并发布 cmux（Cmux + Cmux.Cli）。
+  为 Windows 构建并发布 ECode（ECode + ECode.Cli）。
 
 .DESCRIPTION
   复现 README.md 中记录的三种发布形态：
-    1) 框架依赖版          -> publish/cmux-win-x64       （体积最小，需要 .NET 10 Desktop Runtime）
-    2) 自包含目录版        -> publish/cmux-win-x64-sc    （文件夹形式，可在任意 win-x64 上运行）
-    3) CLI                 -> publish/cmux-cli           （自包含，可直接放入 PATH）
+    1) 框架依赖版          -> publish/ecode-win-x64       （体积最小，需要 .NET 10 Desktop Runtime）
+    2) 自包含目录版        -> publish/ecode-win-x64-sc    （文件夹形式，可在任意 win-x64 上运行）
+    3) CLI                 -> publish/ecode-cli           （自包含，可直接放入 PATH）
 
   WPF + ConPTY 与 PublishSingleFile 配合不佳，因此有意省略了单文件
   发布形态。请改用自包含文件夹版本。
@@ -59,8 +59,8 @@ if ($OutputRoot) {
     $OutputRoot = Join-Path $RepoRoot 'publish'
 }
 
-$MainProj = Join-Path $RepoRoot 'src/Cmux/Cmux.csproj'
-$CliProj  = Join-Path $RepoRoot 'src/Cmux.Cli/Cmux.Cli.csproj'
+$MainProj = Join-Path $RepoRoot 'src/ECode/ECode.csproj'
+$CliProj  = Join-Path $RepoRoot 'src/ECode.Cli/ECode.Cli.csproj'
 
 function Invoke-DotnetPublish {
     param(
@@ -80,14 +80,14 @@ function Ensure-Dir([string]$path) {
 }
 
 # --- 预检：清理 `dotnet clean` 清不掉的 WPF 临时 csproj 缓存 ----------
-# 若不清理，obj/ 中残留的 Cmux_*_wpftmp.csproj 可能导致第二次构建时
+# 若不清理，obj/ 中残留的 ECode_*_wpftmp.csproj 可能导致第二次构建时
 # XAML code-behind 字段（ContentArea、PaneCountText、SurfaceTabBarControl、
 # AgentMessagesList 等）被报告为缺失。
 $cacheDirs = @(
-    (Join-Path $RepoRoot 'src/Cmux/obj'),
-    (Join-Path $RepoRoot 'src/Cmux/bin'),
-    (Join-Path $RepoRoot 'src/Cmux.Core/obj'),
-    (Join-Path $RepoRoot 'src/Cmux.Core/bin')
+    (Join-Path $RepoRoot 'src/ECode/obj'),
+    (Join-Path $RepoRoot 'src/ECode/bin'),
+    (Join-Path $RepoRoot 'src/ECode.Core/obj'),
+    (Join-Path $RepoRoot 'src/ECode.Core/bin')
 )
 foreach ($d in $cacheDirs) {
     if (Test-Path $d) {
@@ -99,41 +99,41 @@ foreach ($d in $cacheDirs) {
 Ensure-Dir $OutputRoot
 
 $stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-Write-Host "=== cmux publish === Config=$Config Rid=$Rid Flavor=$Flavor Time=$stamp ===" -ForegroundColor Yellow
+Write-Host "=== ECode publish === Config=$Config Rid=$Rid Flavor=$Flavor Time=$stamp ===" -ForegroundColor Yellow
 
 $ran = @()
 
 if ($Flavor -in @('All', 'Framework')) {
-    $out = Join-Path $OutputRoot "cmux-$Rid"
+    $out = Join-Path $OutputRoot "ecode-$Rid"
     Invoke-DotnetPublish -Project $MainProj -Args @(
         '-c', $Config,
         '-r', $Rid,
         '--self-contained', 'false',
         '-o', $out
     )
-    $ran += "Framework      -> $out\cmuxw.exe"
+    $ran += "Framework      -> $out\ecodew.exe"
 }
 
 if ($Flavor -in @('All', 'SelfContained')) {
-    $out = Join-Path $OutputRoot "cmux-$Rid-sc"
+    $out = Join-Path $OutputRoot "ecode-$Rid-sc"
     Invoke-DotnetPublish -Project $MainProj -Args @(
         '-c', $Config,
         '-r', $Rid,
         '--self-contained', 'true',
         '-o', $out
     )
-    $ran += "SelfContained  -> $out\cmuxw.exe"
+    $ran += "SelfContained  -> $out\ecodew.exe"
 }
 
 if ($Flavor -in @('All', 'Cli')) {
-    $out = Join-Path $OutputRoot "cmux-cli"
+    $out = Join-Path $OutputRoot "ecode-cli"
     Invoke-DotnetPublish -Project $CliProj -Args @(
         '-c', $Config,
         '-r', $Rid,
         '--self-contained', 'true',
         '-o', $out
     )
-    $ran += "Cli            -> $out\cmux.exe"
+    $ran += "Cli            -> $out\ecode.exe"
 }
 
 Write-Host ""
