@@ -638,8 +638,8 @@ public partial class MainWindow : Window
     private void MenuAbout_Click(object sender, RoutedEventArgs e)
     {
         MessageBox.Show(
-            "ECloud Code\n面向现代工作流优化的终端复用器。",
-            "关于 cmux",
+            "ECode\n面向现代工作流优化的终端复用器。",
+            "关于 ECode",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     }

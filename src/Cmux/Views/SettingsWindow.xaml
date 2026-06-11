@@ -1373,7 +1373,7 @@
 
                         <Border Background="#FF1A1A1A" CornerRadius="6" Padding="20,16" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="ECloud Code" FontSize="20" FontWeight="Bold"
+                                <TextBlock Text="ECode" FontSize="20" FontWeight="Bold"
                                            Foreground="{StaticResource ForegroundBrush}" Margin="0,0,0,4" />
                                 <TextBlock Text="v1.0.6" FontSize="13"
                                            Foreground="{StaticResource AccentBrush}" Margin="0,0,0,12" />
