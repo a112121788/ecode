@@ -704,8 +704,8 @@ public partial class MainViewModel : ObservableObject
 
     private string HandleStatus()
     {
-        // 版本号以主程序集为主（由 ECode.csproj <Version> 提供），避免硬编码。
-        var version = typeof(ECode.App).Assembly.GetName().Version?.ToString() ?? "0.1.0";
+        // 版本号以主程序集为主（由 Directory.Build.props <Version> 生成），避免硬编码。
+        var version = VersionService.GetInformationalVersion(typeof(App).Assembly);
         return JsonSerializer.Serialize(new
         {
             version,

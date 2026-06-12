@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Text.Json;
 using ECode.Core.Models;
@@ -8,6 +9,25 @@ using FluentAssertions;
 using Xunit;
 
 namespace ECode.Tests;
+
+
+public class VersionServiceTests
+{
+    [Fact]
+    public void GetInformationalVersion_StripsSourceRevisionSuffix()
+    {
+        var assembly = AssemblyBuilder.DefineDynamicAssembly(
+            new AssemblyName("VersionServiceTestAssembly"),
+            AssemblyBuilderAccess.Run);
+        var ctor = typeof(AssemblyInformationalVersionAttribute).GetConstructor([typeof(string)])!;
+        assembly.SetCustomAttribute(new CustomAttributeBuilder(ctor, ["1.2.3+abcdef"]));
+
+        var version = VersionService.GetInformationalVersion(assembly);
+
+        version.Should().NotContain("+");
+        version.Should().Be("1.2.3");
+    }
+}
 
 public class VtParserTests
 {
@@ -698,4 +718,3 @@ public class MouseModeTests
         buffer.MouseEnabled.Should().BeTrue();
     }
 }
-

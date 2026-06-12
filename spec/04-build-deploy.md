@@ -61,6 +61,8 @@ ECode.Smoke ──▶  ECode.Core
 
 `ECode.Core.csproj` 启用 `AllowUnsafeBlocks=true`（ConPty Interop 使用）。
 
+版本号以 `Directory.Build.props` 的 `<Version>` 作为单一事实源；CLI `ecode version` 与 IPC `STATUS.version` 均读取程序集 `AssemblyInformationalVersion`，并去掉 CI 可能附加的 source revision 后缀。
+
 ## 4. 本地开发运行
 
 ### 4.1 命令行
