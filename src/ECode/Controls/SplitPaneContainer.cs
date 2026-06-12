@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using ECode.Core.Models;
 using ECode.Core.Config;
@@ -30,6 +31,7 @@ public class SplitPaneContainer : ContentControl
     {
         Background = Brushes.Transparent;
         DataContextChanged += OnDataContextChanged;
+        AddHandler(Mouse.PreviewMouseWheelEvent, new MouseWheelEventHandler(OnPreviewMouseWheel), true);
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -49,6 +51,7 @@ public class SplitPaneContainer : ContentControl
         {
             _surface.PropertyChanged += OnSurfacePropertyChanged;
             Rebuild();
+            QueueFocusCurrentPane();
         }
         else
         {
@@ -82,6 +85,7 @@ public class SplitPaneContainer : ContentControl
         if (_surface.IsZoomed)
         {
             Rebuild();
+            QueueFocusCurrentPane();
             return;
         }
 
@@ -89,6 +93,8 @@ public class SplitPaneContainer : ContentControl
         {
             terminal.IsPaneFocused = paneId == _surface.FocusedPaneId;
         }
+
+        QueueFocusCurrentPane();
     }
 
     private void Rebuild()
@@ -102,11 +108,13 @@ public class SplitPaneContainer : ContentControl
             if (focusedNode != null)
             {
                 Content = BuildLeaf(focusedNode);
+                QueueFocusCurrentPane();
                 return;
             }
         }
 
         Content = BuildNode(_surface.RootNode);
+        QueueFocusCurrentPane();
     }
 
     private UIElement BuildNode(SplitNode node)
@@ -117,6 +125,78 @@ public class SplitPaneContainer : ContentControl
         }
 
         return BuildSplit(node);
+    }
+
+    private void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        var terminal = FindTerminalUnderMouse(e.GetPosition(this));
+        if (terminal == null)
+            return;
+
+        if (terminal.HandleMouseWheel(e.Delta, e.GetPosition(terminal)))
+            e.Handled = true;
+    }
+
+    private TerminalControl? FindTerminalUnderMouse(Point point)
+    {
+        var hit = VisualTreeHelper.HitTest(this, point)?.VisualHit;
+        return FindVisualAncestor<TerminalControl>(hit);
+    }
+
+    private static T? FindVisualAncestor<T>(DependencyObject? current) where T : DependencyObject
+    {
+        while (current != null)
+        {
+            if (current is T match)
+                return match;
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
+    }
+
+    private void FocusTerminalPane(string paneId, TerminalControl terminal)
+    {
+        if (_surface == null)
+            return;
+
+        if (_surface.FocusedPaneId != paneId)
+            _surface.FocusPane(paneId);
+
+        terminal.IsPaneFocused = true;
+        terminal.ActivateForInput();
+    }
+
+    public bool FocusCurrentPane()
+    {
+        if (_surface == null)
+            return false;
+
+        var paneId = _surface.FocusedPaneId;
+        if (string.IsNullOrWhiteSpace(paneId) || _surface.RootNode.FindNode(paneId) == null)
+        {
+            paneId = _surface.RootNode.GetLeaves()
+                .Select(leaf => leaf.PaneId)
+                .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id));
+
+            if (!string.IsNullOrWhiteSpace(paneId))
+                _surface.FocusPane(paneId);
+        }
+
+        if (string.IsNullOrWhiteSpace(paneId) ||
+            !_terminalCache.TryGetValue(paneId, out var terminal))
+        {
+            return false;
+        }
+
+        FocusTerminalPane(paneId, terminal);
+        return true;
+    }
+
+    private void QueueFocusCurrentPane()
+    {
+        Dispatcher.BeginInvoke(() => FocusCurrentPane(), System.Windows.Threading.DispatcherPriority.ContextIdle);
     }
 
     private UIElement BuildLeaf(SplitNode node)
@@ -152,12 +232,12 @@ public class SplitPaneContainer : ContentControl
         }
 
         // 用闭包连接事件处理程序，捕获当前面板 ID
-        terminal.FocusRequested += () => _surface?.FocusPane(paneId);
+        terminal.FocusRequested += () => FocusTerminalPane(paneId, terminal);
         terminal.CommandSubmitted += command => _surface?.RegisterCommandSubmission(paneId, command);
         terminal.ClearRequested += () => _surface?.CapturePaneTranscript(paneId, "clear-terminal");
         terminal.SplitRequested += dir =>
         {
-            _surface?.FocusPane(paneId);
+            FocusTerminalPane(paneId, terminal);
             _surface?.SplitFocused(dir);
         };
         terminal.ZoomRequested += () => _surface?.ToggleZoom();
@@ -176,6 +256,8 @@ public class SplitPaneContainer : ContentControl
 
         // 创建带头部的面板
         var panel = new DockPanel { LastChildFill = true };
+        panel.MouseEnter += (_, _) => FocusTerminalPane(paneId, terminal);
+        panel.PreviewMouseDown += (_, _) => FocusTerminalPane(paneId, terminal);
 
         // 带标题和关闭按钮的头部栏
         var header = new Border
@@ -266,7 +348,7 @@ public class SplitPaneContainer : ContentControl
         panel.Children.Add(terminal);
 
         var focusedAccent = GetThemeColor("AccentColor");
-        return new Border
+        var container = new Border
         {
             Child = panel,
             BorderBrush = terminal.IsPaneFocused
@@ -274,6 +356,9 @@ public class SplitPaneContainer : ContentControl
                 : GetThemeBrush("BorderBrush"),
             BorderThickness = new Thickness(1),
         };
+        container.MouseEnter += (_, _) => FocusTerminalPane(paneId, terminal);
+        container.PreviewMouseDown += (_, _) => FocusTerminalPane(paneId, terminal);
+        return container;
     }
 
 

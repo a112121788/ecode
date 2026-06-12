@@ -85,11 +85,15 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
             }
         }
 
-        if (_focusedPaneId == null)
+        var firstLeaf = _rootNode.GetLeaves().FirstOrDefault(l => !string.IsNullOrWhiteSpace(l.PaneId));
+        if (firstLeaf?.PaneId != null &&
+            (string.IsNullOrWhiteSpace(_focusedPaneId) || _rootNode.FindNode(_focusedPaneId) == null))
         {
-            var firstLeaf = _rootNode.GetLeaves().FirstOrDefault();
-            if (firstLeaf?.PaneId != null)
-                FocusedPaneId = firstLeaf.PaneId;
+            FocusedPaneId = firstLeaf.PaneId;
+        }
+        else
+        {
+            Surface.FocusedPaneId = _focusedPaneId;
         }
     }
 

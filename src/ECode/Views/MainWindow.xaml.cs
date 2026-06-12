@@ -19,6 +19,7 @@ public partial class MainWindow : Window
 {
     private MainViewModel ViewModel => (MainViewModel)DataContext;
     private readonly DispatcherTimer _uiRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
+    private readonly DispatcherTimer _terminalFocusTimer = new() { Interval = TimeSpan.FromMilliseconds(80) };
     private ICollectionView? _workspaceView;
 
     public MainWindow()
@@ -49,6 +50,12 @@ public partial class MainWindow : Window
         // 定期刷新轻量级 UI 状态（面板数量、缩放图标）
         _uiRefreshTimer.Tick += (_, _) => RefreshSurfaceUiState();
         _uiRefreshTimer.Start();
+        _terminalFocusTimer.Tick += (_, _) =>
+        {
+            _terminalFocusTimer.Stop();
+            FocusTerminal();
+        };
+        WorkspaceList.SelectionChanged += (_, _) => QueueFocusTerminal();
 
         // 订阅设置变更事件
         ECode.Core.Config.SettingsService.SettingsChanged += OnSettingsChanged;
@@ -134,6 +141,7 @@ public partial class MainWindow : Window
         SizeChanged += (_, _) => UpdateWindowClip();
         StateChanged += (_, _) => UpdateWindowChrome();
         UpdateWindowClip();
+        QueueFocusTerminal();
 
         // 监听守护进程连接状态变化
         App.DaemonClient.Connected += () => Dispatcher.BeginInvoke(UpdateDaemonStatus);
@@ -175,6 +183,7 @@ public partial class MainWindow : Window
     private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e)
     {
         _uiRefreshTimer.Stop();
+        _terminalFocusTimer.Stop();
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
         ViewModel.SaveSession(Left, Top, Width, Height, WindowState == WindowState.Maximized);
     }
@@ -185,6 +194,13 @@ public partial class MainWindow : Window
             e.PropertyName == nameof(MainViewModel.SidebarWidth))
         {
             UpdateSidebarLayout();
+            return;
+        }
+
+        if (e.PropertyName == nameof(MainViewModel.SelectedWorkspace))
+        {
+            RefreshSurfaceUiState();
+            QueueFocusTerminal();
             return;
         }
     }
@@ -729,7 +745,15 @@ public partial class MainWindow : Window
     private void FocusTerminal()
     {
         // 让焦点回到当前激活的终端面板
-        ContentArea.Focus();
+        if (!SplitPaneContainerControl.FocusCurrentPane())
+            ContentArea.Focus();
+    }
+
+    private void QueueFocusTerminal()
+    {
+        Dispatcher.BeginInvoke(FocusTerminal, DispatcherPriority.ContextIdle);
+        _terminalFocusTimer.Stop();
+        _terminalFocusTimer.Start();
     }
 
     private void RefreshSurfaceUiState()

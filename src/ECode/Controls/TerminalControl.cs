@@ -48,6 +48,11 @@ public class TerminalControl : FrameworkElement
     private bool _nativeCaretCreated;
     private IntPtr _nativeCaretHwnd;
     private HwndSource? _imeSource;
+    private ImeMetrics? _lastImeMetrics;
+    private IntPtr _lastImeMetricsHwnd;
+    private int _lastCandidateMask;
+    private int _imeRefreshQueued;
+    private System.Windows.Threading.DispatcherTimer? _imeRefreshTimer;
 
     // 可视响铃
     private DateTime _bellFlashUntil;
@@ -226,6 +231,7 @@ public class TerminalControl : FrameworkElement
 
         _lastScrollbackCount = currentScrollback;
         RequestRender();
+        QueueImeCaretRefresh();
     }
 
     private void OnBell()
@@ -345,6 +351,7 @@ public class TerminalControl : FrameworkElement
         base.OnRenderSizeChanged(sizeInfo);
         CalculateTerminalSize();
         RequestRender(System.Windows.Threading.DispatcherPriority.Render);
+        QueueImeCaretRefresh();
     }
 
     // --- 渲染 ---
@@ -683,19 +690,32 @@ public class TerminalControl : FrameworkElement
     private static Color ToWpfColor(TerminalColor c) =>
         c.IsDefault ? Colors.Transparent : Color.FromRgb(c.R, c.G, c.B);
 
-    private void OnImeTextInputPositionChanged(object sender, TextCompositionEventArgs e) =>
+    private void OnImeTextInputPositionChanged(object sender, TextCompositionEventArgs e)
+    {
         UpdateImeCaretPosition();
+        QueueImeCaretRefresh();
+    }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        RegisterImeHook();
-        UpdateImeCaretPosition();
+        if (IsPaneFocused)
+            ActivateForInput();
+        else
+        {
+            RegisterImeHook();
+            UpdateImeCaretPosition();
+            QueueImeCaretRefresh();
+        }
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        _imeRefreshTimer?.Stop();
         DestroyNativeCaret();
         UnregisterImeHook();
+        _lastImeMetrics = null;
+        _lastImeMetricsHwnd = IntPtr.Zero;
+        _lastCandidateMask = 0;
     }
 
     private void RegisterImeHook()
@@ -709,6 +729,25 @@ public class TerminalControl : FrameworkElement
         UnregisterImeHook();
         _imeSource = source;
         _imeSource.AddHook(OnImeWindowMessage);
+    }
+
+    public void ActivateForInput()
+    {
+        Focusable = true;
+
+        if (!IsKeyboardFocusWithin)
+        {
+            Focus();
+            Keyboard.Focus(this);
+
+            var focusScope = FocusManager.GetFocusScope(this);
+            if (focusScope != null)
+                FocusManager.SetFocusedElement(focusScope, this);
+        }
+
+        RegisterImeHook();
+        UpdateImeCaretPosition();
+        QueueImeCaretRefresh();
     }
 
     private void UnregisterImeHook()
@@ -728,12 +767,25 @@ public class TerminalControl : FrameworkElement
         switch (msg)
         {
             case WmImeStartComposition:
+                _lastCandidateMask = 0;
+                UpdateImeCaretPosition();
+                QueueImeCaretRefresh();
+                break;
             case WmImeComposition:
                 UpdateImeCaretPosition();
+                QueueImeCaretRefresh();
                 break;
             case WmImeNotify:
                 if (wParam.ToInt32() is ImnOpenCandidate or ImnChangeCandidate)
+                {
+                    _lastCandidateMask = unchecked((int)lParam.ToInt64());
                     UpdateImeCaretPosition();
+                    QueueImeCaretRefresh();
+                }
+                else if (wParam.ToInt32() == ImnCloseCandidate)
+                {
+                    _lastCandidateMask = 0;
+                }
                 break;
             case WmImeRequest:
                 return HandleImeRequest(hwnd, wParam, lParam, ref handled);
@@ -744,7 +796,7 @@ public class TerminalControl : FrameworkElement
 
     private IntPtr HandleImeRequest(IntPtr hwnd, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (lParam == IntPtr.Zero || !TryGetImeMetrics(hwnd, out var metrics))
+        if (lParam == IntPtr.Zero || !TryGetImeMetrics(hwnd, allowCached: true, out var metrics))
             return IntPtr.Zero;
 
         switch (wParam.ToInt32())
@@ -755,7 +807,7 @@ public class TerminalControl : FrameworkElement
                 return IntPtrOne;
 
             case ImrCandidateWindow:
-                var candidateForm = CreateCandidateForm(metrics);
+                var candidateForm = CreateCandidateForm(metrics, 0);
                 try
                 {
                     var requestedForm = Marshal.PtrToStructure<CandidateForm>(lParam);
@@ -797,34 +849,69 @@ public class TerminalControl : FrameworkElement
                 return;
             }
 
-            var buffer = _session.Buffer;
-            int cursorCol = Math.Clamp(buffer.CursorCol, 0, Math.Max(0, buffer.Cols - 1));
-            int cursorRow = Math.Clamp(buffer.CursorRow, 0, Math.Max(0, buffer.Rows - 1));
-            var caretTopLeft = new Point(cursorCol * _cellWidth, cursorRow * _cellHeight);
-            var caretTopLeftPx = ToHwndClientPixel(source, caretTopLeft);
-
-            var deviceSize = source.CompositionTarget.TransformToDevice.Transform(new Vector(_cellWidth, _cellHeight));
-            int cellHeight = Math.Max(1, (int)Math.Ceiling(Math.Abs(deviceSize.Y)));
             var hwnd = source.Handle;
+            if (!TryGetImeMetrics(hwnd, allowCached: true, out var metrics))
+                return;
 
             if (!_nativeCaretCreated || _nativeCaretHwnd != hwnd)
             {
                 DestroyNativeCaret();
-                _nativeCaretCreated = CreateCaret(hwnd, IntPtr.Zero, 1, cellHeight);
+                _nativeCaretCreated = CreateCaret(hwnd, IntPtr.Zero, 1, metrics.CellHeight);
                 _nativeCaretHwnd = _nativeCaretCreated ? hwnd : IntPtr.Zero;
                 if (_nativeCaretCreated)
                     _ = ShowCaret(hwnd);
             }
 
             if (_nativeCaretCreated)
-                _ = SetCaretPos(caretTopLeftPx.X, caretTopLeftPx.Y);
+            {
+                _ = SetCaretPos(metrics.CaretTopLeftClient.X, metrics.CaretTopLeftClient.Y);
+                NotifyCaretLocationChanged(hwnd);
+            }
 
-            UpdateImeWindows(hwnd);
+            UpdateImeWindows(hwnd, metrics, _lastCandidateMask);
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[TerminalControl] IME caret positioning failed: {ex}");
         }
+    }
+
+    private void QueueImeCaretRefresh()
+    {
+        if (Interlocked.Exchange(ref _imeRefreshQueued, 1) == 1)
+            return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            Interlocked.Exchange(ref _imeRefreshQueued, 0);
+            UpdateImeCaretPosition();
+            StartDelayedImeCaretRefresh();
+        }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void StartDelayedImeCaretRefresh()
+    {
+        _imeRefreshTimer ??= new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(35),
+        };
+
+        _imeRefreshTimer.Stop();
+        _imeRefreshTimer.Tick -= OnImeRefreshTimerTick;
+        _imeRefreshTimer.Tick += OnImeRefreshTimerTick;
+        _imeRefreshTimer.Start();
+    }
+
+    private void OnImeRefreshTimerTick(object? sender, EventArgs e)
+    {
+        _imeRefreshTimer?.Stop();
+        UpdateImeCaretPosition();
+    }
+
+    private static void NotifyCaretLocationChanged(IntPtr hwnd)
+    {
+        if (hwnd != IntPtr.Zero)
+            NotifyWinEvent(EventObjectLocationChange, hwnd, ObjidCaret, ChildidSelf);
     }
 
     private void DestroyNativeCaret()
@@ -838,11 +925,8 @@ public class TerminalControl : FrameworkElement
         _nativeCaretHwnd = IntPtr.Zero;
     }
 
-    private void UpdateImeWindows(IntPtr hwnd)
+    private void UpdateImeWindows(IntPtr hwnd, ImeMetrics metrics, int candidateMask)
     {
-        if (!TryGetImeMetrics(hwnd, out var metrics))
-            return;
-
         var himc = ImmGetContext(hwnd);
         if (himc == IntPtr.Zero)
             return;
@@ -852,8 +936,7 @@ public class TerminalControl : FrameworkElement
             var compositionForm = CreateCompositionForm(metrics);
             _ = ImmSetCompositionWindow(himc, ref compositionForm);
 
-            var candidateForm = CreateCandidateForm(metrics);
-            _ = ImmSetCandidateWindow(himc, ref candidateForm);
+            UpdateCandidateWindows(himc, metrics, candidateMask);
         }
         finally
         {
@@ -861,7 +944,47 @@ public class TerminalControl : FrameworkElement
         }
     }
 
-    private bool TryGetImeMetrics(IntPtr hwnd, out ImeMetrics metrics)
+    private void UpdateCandidateWindows(IntPtr himc, ImeMetrics metrics, int candidateMask)
+    {
+        var mask = unchecked((uint)candidateMask);
+        if (mask == 0)
+        {
+            var candidateForm = CreateCandidateForm(metrics, 0);
+            _ = ImmSetCandidateWindow(himc, ref candidateForm);
+            return;
+        }
+
+        for (int index = 0; index < 32; index++)
+        {
+            if ((mask & (1u << index)) == 0)
+                continue;
+
+            var candidateForm = CreateCandidateForm(metrics, index);
+            _ = ImmSetCandidateWindow(himc, ref candidateForm);
+        }
+    }
+
+    private bool TryGetImeMetrics(IntPtr hwnd, bool allowCached, out ImeMetrics metrics)
+    {
+        metrics = default;
+
+        if (!TryCalculateImeMetrics(hwnd, out metrics))
+        {
+            if (allowCached && _lastImeMetricsHwnd == hwnd && _lastImeMetrics.HasValue)
+            {
+                metrics = _lastImeMetrics.Value;
+                return true;
+            }
+
+            return false;
+        }
+
+        _lastImeMetricsHwnd = hwnd;
+        _lastImeMetrics = metrics;
+        return true;
+    }
+
+    private bool TryCalculateImeMetrics(IntPtr hwnd, out ImeMetrics metrics)
     {
         metrics = default;
 
@@ -880,7 +1003,13 @@ public class TerminalControl : FrameworkElement
         int cursorRow = Math.Clamp(buffer.CursorRow, 0, Math.Max(0, buffer.Rows - 1));
 
         var caretTopLeft = new Point(cursorCol * _cellWidth, cursorRow * _cellHeight);
-        var caretTopLeftClient = ToHwndClientPixel(source, caretTopLeft);
+        if (!TryToHwndClientPixel(source, caretTopLeft, out var caretTopLeftClient) ||
+            !TryToHwndClientPixel(source, new Point(0, 0), out var documentTopLeft) ||
+            !TryToHwndClientPixel(source, new Point(ActualWidth, ActualHeight), out var documentBottomRight))
+        {
+            return false;
+        }
+
         var deviceSize = source.CompositionTarget.TransformToDevice.Transform(new Vector(_cellWidth, _cellHeight));
         int cellWidth = Math.Max(1, (int)Math.Ceiling(Math.Abs(deviceSize.X)));
         int cellHeight = Math.Max(1, (int)Math.Ceiling(Math.Abs(deviceSize.Y)));
@@ -892,8 +1021,6 @@ public class TerminalControl : FrameworkElement
             caretTopLeftClient.X + cellWidth,
             caretTopLeftClient.Y + cellHeight);
 
-        var documentTopLeft = ToHwndClientPixel(source, new Point(0, 0));
-        var documentBottomRight = ToHwndClientPixel(source, new Point(ActualWidth, ActualHeight));
         var documentRectClient = NativeRect.FromPoints(documentTopLeft, documentBottomRight);
 
         var charPositionScreen = caretTopLeftClient;
@@ -921,16 +1048,16 @@ public class TerminalControl : FrameworkElement
     private static CompositionForm CreateCompositionForm(ImeMetrics metrics) =>
         new()
         {
-            DwStyle = CfsPoint,
+            DwStyle = CfsForcePosition,
             PtCurrentPos = metrics.CaretTopLeftClient,
             RcArea = metrics.DocumentRectClient,
         };
 
-    private static CandidateForm CreateCandidateForm(ImeMetrics metrics) =>
+    private static CandidateForm CreateCandidateForm(ImeMetrics metrics, int index) =>
         new()
         {
-            DwIndex = 0,
-            DwStyle = CfsExclude,
+            DwIndex = index,
+            DwStyle = CfsCandidatePos,
             PtCurrentPos = metrics.CaretBottomLeftClient,
             RcArea = metrics.CaretRectClient,
         };
@@ -945,23 +1072,46 @@ public class TerminalControl : FrameworkElement
             RcDocument = metrics.DocumentRectScreen,
         };
 
-    private NativePoint ToHwndClientPixel(HwndSource source, Point localPoint)
+    private bool TryToHwndClientPixel(HwndSource source, Point localPoint, out NativePoint point)
     {
-        Point rootPoint = localPoint;
-        if (source.RootVisual is Visual rootVisual && !ReferenceEquals(rootVisual, this))
+        point = default;
+
+        try
         {
-            try
+            Point rootPoint = localPoint;
+            if (source.RootVisual is Visual rootVisual && !ReferenceEquals(rootVisual, this))
             {
                 rootPoint = TransformToAncestor(rootVisual).Transform(localPoint);
             }
-            catch (InvalidOperationException)
-            {
-                rootPoint = localPoint;
-            }
-        }
 
-        var devicePoint = source.CompositionTarget.TransformToDevice.Transform(rootPoint);
-        return new NativePoint((int)Math.Round(devicePoint.X), (int)Math.Round(devicePoint.Y));
+            var devicePoint = source.CompositionTarget.TransformToDevice.Transform(rootPoint);
+            point = new NativePoint((int)Math.Round(devicePoint.X), (int)Math.Round(devicePoint.Y));
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return TryPointToScreenClient(source.Handle, localPoint, out point);
+        }
+        catch (ArgumentException)
+        {
+            return TryPointToScreenClient(source.Handle, localPoint, out point);
+        }
+    }
+
+    private bool TryPointToScreenClient(IntPtr hwnd, Point localPoint, out NativePoint point)
+    {
+        point = default;
+
+        try
+        {
+            var screenPoint = PointToScreen(localPoint);
+            point = new NativePoint((int)Math.Round(screenPoint.X), (int)Math.Round(screenPoint.Y));
+            return ScreenToClient(hwnd, ref point);
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     private static Typeface CreateTerminalTypeface(string? preferredFamily, FontStyle style, FontWeight weight) =>
@@ -1139,6 +1289,7 @@ public class TerminalControl : FrameworkElement
             _inputLineBuffer.Clear();
             EnsureLiveView();
             _session.Write("\x17");
+            QueueImeCaretRefresh();
             e.Handled = true;
             return;
         }
@@ -1152,6 +1303,7 @@ public class TerminalControl : FrameworkElement
                 _inputLineBuffer.Clear();
                 EnsureLiveView();
                 _session.Write("\x03");
+                QueueImeCaretRefresh();
             }
 
             e.Handled = true;
@@ -1178,6 +1330,7 @@ public class TerminalControl : FrameworkElement
             _inputLineBuffer.Clear();
             EnsureLiveView();
             _session.Write(ctrlSequence);
+            QueueImeCaretRefresh();
             e.Handled = true;
             return;
         }
@@ -1201,6 +1354,7 @@ public class TerminalControl : FrameworkElement
 
             EnsureLiveView();
             _session.Write(sequence);
+            QueueImeCaretRefresh();
             e.Handled = true;
         }
     }
@@ -1249,6 +1403,7 @@ public class TerminalControl : FrameworkElement
         TrackInputText(e.Text);
         _session.Write(e.Text);
         _selection.ClearSelection();
+        QueueImeCaretRefresh();
     }
 
     private void PasteFromClipboard()
@@ -1270,6 +1425,7 @@ public class TerminalControl : FrameworkElement
             _session.Write("\x1b[200~" + text + "\x1b[201~");
         else
             _session.Write(text);
+        QueueImeCaretRefresh();
     }
 
     private static bool HasClipboardPasteContent()
@@ -1801,29 +1957,33 @@ public class TerminalControl : FrameworkElement
     protected override void OnMouseWheel(MouseWheelEventArgs e)
     {
         base.OnMouseWheel(e);
-        if (_session == null) return;
+        if (HandleMouseWheel(e.Delta, e.GetPosition(this)))
+            e.Handled = true;
+    }
+
+    public bool HandleMouseWheel(int delta, Point position)
+    {
+        if (_session == null) return false;
 
         // 鼠标滚轮上报
         if (IsMouseTrackingActive)
         {
-            if (_cols <= 0 || _rows <= 0) return;
+            if (_cols <= 0 || _rows <= 0) return false;
 
-            var pos = e.GetPosition(this);
-            int col = Math.Clamp((int)(pos.X / _cellWidth), 0, _cols - 1);
-            int row = Math.Clamp((int)(pos.Y / _cellHeight), 0, _rows - 1);
-            int button = e.Delta > 0 ? 64 : 65; // 64 = 向上滚动，65 = 向下滚动
+            int col = Math.Clamp((int)(position.X / _cellWidth), 0, _cols - 1);
+            int row = Math.Clamp((int)(position.Y / _cellHeight), 0, _rows - 1);
+            int button = delta > 0 ? 64 : 65; // 64 = 向上滚动，65 = 向下滚动
             SendMouseReport(button, col, row, true);
-            e.Handled = true;
-            return;
+            return true;
         }
 
         // 滚动历史导航
-        int lines = e.Delta > 0 ? -3 : 3;
+        int lines = delta > 0 ? -3 : 3;
         _scrollOffset = Math.Clamp(_scrollOffset + lines, -_session.Buffer.ScrollbackCount, 0);
         _followOutput = _scrollOffset == 0;
         _lastScrollbackCount = _session.Buffer.ScrollbackCount;
         RequestRender(System.Windows.Threading.DispatcherPriority.Render);
-        e.Handled = true;
+        return true;
     }
 
     // --- Visual tree ---
@@ -1834,11 +1994,14 @@ public class TerminalControl : FrameworkElement
     protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)
     {
         base.OnGotKeyboardFocus(e);
+        RegisterImeHook();
         UpdateImeCaretPosition();
+        QueueImeCaretRefresh();
     }
 
     protected override void OnLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
     {
+        _imeRefreshTimer?.Stop();
         DestroyNativeCaret();
         base.OnLostKeyboardFocus(e);
     }
@@ -1927,6 +2090,13 @@ public class TerminalControl : FrameworkElement
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ClientToScreen(IntPtr hwnd, ref NativePoint point);
 
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ScreenToClient(IntPtr hwnd, ref NativePoint point);
+
+    [DllImport("user32.dll")]
+    private static extern void NotifyWinEvent(uint eventMin, IntPtr hwnd, int idObject, int idChild);
+
     [DllImport("imm32.dll")]
     private static extern IntPtr ImmGetContext(IntPtr hwnd);
 
@@ -1947,12 +2117,16 @@ public class TerminalControl : FrameworkElement
     private const int WmImeNotify = 0x0282;
     private const int WmImeRequest = 0x0288;
     private const int ImnChangeCandidate = 0x0003;
+    private const int ImnCloseCandidate = 0x0004;
     private const int ImnOpenCandidate = 0x0005;
     private const int ImrCompositionWindow = 0x0001;
     private const int ImrCandidateWindow = 0x0002;
     private const int ImrQueryCharPosition = 0x0006;
-    private const int CfsPoint = 0x0002;
-    private const int CfsExclude = 0x0080;
+    private const int CfsForcePosition = 0x0020;
+    private const int CfsCandidatePos = 0x0040;
+    private const uint EventObjectLocationChange = 0x800B;
+    private const int ObjidCaret = -8;
+    private const int ChildidSelf = 0;
     private static readonly IntPtr IntPtrOne = new(1);
 
     [StructLayout(LayoutKind.Sequential)]

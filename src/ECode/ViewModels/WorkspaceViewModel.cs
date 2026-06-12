@@ -161,6 +161,11 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         HasNotification = value > 0;
     }
 
+    partial void OnSelectedSurfaceChanged(SurfaceViewModel? value)
+    {
+        Workspace.SelectedSurface = value?.Surface;
+    }
+
     partial void OnNameChanged(string value)
     {
         Workspace.Name = value;
