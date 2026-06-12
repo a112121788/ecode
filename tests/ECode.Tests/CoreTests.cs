@@ -246,6 +246,30 @@ public class VtParserTests
     }
 
     [Fact]
+    public void Feed_OscStringTerminatedByEscBackslash_RaisesOnOscDispatch()
+    {
+        var parser = new VtParser();
+        string? receivedOsc = null;
+        parser.OnOscDispatch = osc => receivedOsc = osc;
+
+        parser.Feed("\x1b]0;Esc Title\x1b\\");
+
+        receivedOsc.Should().Be("0;Esc Title");
+    }
+
+    [Fact]
+    public void Feed_OscStringTerminatedByEightBitSt_RaisesOnOscDispatch()
+    {
+        var parser = new VtParser();
+        string? receivedOsc = null;
+        parser.OnOscDispatch = osc => receivedOsc = osc;
+
+        parser.Feed(new byte[] { 0x1B, (byte)']', (byte)'0', (byte)';', (byte)'T', (byte)'i', (byte)'t', (byte)'l', (byte)'e', 0x9C });
+
+        receivedOsc.Should().Be("0;Title");
+    }
+
+    [Fact]
     public void Feed_Osc9Notification_Detected()
     {
         var parser = new VtParser();
@@ -299,6 +323,47 @@ public class VtParserTests
 
         receivedParams.Should().Equal(25);
         receivedQualifier.Should().Contain("?");
+    }
+
+    [Fact]
+    public void Feed_Utf8AcrossChunks_PrintsSingleCharacter()
+    {
+        var parser = new VtParser();
+        var printed = new List<char>();
+        parser.OnPrint = c => printed.Add(c);
+        var bytes = Encoding.UTF8.GetBytes("中");
+
+        parser.Feed(bytes.AsSpan(0, 1));
+        parser.Feed(bytes.AsSpan(1));
+
+        printed.Should().Equal('中');
+    }
+
+    [Fact]
+    public void Feed_InvalidUtf8Continuation_RecoversAndPrintsFollowingAscii()
+    {
+        var parser = new VtParser();
+        var printed = new List<char>();
+        parser.OnPrint = c => printed.Add(c);
+
+        parser.Feed(new byte[] { 0xE4, (byte)'A' });
+
+        printed.Should().Equal('A');
+    }
+
+    [Fact]
+    public void Feed_CanCancelsIncompleteCsiAndReturnsToGround()
+    {
+        var parser = new VtParser();
+        var printed = new List<char>();
+        var dispatched = false;
+        parser.OnPrint = c => printed.Add(c);
+        parser.OnCsiDispatch = (_, _, _) => dispatched = true;
+
+        parser.Feed("\x1b[31\x18A");
+
+        dispatched.Should().BeFalse();
+        printed.Should().Equal('A');
     }
 }
 

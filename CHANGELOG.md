@@ -14,6 +14,7 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 - GitHub Actions 改为复用本地 CI 入口，减少本地验证与远端 CI 的命令漂移。
 - 新增 daemon IPC DTO roundtrip 测试，覆盖 request、response、session info 与 event 序列化兼容性。
 - 新增命令日志脱敏测试，覆盖环境变量、命令行 flag、URI credential 与独立密钥输入。
+- 新增 VT parser 回归测试，覆盖 OSC ST 终止、UTF-8 跨包、无效 UTF-8 恢复与 CAN 取消 CSI。
 
 ### Changed
 
