@@ -11,6 +11,52 @@ using Xunit;
 
 namespace ECode.Tests;
 
+public class CommandLogSanitizationTests
+{
+    [Theory]
+    [InlineData("OPENAI_API_KEY=sk-test dotnet test", "OPENAI_API_KEY=[REDACTED] dotnet test")]
+    [InlineData("export GITHUB_TOKEN=ghp_123456", "export GITHUB_TOKEN=[REDACTED]")]
+    [InlineData("PASSWORD='hunter2' npm run deploy", "PASSWORD=[REDACTED] npm run deploy")]
+    [InlineData("curl --api-key secret-value https://example.com", "curl --api-key [REDACTED] https://example.com")]
+    [InlineData("tool --token=abc123 --name demo", "tool --token=[REDACTED] --name demo")]
+    [InlineData("git clone https://user:pass@example.com/repo.git", "git clone https://user:[REDACTED]@example.com/repo.git")]
+    public void SanitizeCommandForStorage_RedactsKnownSecretPatterns(string command, string expected)
+    {
+        var service = new CommandLogService();
+
+        var sanitized = service.SanitizeCommandForStorage(command);
+
+        sanitized.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("dotnet test tests/ECode.Tests/ECode.Tests.csproj")]
+    [InlineData("git status -sb")]
+    [InlineData("npm run build -- --mode production")]
+    [InlineData("curl https://example.com/api?tokenized=false")]
+    public void SanitizeCommandForStorage_PreservesNonSecretCommands(string command)
+    {
+        var service = new CommandLogService();
+
+        var sanitized = service.SanitizeCommandForStorage(command);
+
+        sanitized.Should().Be(command);
+    }
+
+    [Theory]
+    [InlineData("password123!")]
+    [InlineData("my-token-value")]
+    [InlineData("SECRET_VALUE")]
+    public void SanitizeCommandForStorage_DropsLikelyStandaloneSecretInput(string command)
+    {
+        var service = new CommandLogService();
+
+        var sanitized = service.SanitizeCommandForStorage(command);
+
+        sanitized.Should().BeNull();
+    }
+}
+
 public class DaemonMessageRoundTripTests
 {
     [Fact]
