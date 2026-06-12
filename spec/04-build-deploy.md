@@ -24,6 +24,7 @@ ECode/
 ├── README.md / README.en.md
 ├── assets/                        # 截图、图标
 ├── scripts/
+│   ├── ci.ps1                     # 本地 CI 入口
 │   ├── publish.ps1                # 一键发布脚本
 │   └── append-wide-tests.ps1      # 追加广覆盖测试脚本
 ├── spec/                          # 设计文档（本仓库）
@@ -84,6 +85,20 @@ dotnet run --project tests/ECode.Smoke/ECode.Smoke.csproj
 
 1. 当前可执行文件旁（部署/发布场景）
 2. 向上查找 `src/` 父目录，再遍历 `src/ECode.Daemon/bin/{Debug|Release}/<tfm>/ecode-daemon.exe`（开发构建场景）
+
+
+### 4.3 本地 CI 入口
+
+`scripts/ci.ps1` 是本地与 PR 前的统一验证入口：
+
+```powershell
+pwsh ./scripts/ci.ps1                         # restore + build + unit tests + smoke/publish dry-run gate
+pwsh ./scripts/ci.ps1 -Config Release         # Release 配置验证
+pwsh ./scripts/ci.ps1 -IncludeSmoke           # Windows 上额外运行 ConPTY smoke test
+pwsh ./scripts/ci.ps1 -IncludePublish -PublishFlavor Cli
+```
+
+默认不执行耗时或强 Windows 依赖的 smoke/publish 实际步骤，只验证脚本语法与门禁提示；发布前应在 Windows 上显式加入 `-IncludeSmoke` 和 `-IncludePublish`。
 
 ## 5. 发布形态
 

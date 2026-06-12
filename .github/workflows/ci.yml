@@ -21,14 +21,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --no-restore --configuration ${{ matrix.configuration }}
-
-      - name: Test
-        run: dotnet test --no-build --configuration ${{ matrix.configuration }} --verbosity normal
+      - name: Local CI
+        shell: pwsh
+        run: ./scripts/ci.ps1 -Config ${{ matrix.configuration }}
 
   publish:
     runs-on: windows-latest
@@ -43,20 +38,18 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Publish WPF App
-        run: dotnet publish src/ECode/ECode.csproj -c Release -r win-x64 --self-contained -o publish/app
-
-      - name: Publish CLI
-        run: dotnet publish src/ECode.Cli/ECode.Cli.csproj -c Release -r win-x64 --self-contained -o publish/cli
+      - name: Publish artifacts
+        shell: pwsh
+        run: ./scripts/ci.ps1 -Config Release -IncludePublish -PublishFlavor All
 
       - name: Upload App Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ecode-windows-x64
-          path: publish/app/
+          path: publish/ecode-win-x64-sc/
 
       - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ecode-cli-windows-x64
-          path: publish/cli/
+          path: publish/ecode-cli/
