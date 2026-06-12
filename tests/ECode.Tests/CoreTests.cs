@@ -661,6 +661,127 @@ public class SplitNodeTests
         wrap.Should().NotBeNull();
         wrap!.PaneId.Should().Be("pane-1");
     }
+
+    [Fact]
+    public void GetPreviousLeaf_CyclesCorrectly()
+    {
+        var node = ECode.Core.Models.SplitNode.CreateLeaf("pane-1");
+        var child2 = node.Split(ECode.Core.Models.SplitDirection.Vertical);
+
+        var previous = node.GetPreviousLeaf("pane-1");
+
+        previous.Should().NotBeNull();
+        previous!.PaneId.Should().Be(child2.PaneId);
+    }
+
+    [Fact]
+    public void Remove_NestedLeaf_CollapsesOnlyContainingParent()
+    {
+        var root = ECode.Core.Models.SplitNode.CreateLeaf("pane-1");
+        var right = root.Split(ECode.Core.Models.SplitDirection.Vertical);
+        var rightPaneId = right.PaneId!;
+        var nested = right.Split(ECode.Core.Models.SplitDirection.Horizontal);
+
+        var removed = root.Remove(nested.PaneId!);
+
+        removed.Should().BeTrue();
+        root.IsLeaf.Should().BeFalse();
+        root.GetLeaves().Select(l => l.PaneId).Should().Equal("pane-1", rightPaneId);
+    }
+
+    [Fact]
+    public void Remove_MissingPane_ReturnsFalse()
+    {
+        var node = ECode.Core.Models.SplitNode.CreateLeaf("pane-1");
+        node.Split(ECode.Core.Models.SplitDirection.Vertical);
+
+        var removed = node.Remove("missing-pane");
+
+        removed.Should().BeFalse();
+        node.GetLeaves().Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void CreateColumns_CreatesRequestedVerticalLeaves()
+    {
+        var node = ECode.Core.Models.SplitNode.CreateColumns(3);
+
+        node.Direction.Should().Be(ECode.Core.Models.SplitDirection.Vertical);
+        node.GetLeaves().Should().HaveCount(3);
+        node.SplitRatio.Should().BeApproximately(2d / 3d, 0.0001);
+    }
+
+    [Fact]
+    public void CreateRows_CreatesRequestedHorizontalLeaves()
+    {
+        var node = ECode.Core.Models.SplitNode.CreateRows(3);
+
+        node.Direction.Should().Be(ECode.Core.Models.SplitDirection.Horizontal);
+        node.GetLeaves().Should().HaveCount(3);
+        node.SplitRatio.Should().BeApproximately(2d / 3d, 0.0001);
+    }
+
+    [Fact]
+    public void CreateGrid_CreatesFourLeaves()
+    {
+        var node = ECode.Core.Models.SplitNode.CreateGrid();
+
+        node.Direction.Should().Be(ECode.Core.Models.SplitDirection.Horizontal);
+        node.GetLeaves().Should().HaveCount(4);
+        node.First!.Direction.Should().Be(ECode.Core.Models.SplitDirection.Vertical);
+        node.Second!.Direction.Should().Be(ECode.Core.Models.SplitDirection.Vertical);
+    }
+
+    [Fact]
+    public void CreateMainStack_CreatesMainPaneAndStack()
+    {
+        var node = ECode.Core.Models.SplitNode.CreateMainStack(stackCount: 3);
+
+        node.Direction.Should().Be(ECode.Core.Models.SplitDirection.Vertical);
+        node.SplitRatio.Should().Be(0.6);
+        node.GetLeaves().Should().HaveCount(4);
+        node.Second!.Direction.Should().Be(ECode.Core.Models.SplitDirection.Horizontal);
+    }
+
+    [Fact]
+    public void Equalize_ResetsNestedSplitRatios()
+    {
+        var node = ECode.Core.Models.SplitNode.CreateMainStack(stackCount: 3);
+        node.SplitRatio = 0.8;
+        node.Second!.SplitRatio = 0.2;
+
+        node.Equalize();
+
+        node.SplitRatio.Should().Be(0.5);
+        node.Second!.SplitRatio.Should().Be(0.5);
+    }
+
+    [Fact]
+    public void ResizePane_AdjustsNearestDirectParentAndClamps()
+    {
+        var node = ECode.Core.Models.SplitNode.CreateLeaf("pane-1");
+        var child2 = node.Split(ECode.Core.Models.SplitDirection.Vertical);
+
+        var resizedFirst = node.ResizePane("pane-1", 0.2);
+        var resizedSecond = node.ResizePane(child2.PaneId!, 1.0);
+
+        resizedFirst.Should().BeTrue();
+        resizedSecond.Should().BeTrue();
+        node.SplitRatio.Should().Be(0.1);
+    }
+
+    [Fact]
+    public void SwapPanes_ExchangesLeafPaneIds()
+    {
+        var node = ECode.Core.Models.SplitNode.CreateLeaf("pane-1");
+        var child2 = node.Split(ECode.Core.Models.SplitDirection.Vertical);
+        var pane2 = child2.PaneId!;
+
+        var swapped = node.SwapPanes("pane-1", pane2);
+
+        swapped.Should().BeTrue();
+        node.GetLeaves().Select(l => l.PaneId).Should().Equal(pane2, "pane-1");
+    }
 }
 
 public class TerminalColorTests
