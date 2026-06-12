@@ -215,7 +215,7 @@ public static class Program
     private static int PrintHelp()
     {
         Console.WriteLine("""
-            ecode - Terminal multiplexer for AI coding agents (Windows)
+            ecode - Terminal multiplexer (Windows)
 
             Usage:
               ecode <command> [options]
@@ -282,3 +282,4 @@ public static class Program
         return 1;
     }
 }
+

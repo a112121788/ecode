@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System;
 using System.Linq;
 using System.ComponentModel;
@@ -102,8 +102,7 @@ public partial class MainWindow : Window
 
         return (ws.Name?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
             || (ws.WorkingDirectory?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
-            || (ws.GitBranch?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
-            || (ws.AgentLabel?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false);
+            || (ws.GitBranch?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 
     private void WorkspaceFilterBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -959,3 +958,4 @@ public partial class MainWindow : Window
         settings.ShowDialog();
     }
 }
+

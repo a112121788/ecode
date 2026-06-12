@@ -10,7 +10,7 @@ namespace ECode.Core.IPC;
 /// 相当于 macOS 上 ecode 使用的 Unix 域套接字的 Windows 版本。
 /// 管道名：\\.\pipe\ecode（或带标签实例 \\.\pipe\ecode-{tag}）。
 /// 兼容期还会额外监听旧名 \\.\pipe\cmux（/ \\.\pipe\cmux-{tag}），
-/// 以便旧 agent 集成脚本继续可用；可通过
+/// 以便旧版 CLI 集成脚本继续可用；可通过
 /// <see cref="ECodeSettings.CompatListenLegacyMainPipe"/> 关闭。
 /// </summary>
 public sealed class NamedPipeServer : IDisposable
@@ -313,3 +313,4 @@ public static class NamedPipeClient
         throw new TimeoutException($"Could not connect to any ecode pipe (tried: {string.Join(", ", candidates)}).");
     }
 }
+

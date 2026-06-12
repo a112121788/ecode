@@ -7,7 +7,7 @@ namespace ECode.Controls;
 
 /// <summary>
 /// 基于 WebView2 的应用内浏览器控件。提供工具栏（后退/前进/刷新/地址栏），
-/// 以及供 Agent 与网页交互的可脚本化 API。
+/// 以及供脚本与网页交互的可编程 API。
 /// </summary>
 public partial class BrowserControl : UserControl
 {
@@ -156,3 +156,4 @@ public partial class BrowserControl : UserControl
         AddressBar.Text = WebView.CoreWebView2?.Source ?? "";
     }
 }
+

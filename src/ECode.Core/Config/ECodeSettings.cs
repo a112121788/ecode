@@ -52,14 +52,13 @@ public class ECodeSettings
     public List<ShellProfile> ShellProfiles { get; set; } = [];
     public Dictionary<string, string> KeyBindings { get; set; } = [];
     public List<string> RecentDirectories { get; set; } = [];
-    public AgentSettings Agent { get; set; } = new();
 
     // ── 兼容（cmux-windows 迁移期） ───────────────────────────
     // 这些选项仅保留旧管道/配置/CLI 名称兼容；运行时数据目录不再回退旧路径。
 
     /// <summary>
     /// 主应用管道额外监听旧名 `\\.\pipe\cmux`（以及带 tag 的 `\\.\pipe\cmux-{tag}`），
-    /// 以便旧的 agent 集成脚本继续可用。
+    /// 以便旧版 CLI 集成脚本继续可用。
     /// </summary>
     public bool CompatListenLegacyMainPipe { get; set; } = true;
 
@@ -95,3 +94,4 @@ public class ShellProfile
     public string? ThemeOverride { get; set; }
     public bool IsDefault { get; set; }
 }
+

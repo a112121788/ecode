@@ -43,11 +43,6 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasNotification;
 
-    [ObservableProperty]
-    private AgentType _detectedAgent;
-
-    public string AgentLabel => AgentDetector.GetLabel(DetectedAgent);
-    public string AgentIcon => AgentDetector.GetIcon(DetectedAgent);
     public string IconFontFamily => IsPrivateUseGlyph(IconGlyph) ? "Segoe MDL2 Assets" : "Segoe UI Emoji";
 
     private readonly NotificationService _notificationService;
@@ -154,19 +149,6 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
                     Workspace.GitBranch = branch;
                 }
             }
-
-            // AI agent 检测
-            var activeSurface = SelectedSurface;
-            if (activeSurface?.ShellPid is int pid and > 0)
-            {
-                var agent = AgentDetector.DetectFromProcessId(pid);
-                if (agent != DetectedAgent)
-                {
-                    DetectedAgent = agent;
-                    OnPropertyChanged(nameof(AgentLabel));
-                    OnPropertyChanged(nameof(AgentIcon));
-                }
-            }
         }
         catch
         {
@@ -220,3 +202,4 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
             surface.Dispose();
     }
 }
+

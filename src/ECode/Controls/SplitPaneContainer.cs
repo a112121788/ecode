@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ECode.Core.Models;
@@ -153,7 +153,6 @@ public class SplitPaneContainer : ContentControl
 
         // 用闭包连接事件处理程序，捕获当前面板 ID
         terminal.FocusRequested += () => _surface?.FocusPane(paneId);
-        terminal.CommandInterceptRequested += command => _surface?.TryHandlePaneCommand(paneId, command) == true;
         terminal.CommandSubmitted += command => _surface?.RegisterCommandSubmission(paneId, command);
         terminal.ClearRequested += () => _surface?.CapturePaneTranscript(paneId, "clear-terminal");
         terminal.SplitRequested += dir =>

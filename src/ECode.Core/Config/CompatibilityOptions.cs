@@ -1,4 +1,4 @@
-namespace ECode.Core.Config;
+﻿namespace ECode.Core.Config;
 
 /// <summary>
 /// 集中读取“当前数据目录 / 配置目录 / 命名管道名”的辅助类。
@@ -50,10 +50,6 @@ public static class CompatibilityOptions
     /// </summary>
     public static string GetCommandLogsDir() => Path.Combine(GetAppDataDir(), "logs");
 
-    /// <summary>
-    /// 决定 Agent 会话目录。
-    /// </summary>
-    public static string GetAgentDir() => Path.Combine(GetAppDataDir(), "agent");
 
     /// <summary>
     /// 在工作目录下寻找 `ecode.json` / `cmux.json` 的回退候选路径。

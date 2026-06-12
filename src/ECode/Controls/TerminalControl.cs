@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -91,7 +91,6 @@ public class TerminalControl : FrameworkElement
     /// <summary>当面板请求焦点时触发。</summary>
     public event Action? FocusRequested;
     public event Action<string>? CommandSubmitted;
-    public event Func<string, bool>? CommandInterceptRequested;
     public event Action? ClearRequested;
     public event Action<SplitDirection>? SplitRequested;
     public event Action? ZoomRequested;
@@ -103,7 +102,6 @@ public class TerminalControl : FrameworkElement
     {
         FocusRequested = null;
         CommandSubmitted = null;
-        CommandInterceptRequested = null;
         ClearRequested = null;
         SplitRequested = null;
         ZoomRequested = null;
@@ -1077,7 +1075,7 @@ public class TerminalControl : FrameworkElement
 
                 case '\r':
                 case '\n':
-                    SubmitBufferedCommand(allowInterception: false);
+                    SubmitBufferedCommand();
                     break;
 
                 default:
@@ -1093,7 +1091,7 @@ public class TerminalControl : FrameworkElement
         }
     }
 
-    private void SubmitBufferedCommand(bool allowInterception)
+    private void SubmitBufferedCommand()
     {
         var rawCommand = _inputLineBuffer.ToString();
         var command = rawCommand.Trim();
@@ -1101,43 +1099,7 @@ public class TerminalControl : FrameworkElement
 
         if (string.IsNullOrWhiteSpace(command))
             return;
-
-        if (allowInterception && TryInterceptCommand(command))
-        {
-            _suppressNextEnterToShell = true;
-            _suppressNextEnterTextInput = true;
-
-            // 命令文本已经按字符逐个发送给 Shell。
-            // 取消当前正在输入的这一行，以便 agent 输出中的后续换行
-            // 不会再次执行被截获的处理命令。
-            if (_session != null)
-                _session.Write("\x03");
-            return;
-        }
-
         CommandSubmitted?.Invoke(command);
-    }
-
-    private bool TryInterceptCommand(string command)
-    {
-        var handlers = CommandInterceptRequested;
-        if (handlers == null)
-            return false;
-
-        foreach (var callback in handlers.GetInvocationList().OfType<Func<string, bool>>())
-        {
-            try
-            {
-                if (callback(command))
-                    return true;
-            }
-            catch
-            {
-                // 忽略处理失败，避免破坏终端输入流程。
-            }
-        }
-
-        return false;
     }
 
     private bool CopySelectionToClipboard()
@@ -1228,7 +1190,7 @@ public class TerminalControl : FrameworkElement
                 TrackInputText("\b");
             else if (e.Key == Key.Enter)
             {
-                SubmitBufferedCommand(allowInterception: true);
+                SubmitBufferedCommand();
                 if (_suppressNextEnterToShell)
                 {
                     _suppressNextEnterToShell = false;
