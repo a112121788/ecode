@@ -71,7 +71,7 @@ public class NotificationService
     }
 
     /// <summary>
-    /// 将指定工作区的所有通知标记为已读。
+    /// 将指定项目的所有通知标记为已读。
     /// </summary>
     public void MarkWorkspaceAsRead(string workspaceId)
     {
@@ -108,7 +108,7 @@ public class NotificationService
     }
 
     /// <summary>
-    /// 获取指定工作区的未读数量。
+    /// 获取指定项目的未读数量。
     /// </summary>
     public int GetUnreadCount(string workspaceId)
     {
@@ -119,7 +119,7 @@ public class NotificationService
     }
 
     /// <summary>
-    /// 获取指定工作区的最新通知文本（用于侧边栏显示）。
+    /// 获取指定项目的最新通知文本（用于侧边栏显示）。
     /// </summary>
     public string? GetLatestText(string workspaceId)
     {

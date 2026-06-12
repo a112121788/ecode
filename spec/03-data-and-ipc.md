@@ -41,12 +41,12 @@ CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超
 
 | 命令 | 参数 | 行为 |
 |---|---|---|
-| `NOTIFY` | `title?` `body?` `subtitle?` | 向当前选中工作区 / Surface 添加一条 `NotificationSource.Cli` 通知；返回 `{ok:true}` |
-| `WORKSPACE.LIST` | — | 返回工作区列表 `[ {id, name, selected, surfaces}, ... ]` |
-| `WORKSPACE.CREATE` | `name?` | 新建工作区，可选改名为 `name`；返回 `{id, name}` |
+| `NOTIFY` | `title?` `body?` `subtitle?` | 向当前选中项目 / Surface 添加一条 `NotificationSource.Cli` 通知；返回 `{ok:true}` |
+| `WORKSPACE.LIST` | — | 返回项目列表 `[ {id, name, selected, surfaces}, ... ]` |
+| `WORKSPACE.CREATE` | `name?` | 新建项目，可选改名为 `name`；返回 `{id, name}` |
 | `WORKSPACE.SELECT` | `index?` `id?` `name?` | 按 index（0/1-based）/ id / 名称匹配；`name` 支持精确与 `Contains`；返回 `{ok:true}` |
 | `SURFACE.CREATE` | — | 新建 Surface；返回 `{ok:true}` |
-| `SURFACE.SELECT` | `workspaceId?`/`workspaceName?`/`workspaceIndex?` + `surfaceId?`/`surfaceName?`/`surfaceIndex?` | 切换工作区 + Surface；返回 `{ok, workspaceId, workspaceName, surfaceId, surfaceName}` |
+| `SURFACE.SELECT` | `workspaceId?`/`workspaceName?`/`workspaceIndex?` + `surfaceId?`/`surfaceName?`/`surfaceIndex?` | 切换项目 + Surface；返回 `{ok, workspaceId, workspaceName, surfaceId, surfaceName}` |
 | `SPLIT.RIGHT` / `SPLIT.DOWN` | — | 对当前聚焦面板分屏 |
 | `PANE.LIST` | `workspaceId?`/`workspaceName?`/`workspaceIndex?` + `surfaceId?`/`surfaceName?`/`surfaceIndex?` | 返回 `{workspace, surface, panes:[{index, id, name, customName, focused, workingDirectory}]}` |
 | `PANE.FOCUS` | 同上 + `paneId?`/`paneName?`/`paneIndex?` | 切换面板焦点；返回 `{ok, workspaceId, workspaceName, surfaceId, surfaceName, paneId, paneIndex, paneName}` |
@@ -56,7 +56,7 @@ CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超
 | 未知命令 | — | 返回 `{error:"Unknown command: …"}` |
 
 > 索引解析（`TryResolveCollectionIndex`）：正整数（1-based） 或 0 起（0-based）；越界返回错误。
-> `WORKSPACE.SELECT` / `SURFACE.SELECT` / `PANE.*` 一律遵循优先级 `id > name > index`，与 `spec/05-cli-commands.md` 的“工作区 / Surface / 面板定位约定”保持一致。
+> `WORKSPACE.SELECT` / `SURFACE.SELECT` / `PANE.*` 一律遵循优先级 `id > name > index`，与 `spec/05-cli-commands.md` 的“项目 / Surface / 面板定位约定”保持一致。
 
 ### 2.4 CLI 顶层命令
 
@@ -338,9 +338,9 @@ public NotificationSource Source; // Osc9 / Osc99 / Osc777 / Cli
 ```
 
 - 内存上限 500（`AddNotification` 满则丢弃最旧）
-- 工作区维度的 `UnreadCount` 在每次 `UnreadCountChanged` 事件时回写到 `WorkspaceViewModel`
+- 项目维度的 `UnreadCount` 在每次 `UnreadCountChanged` 事件时回写到 `WorkspaceViewModel`
 - 当 `MainWindow` 未获焦时触发 Windows Toast（`ToastNotificationHelper.ShowToast`）
-- `Ctrl+Shift+U` → `JumpToLatestUnread`：选中工作区 + Surface + 聚焦面板 + 标记已读
+- `Ctrl+Shift+U` → `JumpToLatestUnread`：选中项目 + Surface + 聚焦面板 + 标记已读
 
 ---
 

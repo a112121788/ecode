@@ -19,7 +19,7 @@ public static class ToastNotificationHelper
             new ToastContentBuilder()
                 .AddText(notification.Title)
                 .AddText(notification.Body)
-                .AddAttributionText($"Workspace: {workspaceName}")
+                .AddAttributionText($"项目: {workspaceName}")
                 .AddArgument("action", "jumpToNotification")
                 .AddArgument("notificationId", notification.Id)
                 .AddArgument("workspaceId", notification.WorkspaceId)

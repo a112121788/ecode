@@ -695,7 +695,7 @@ public sealed class AgentRuntimeService : IDisposable
         {
             new(
                 "ecode_status",
-                "Get ecode runtime status (version, workspace counts, selected workspace).",
+                "Get ecode runtime status (version, project counts, selected project).",
                 ParseSchema("""{"type":"object","properties":{},"additionalProperties":false}"""),
                 async (_, _, token) => await ExecutePipeCommandAsync("STATUS", [], token)),
 
@@ -759,13 +759,13 @@ Describe:
 
             new(
                 "ecode_workspace_list",
-                "List all workspaces.",
+                "List all projects.",
                 ParseSchema("""{"type":"object","properties":{},"additionalProperties":false}"""),
                 async (_, _, token) => await ExecutePipeCommandAsync("WORKSPACE.LIST", [], token)),
 
             new(
                 "ecode_workspace_create",
-                "Create a workspace. Optional name.",
+                "Create a project. Optional name.",
                 ParseSchema("""{"type":"object","properties":{"name":{"type":"string"}},"additionalProperties":false}"""),
                 async (args, _, token) =>
                 {
@@ -777,7 +777,7 @@ Describe:
 
             new(
                 "ecode_workspace_select",
-                "Select a workspace by index, id, or name.",
+                "Select a project by index, id, or name.",
                 ParseSchema("""{"type":"object","properties":{"index":{"type":"integer"},"id":{"type":"string"},"name":{"type":"string"}},"additionalProperties":false}"""),
                 async (args, _, token) =>
                 {
@@ -793,13 +793,13 @@ Describe:
 
             new(
                 "ecode_surface_create",
-                "Create a new surface/tab in selected workspace.",
+                "Create a new surface/tab in selected project.",
                 ParseSchema("""{"type":"object","properties":{},"additionalProperties":false}"""),
                 async (_, _, token) => await ExecutePipeCommandAsync("SURFACE.CREATE", [], token)),
 
             new(
                 "ecode_surface_select",
-                "Select a surface/tab by index, id, or name. Optional workspace selectors supported.",
+                "Select a surface/tab by index, id, or name. Optional project selectors supported.",
                 ParseSchema($$"""{"type":"object","properties":{ {{TargetSelectorsSchemaFragment}} },"additionalProperties":false}"""),
                 async (args, _, token) =>
                 {
@@ -834,7 +834,7 @@ Describe:
 
             new(
                 "ecode_pane_list",
-                "List panes for a surface/workspace. Useful before targeting paneIndex/paneName.",
+                "List panes for a surface/project. Useful before targeting paneIndex/paneName.",
                 ParseSchema($$"""{"type":"object","properties":{ {{TargetSelectorsSchemaFragment}} },"additionalProperties":false}"""),
                 async (args, _, token) =>
                 {
@@ -844,7 +844,7 @@ Describe:
 
             new(
                 "ecode_pane_focus",
-                "Focus/select a target pane by paneIndex/paneId/paneName (with optional workspace/surface selectors).",
+                "Focus/select a target pane by paneIndex/paneId/paneName (with optional project/surface selectors).",
                 ParseSchema($$"""{"type":"object","properties":{ {{TargetSelectorsSchemaFragment}} },"additionalProperties":false}"""),
                 async (args, _, token) =>
                 {

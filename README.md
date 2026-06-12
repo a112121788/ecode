@@ -12,13 +12,13 @@
 
 | 缘起（痛点） | 谁用（用户） | 是什么（能力） | 怎么用 |
 |---|---|---|---|
-| 在不同项目与 shell 之间切换时会丢失上下文 | 同时维护多个仓库/任务的同学 | **工作区 + 标签页（surfaces）** | `Ctrl+N` 新建工作区，`Ctrl+T` 新建标签页，`Ctrl+1..9` 切换 |
+| 在不同项目与 shell 之间切换时会丢失上下文 | 同时维护多个仓库/任务的同学 | **项目 + 标签页（surfaces）** | `Ctrl+N` 新建项目，`Ctrl+T` 新建标签页，`Ctrl+1..9` 切换 |
 | 一个终端永远不够用 | 命令行重度用户、agent 工作流 | **分屏（左右/上下）** | `Ctrl+D` 向右分屏，`Ctrl+Shift+D` 向下分屏，`Ctrl+Alt+方向键` 聚焦面板 |
 | 错过 agent 的关键输出 | 使用 AI 辅助编码的同学（Claude/Codex 等） | **OSC 通知 + 未读追踪** | `Ctrl+I` 打开通知，`Ctrl+Shift+U` 跳到最新未读 |
 | 需要可审计的执行命令记录 | 注重安全/排障的工作流 | **命令日志 + 历史选择器** | `Ctrl+Shift+L` 查看日志，`Ctrl+Alt+H` 命令历史，可在界面里插入/执行 |
 | 希望崩溃/重启后能完整恢复会话 | 长时间运行的会话 | **会话持久化 + 脚本捕获** | 启动时自动恢复，并打开 **Session Vault**（`Ctrl+Shift+V`） |
 | 像 Termius vault 一样可搜索历史输出 | 需要复盘终端会话的同学 | **Session Vault 浏览器** | 打开 vault，过滤捕获记录，预览脚本，复制/打开文件 |
-| 希望深色主题统一且可定制 | 在意交互/可读性的同学 | **深色 UI + 终端主题定制** | 设置（`Ctrl+,`）调整颜色/字体/光标 + 工作区配色 |
+| 希望深色主题统一且可定制 | 在意交互/可读性的同学 | **深色 UI + 终端主题定制** | 设置（`Ctrl+,`）调整颜色/字体/光标 + 项目配色 |
 | 不想反复找鼠标触发操作 | 键盘优先的进阶用户 | **命令面板 + 快捷键** | `Ctrl+Shift+P` 打开命令面板，菜单镜像主快捷键 |
 | 需要脚本/工具自动化 | 集成方/agent hook | **命名管道 CLI API**（`ecode`） | `ecode notify`、`ecode workspace`、`ecode split`、`ecode status` |
 
@@ -27,12 +27,12 @@
 ## 核心能力
 
 - 原生 **ConPTY 终端模拟**（真正的 Windows 终端后端）
-- 工作区侧边栏，带元信息（git 分支、当前目录、通知）
+- 项目侧边栏，带元信息（git 分支、当前目录、通知）
 - 多标签页与分屏布局管理
 - 通知接入（OSC 9/99/777），适配编码 agent
 - 命令日志/历史，支持过滤与一键回放
 - 终端脚本捕获 + Session Vault 浏览
-- 会话持久化（窗口 + 工作区/标签页/面板状态）
+- 会话持久化（窗口 + 项目/标签页/面板状态）
 - 深色桌面 UI，主打键盘优先的导航
 
 ---
@@ -42,8 +42,8 @@
 <details>
   <summary>展开截图</summary>
 
-  <p><strong>主工作区视图</strong></p>
-  <img src="assets/screenshots/1.jpg" alt="ECode 主工作区" width="1000" />
+  <p><strong>主项目视图</strong></p>
+  <img src="assets/screenshots/1.jpg" alt="ECode 主项目" width="1000" />
 
   <p><strong>代码片段面板</strong></p>
   <img src="assets/screenshots/2.jpg" alt="ECode 代码片段面板" width="700" />
@@ -124,7 +124,7 @@ dotnet publish src/ECode.Cli/ECode.Cli.csproj -c Release -r win-x64 --self-conta
 ## 前 5 分钟上手
 
 1. 启动 `ecode-app.exe`
-2. 用 `Ctrl+N` 为你的仓库创建一个工作区
+2. 用 `Ctrl+N` 为你的仓库创建一个项目
 3. 用 `Ctrl+T` 新增更多标签页
 4. 用 `Ctrl+D` / `Ctrl+Shift+D` 分屏
 5. 用 `Ctrl+Shift+P` 打开命令面板快速操作
@@ -136,15 +136,15 @@ dotnet publish src/ECode.Cli/ECode.Cli.csproj -c Release -r win-x64 --self-conta
 
 ## 快捷键
 
-### 工作区
+### 项目
 
 | 快捷键 | 动作 |
 |---|---|
-| `Ctrl+N` | 新建工作区 |
-| `Ctrl+1..8` | 跳转到第 1..8 个工作区 |
-| `Ctrl+9` | 跳转到最后一个工作区 |
-| `Ctrl+Shift+W` | 关闭工作区 |
-| `Ctrl+Shift+R` | 重命名工作区 |
+| `Ctrl+N` | 新建项目 |
+| `Ctrl+1..8` | 跳转到第 1..8 个项目 |
+| `Ctrl+9` | 跳转到最后一个项目 |
+| `Ctrl+Shift+W` | 关闭项目 |
+| `Ctrl+Shift+R` | 重命名项目 |
 | `Ctrl+B` | 显示/隐藏侧边栏 |
 
 ### 标签页（surfaces）
@@ -185,7 +185,7 @@ dotnet publish src/ECode.Cli/ECode.Cli.csproj -c Release -r win-x64 --self-conta
 # 发送一条通知（例如，来自 agent hook）
 ecode notify --title "Claude Code" --body "等待输入"
 
-# 工作区管理
+# 项目管理
 ecode workspace list
 ecode workspace create --name "My Project"
 ecode workspace select --index 0

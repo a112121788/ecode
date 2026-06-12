@@ -55,7 +55,7 @@ public partial class MainViewModel : ObservableObject
             App.PipeServer.OnCommand = HandlePipeCommand;
         }
 
-        // 恢复会话或创建默认工作区
+        // 恢复会话或创建默认项目
         var session = SessionPersistenceService.Load();
         if (session != null && session.Workspaces.Count > 0)
         {
@@ -70,7 +70,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public void CreateNewWorkspace()
     {
-        var workspace = new Workspace { Name = $"Workspace {Workspaces.Count + 1}" };
+        var workspace = new Workspace { Name = $"项目 {Workspaces.Count + 1}" };
         var surface = new Surface { Name = "Terminal 1" };
         workspace.Surfaces.Add(surface);
         workspace.SelectedSurface = surface;
@@ -232,7 +232,7 @@ public partial class MainViewModel : ObservableObject
         var latest = _notificationService.GetLatestUnread();
         if (latest == null) return;
 
-        // 找到对应的工作区和 Surface
+        // 找到对应的项目和 Surface
         var workspace = Workspaces.FirstOrDefault(w => w.Workspace.Id == latest.WorkspaceId);
         if (workspace != null)
         {
@@ -488,7 +488,7 @@ public partial class MainViewModel : ObservableObject
                 return JsonSerializer.Serialize(new { ok = true });
             }
         }
-        return JsonSerializer.Serialize(new { error = "Workspace not found" });
+        return JsonSerializer.Serialize(new { error = "Project not found" });
     }
 
     private string HandleSurfaceCreate(Dictionary<string, string> args)
@@ -723,7 +723,7 @@ public partial class MainViewModel : ObservableObject
         var defaultWorkspace = SelectedWorkspace ?? Workspaces.FirstOrDefault();
         if (defaultWorkspace == null)
         {
-            error = "No workspace available.";
+            error = "No project available.";
             return false;
         }
 
@@ -734,7 +734,7 @@ public partial class MainViewModel : ObservableObject
             var byId = Workspaces.FirstOrDefault(w => string.Equals(w.Workspace.Id, workspaceId, StringComparison.Ordinal));
             if (byId == null)
             {
-                error = $"Workspace id not found: {workspaceId}";
+                error = $"Project id not found: {workspaceId}";
                 return false;
             }
 
@@ -748,7 +748,7 @@ public partial class MainViewModel : ObservableObject
                 ?? Workspaces.FirstOrDefault(w => w.Name.Contains(workspaceName, StringComparison.OrdinalIgnoreCase));
             if (byName == null)
             {
-                error = $"Workspace name not found: {workspaceName}";
+                error = $"Project name not found: {workspaceName}";
                 return false;
             }
 
@@ -761,7 +761,7 @@ public partial class MainViewModel : ObservableObject
         {
             if (!TryResolveCollectionIndex(workspaceIndex, Workspaces.Count, out var resolvedIndex))
             {
-                error = $"Workspace index out of range: {workspaceIndex}";
+                error = $"Project index out of range: {workspaceIndex}";
                 return false;
             }
 
@@ -780,7 +780,7 @@ public partial class MainViewModel : ObservableObject
         var defaultSurface = workspace.SelectedSurface ?? workspace.Surfaces.FirstOrDefault();
         if (defaultSurface == null)
         {
-            error = "No surface available in workspace.";
+            error = "No surface available in project.";
             return false;
         }
 

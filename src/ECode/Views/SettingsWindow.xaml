@@ -688,7 +688,7 @@
                             <TextBlock Text="关闭时保存记录" Style="{StaticResource SectionLabel}" />
                             <CheckBox x:Name="CaptureOnCloseCheck" Grid.Column="1"
                                       Style="{StaticResource SettingsCheck}"
-                                      Content="在面板/Surface/工作区/应用关闭时保存终端脚本" />
+                                      Content="在面板/Surface/项目/应用关闭时保存终端脚本" />
                         </Grid>
 
                         <!-- 清屏前保存终端记录 -->
@@ -750,20 +750,20 @@
                                     <RowDefinition Height="28" />
                                 </Grid.RowDefinitions>
 
-                                <!-- 工作区 -->
+                                <!-- 项目 -->
                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+N" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentBrush}" FontSize="13" VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="新建工作区"
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="新建项目"
                                            Foreground="{StaticResource ForegroundDimBrush}" FontSize="13" VerticalAlignment="Center" />
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+1-8" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentBrush}" FontSize="13" VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="1" Grid.Column="1" Text="切换到工作区"
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="切换到项目"
                                            Foreground="{StaticResource ForegroundDimBrush}" FontSize="13" VerticalAlignment="Center" />
 
                                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+Shift+W" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentBrush}" FontSize="13" VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="2" Grid.Column="1" Text="关闭工作区"
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="关闭项目"
                                            Foreground="{StaticResource ForegroundDimBrush}" FontSize="13" VerticalAlignment="Center" />
 
                                 <!-- 标签页 -->
@@ -1346,7 +1346,7 @@
                                            Foreground="{StaticResource ForegroundBrush}" Margin="0,0,0,4" />
                                 <TextBlock Text="v1.0.6" FontSize="13"
                                            Foreground="{StaticResource AccentBrush}" Margin="0,0,0,12" />
-                                <TextBlock Text="为 AI 编码 Agent 设计的现代化终端复用器，支持分屏、工作区、命令面板和智能终端管理。"
+                                <TextBlock Text="为 AI 编码 Agent 设计的现代化终端复用器，支持分屏、项目、命令面板和智能终端管理。"
                                            Foreground="{StaticResource ForegroundDimBrush}" FontSize="13"
                                            TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,12" />
                                 <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,4,0,12" />

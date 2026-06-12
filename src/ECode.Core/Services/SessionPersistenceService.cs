@@ -5,7 +5,7 @@ using ECode.Core.Models;
 namespace ECode.Core.Services;
 
 /// <summary>
-/// 保存并恢复应用程序会话状态（窗口布局、工作区、Surface、分屏布局、工作目录）
+/// 保存并恢复应用程序会话状态（窗口布局、项目、Surface、分屏布局、工作目录）
 /// 到 JSON 文件，或从 JSON 文件恢复。
 /// </summary>
 public class SessionPersistenceService

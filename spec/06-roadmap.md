@@ -17,10 +17,10 @@
 
 最终用户应能：
 
-1. 在 Windows 上用原生 WPF + ConPTY 获得稳定终端、多工作区、多标签页和分屏体验。
+1. 在 Windows 上用原生 WPF + ConPTY 获得稳定终端、多项目、多标签页和分屏体验。
 2. 同时运行多个 Claude Code / Codex / OpenCode / Gemini / Copilot CLI 会话，并通过蓝环、侧栏、通知面板快速定位需要人工输入的会话。
 3. 使用 `ecode.json` 把一个项目的常用布局、Agent 启动命令、浏览器预览和快捷按钮固化下来。
-4. 通过 CLI / Named Pipe / v2 API 自动化创建工作区、分屏、发送输入、读取输出、控制浏览器。
+4. 通过 CLI / Named Pipe / v2 API 自动化创建项目、分屏、发送输入、读取输出、控制浏览器。
 5. 在崩溃 / 重启后恢复窗口、布局、工作目录、终端滚动历史、浏览器 URL，并对支持的 agent 会话执行可审计的 resume。
 
 ---
@@ -32,7 +32,7 @@
 ECode 不是一个新的 IDE，也不是强流程的 Agent 编排器，而是 Windows 上的一组可组合开发原语：
 
 - 终端原语：ConPTY、scrollback、VT/OSC、快捷键、命令历史。
-- 布局原语：工作区、Surface、Pane、分屏树、缩放、重排。
+- 布局原语：项目、Surface、Pane、分屏树、缩放、重排。
 - 通知原语：OSC 9/99/777、CLI notify、未读状态、跳转最新未读。
 - 自动化原语：CLI、Named Pipe、短 ID、v2 JSON 协议。
 - 浏览器原语：WebView2 browser pane、DOM 快照、click/fill/eval/screenshot。

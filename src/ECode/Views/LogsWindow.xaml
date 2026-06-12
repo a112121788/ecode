@@ -242,7 +242,7 @@
                     </DockPanel>
 
                     <WrapPanel>
-                        <TextBlock Text="工作区" Foreground="{StaticResource ForegroundDimBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock Text="项目" Foreground="{StaticResource ForegroundDimBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                         <ComboBox x:Name="WorkspaceFilterCombo" Width="220" Style="{StaticResource SettingsCombo}"
                                   SelectionChanged="WorkspaceFilterCombo_SelectionChanged" Margin="0,0,12,0" />
 
@@ -273,7 +273,7 @@
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="时间" Width="78" DisplayMemberBinding="{Binding StartedAtLocal}" />
-                            <GridViewColumn Header="工作区" Width="210" DisplayMemberBinding="{Binding WorkspaceDisplay}" />
+                            <GridViewColumn Header="项目" Width="210" DisplayMemberBinding="{Binding WorkspaceDisplay}" />
                             <GridViewColumn Header="标签页" Width="180" DisplayMemberBinding="{Binding SurfaceDisplay}" />
                             <GridViewColumn Header="面板" Width="90" DisplayMemberBinding="{Binding PaneDisplay}" />
                             <GridViewColumn Header="命令" Width="300" DisplayMemberBinding="{Binding Command}" />

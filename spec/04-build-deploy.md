@@ -171,7 +171,7 @@ publish/
 | CLI 连不上 | 确认 ecode-app.exe 在运行；`\\.\pipe\ecode` 是否被占用；看 daemon-debug.log |
 | 守护进程频繁退出 | 看是否 24 小时空闲自动退出；或者 `Global\ECodeDaemon` 互斥体冲突 |
 | 终端无输出 | ConPTY 兼容性问题；先看 `tests/ECode.Smoke` 是否通过 |
-| 会话无法恢复 | 检查 `session.json` 版本号（`version=1`）；损坏会回退到默认工作区 |
+| 会话无法恢复 | 检查 `session.json` 版本号（`version=1`）；损坏会回退到默认项目 |
 | 字体乱码 | `ECodeSettings.FontFamily` 是否安装；查看 `TerminalThemes.GetEffective` 主题覆盖 |
 
 ## 10. 测试

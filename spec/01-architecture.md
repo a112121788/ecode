@@ -8,7 +8,7 @@
 ecode 是面向 Windows 的深色、键盘优先的终端复用器，灵感来自 tmux/ecode 工作流，底层使用 **WPF + ConPTY** 原生构建。
 
 **核心价值**：
-- 工作区（Workspace）+ 标签页（Surface）+ 二叉树分屏（SplitNode），实现多项目/多任务上下文隔离
+- 项目（Workspace）+ 标签页（Surface）+ 二叉树分屏（SplitNode），实现多项目/多任务上下文隔离
 - 终端持久化（守护进程 + 缓冲区快照双模式），崩溃/重启后可恢复
 - AI Agent 友好：OSC 通知（9/99/777）、命令日志、脚本捕获、Agent 会话记录
 - 键盘优先：命令面板 + 快捷键 + 命令片段（Snippet）
@@ -318,7 +318,7 @@ SosPmApc
 
 | 文件 / 目录 | 作用 | 写入策略 |
 |---|---|---|
-| `session.json` | 会话状态（窗口 + 工作区 + Surface + 分屏 + 面板快照） | 原子写 |
+| `session.json` | 会话状态（窗口 + 项目 + Surface + 分屏 + 面板快照） | 原子写 |
 | `settings.json` | `ECodeSettings`（含 `AgentSettings`） | 原子写 |
 | `snippets.json` | 代码片段 | 原子写；首次启动播种 10 条默认 |
 | `secrets.json` | DPAPI 加密的 API Key 字典 | 原子写 |
@@ -384,11 +384,11 @@ SosPmApc
 
 | 类别 | 快捷键 | 动作 |
 |---|---|---|
-| 工作区 | `Ctrl+N` | 新建工作区 |
-|  | `Ctrl+1..8` | 跳转到第 1..8 个工作区 |
+| 项目 | `Ctrl+N` | 新建项目 |
+|  | `Ctrl+1..8` | 跳转到第 1..8 个项目 |
 |  | `Ctrl+9` | 跳转到最后一个 |
-|  | `Ctrl+Shift+W` | 关闭工作区 |
-|  | `Ctrl+Shift+R` | 重命名工作区 |
+|  | `Ctrl+Shift+W` | 关闭项目 |
+|  | `Ctrl+Shift+R` | 重命名项目 |
 |  | `Ctrl+B` | 切换侧边栏 |
 | Surface | `Ctrl+T` | 新建 Surface（标签页） |
 |  | `Ctrl+W` | 关闭 Surface |

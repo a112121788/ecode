@@ -189,7 +189,7 @@ public partial class LogsWindow : Window
 
         _suppressFilterEvents = true;
 
-        WorkspaceFilterCombo.ItemsSource = (new[] { new FilterOption { Id = string.Empty, Label = "所有工作区" } })
+        WorkspaceFilterCombo.ItemsSource = (new[] { new FilterOption { Id = string.Empty, Label = "所有项目" } })
             .Concat(workspaceOptions)
             .ToList();
         WorkspaceFilterCombo.SelectedValue = workspaceOptions.Any(x => x.Id == previousWorkspace) ? previousWorkspace : string.Empty;

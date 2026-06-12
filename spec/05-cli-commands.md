@@ -31,8 +31,8 @@
 
 | 子命令 | 选项 | 行为 |
 |---|---|---|
-| `list` / `ls` | — | 列出工作区 → `WORKSPACE.LIST` |
-| `create` / `new` | `--name <text>` | 新建工作区 → `WORKSPACE.CREATE` |
+| `list` / `ls` | — | 列出项目 → `WORKSPACE.LIST` |
+| `create` / `new` | `--name <text>` | 新建项目 → `WORKSPACE.CREATE` |
 | `select` | `--index <n>` / `--id <id>` / `--name <name>` | 切换 → `WORKSPACE.SELECT` |
 | `next` | — | `WORKSPACE.NEXT` |
 | `previous` / `prev` | — | `WORKSPACE.PREVIOUS` |
@@ -88,23 +88,23 @@ COMMAND [k=v [k=v ...]]
 
 | 命令 | 关键参数 | 默认 | 说明 |
 |---|---|---|---|
-| `NOTIFY` | `title` `body` `subtitle` | `title="Terminal"` | 写入当前工作区 / Surface 的通知 |
+| `NOTIFY` | `title` `body` `subtitle` | `title="Terminal"` | 写入当前项目 / Surface 的通知 |
 | `WORKSPACE.LIST` | — | — | 返回 `[ {id,name,selected,surfaces} ]` |
-| `WORKSPACE.CREATE` | `name` | — | 新建工作区，返回 `{id,name}` |
-| `WORKSPACE.SELECT` | `index`(0/1-based) / `id` / `name` | — | 切换工作区（`name` 支持包含匹配） |
-| `WORKSPACE.NEXT` | — | — | 下一个工作区 |
-| `WORKSPACE.PREVIOUS` | — | — | 上一个工作区 |
-| `SURFACE.CREATE` | — | — | 当前工作区新增 Surface |
-| `SURFACE.SELECT` | `workspaceId/Name/Index` + `surfaceId/Name/Index` | 当前工作区 / Surface | 切换 Surface（`index` 支持 0/1-based，越界返回错误） |
+| `WORKSPACE.CREATE` | `name` | — | 新建项目，返回 `{id,name}` |
+| `WORKSPACE.SELECT` | `index`(0/1-based) / `id` / `name` | — | 切换项目（`name` 支持包含匹配） |
+| `WORKSPACE.NEXT` | — | — | 下一个项目 |
+| `WORKSPACE.PREVIOUS` | — | — | 上一个项目 |
+| `SURFACE.CREATE` | — | — | 当前项目新增 Surface |
+| `SURFACE.SELECT` | `workspaceId/Name/Index` + `surfaceId/Name/Index` | 当前项目 / Surface | 切换 Surface（`index` 支持 0/1-based，越界返回错误） |
 | `SURFACE.NEXT` / `SURFACE.PREVIOUS` | — | — | 同 Surface 内切换 |
 | `SPLIT.RIGHT` / `SPLIT.DOWN` | — | — | 对当前聚焦面板分屏 |
-| `PANE.LIST` | 工作区 + Surface 定位参数 | 当前选中 | 返回 `{workspace, surface, panes:[{index,id,name,customName,focused,workingDirectory}]}` |
-| `PANE.FOCUS` | 工作区 + Surface + `paneId/Name/Index` | 当前聚焦 | 切换面板焦点 |
-| `PANE.WRITE` | 工作区 + Surface + `paneId/Name/Index` + `text` + `submit` + `submitKey` | 当前聚焦 | 写入文本；`submit=true` 自动追加 submit 序列；`submitKey ∈ {auto,enter,linefeed,crlf,none}` |
-| `PANE.READ` | 工作区 + Surface + `paneId/Name/Index` + `lines` (1..5000) + `maxChars` (512..200000) | 当前聚焦 / 80 行 / 20000 字符 | 返回 `{ok, ..., lines, maxChars, text}` |
+| `PANE.LIST` | 项目 + Surface 定位参数 | 当前选中 | 返回 `{workspace, surface, panes:[{index,id,name,customName,focused,workingDirectory}]}` |
+| `PANE.FOCUS` | 项目 + Surface + `paneId/Name/Index` | 当前聚焦 | 切换面板焦点 |
+| `PANE.WRITE` | 项目 + Surface + `paneId/Name/Index` + `text` + `submit` + `submitKey` | 当前聚焦 | 写入文本；`submit=true` 自动追加 submit 序列；`submitKey ∈ {auto,enter,linefeed,crlf,none}` |
+| `PANE.READ` | 项目 + Surface + `paneId/Name/Index` + `lines` (1..5000) + `maxChars` (512..200000) | 当前聚焦 / 80 行 / 20000 字符 | 返回 `{ok, ..., lines, maxChars, text}` |
 | `STATUS` | — | — | `{version, workspaces, selectedWorkspace, unreadNotifications}`（`version` 当前为 `1.0.6` 程序集版本；roadmap 规划将从 `0.1.x` 重启发布线） |
 
-#### 工作区 / Surface / 面板定位约定
+#### 项目 / Surface / 面板定位约定
 
 - 优先级：`id > name > index`
 - 名称匹配：先精确（OrdinalIgnoreCase）后 `Contains`（OrdinalIgnoreCase）
@@ -195,7 +195,7 @@ ecode notify --title "Claude Code" --body "等待输入"
 ### 4.2 自动化建会话并写入命令
 
 ```powershell
-# 创建工作区
+# 创建项目
 ecode workspace create --name "My Project"
 
 # 新建 Surface

@@ -130,7 +130,7 @@
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="时间" Width="120" DisplayMemberBinding="{Binding CapturedAtLocal}" />
-                                    <GridViewColumn Header="工作区" Width="150" DisplayMemberBinding="{Binding WorkspaceDisplay}" />
+                                    <GridViewColumn Header="项目" Width="150" DisplayMemberBinding="{Binding WorkspaceDisplay}" />
                                     <GridViewColumn Header="标签页" Width="120" DisplayMemberBinding="{Binding SurfaceDisplay}" />
                                 </GridView>
                             </ListView.View>

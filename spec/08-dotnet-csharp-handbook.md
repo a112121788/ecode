@@ -78,7 +78,7 @@ ECode.sln
 | `TreatWarningsAsErrors` | 警告即错误 | `true`（**全仓库强制**） |
 | `AllowUnsafeBlocks` | 允许 `unsafe` | 仅 `ECode.Core` 为 `true`（ConPty Interop 用） |
 
-> 类比：`csproj` ≈ `Gemfile` + `package.gemspec`；`.sln` ≈ Gemfile + 工作区元数据；`obj/`、`bin/` ≈ `.bundle/` 缓存。
+> 类比：`csproj` ≈ `Gemfile` + `package.gemspec`；`.sln` ≈ Gemfile + 项目元数据；`obj/`、`bin/` ≈ `.bundle/` 缓存。
 
 ### 1.3 全局编译开关
 

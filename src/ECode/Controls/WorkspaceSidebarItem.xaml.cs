@@ -34,8 +34,8 @@ public partial class WorkspaceSidebarItem : UserControl
         if (Vm == null) return;
 
         var prompt = new TextPromptWindow(
-            title: "Workspace Icon",
-            message: "Enter a single icon (emoji/symbol) or a glyph code like E8A5, U+E8A5, 0xE8A5.",
+            title: "项目图标",
+            message: "输入单个图标（emoji/符号）或字形代码，例如 E8A5、U+E8A5、0xE8A5。",
             defaultValue: Vm.IconGlyph)
         {
             Owner = Window.GetWindow(this),
@@ -52,8 +52,8 @@ public partial class WorkspaceSidebarItem : UserControl
 
         if (value.StartsWith("<svg", StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show("SVG is not supported in workspace icon yet. Use emoji/symbol or MDL2 hex code.",
-                "Workspace Icon", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("暂不支持 SVG 项目图标。请使用 emoji/符号或 MDL2 十六进制代码。",
+                "项目图标", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 

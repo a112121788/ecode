@@ -160,7 +160,7 @@
                                 <Style TargetType="Separator" BasedOn="{StaticResource AppMenuSeparatorStyle}" />
                             </Menu.Resources>
                             <MenuItem Header="文件(_F)" Style="{StaticResource AppMenuTopItemStyle}" ItemContainerStyle="{StaticResource AppMenuSubItemStyle}">
-                                <MenuItem Header="新建工作区(_N)" Command="{Binding CreateNewWorkspaceCommand}" InputGestureText="Ctrl+N" />
+                                <MenuItem Header="新建项目(_N)" Command="{Binding CreateNewWorkspaceCommand}" InputGestureText="Ctrl+N" />
                                 <MenuItem Header="新建标签页(_S)" Command="{Binding SelectedWorkspace.CreateNewSurfaceCommand}" InputGestureText="Ctrl+T" />
                                 <Separator />
                                 <MenuItem Header="命令日志(_L)" Click="MenuOpenLogs_Click" InputGestureText="Ctrl+Shift+L" />
@@ -244,12 +244,12 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Vertical">
-                                    <TextBlock Text="工作区" Foreground="{StaticResource ForegroundBrush}" FontSize="12" FontWeight="SemiBold" />
+                                    <TextBlock Text="项目" Foreground="{StaticResource ForegroundBrush}" FontSize="12" FontWeight="SemiBold" />
                                     <TextBlock Text="管理会话与环境" Foreground="{StaticResource ForegroundDimBrush}" FontSize="10" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Style="{StaticResource IconButton}" ToolTip="新建工作区 (Ctrl+N)"
+                                    <Button Style="{StaticResource IconButton}" ToolTip="新建项目 (Ctrl+N)"
                                             Width="24" Height="24" Command="{Binding CreateNewWorkspaceCommand}">
                                         <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="10" />
                                     </Button>
@@ -269,7 +269,7 @@
                                          Background="#FF141420" Foreground="{StaticResource ForegroundBrush}"
                                          BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
                                          CaretBrush="{StaticResource ForegroundBrush}" SelectionBrush="{StaticResource AccentBrush}"
-                                         ToolTip="按名称、分支或目录过滤工作区"
+                                         ToolTip="按名称、分支或目录过滤项目"
                                          TextChanged="WorkspaceFilterBox_TextChanged" />
                             </Grid>
                         </Border>
@@ -343,7 +343,7 @@
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                    Margin="0,0,8,0" Opacity="0.6" />
-                                        <TextBlock Text="新建工作区" FontSize="12" />
+                                        <TextBlock Text="新建项目" FontSize="12" />
                                     </StackPanel>
                                 </Button>
 

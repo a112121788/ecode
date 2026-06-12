@@ -291,12 +291,12 @@ public partial class MainWindow : Window
         if (ctrl && !alt && IsTerminalFocusActive())
             return;
 
-        // 工作区
+        // 项目
         if (ctrl && !shift && !alt)
         {
             switch (e.Key)
             {
-                case Key.N: // 新建工作区
+                case Key.N: // 新建项目
                     ViewModel.CreateNewWorkspace();
                     e.Handled = true;
                     return;
@@ -322,7 +322,7 @@ public partial class MainWindow : Window
                     ViewModel.SelectedWorkspace?.SelectedSurface?.SplitRight();
                     e.Handled = true;
                     return;
-                // 工作区 1-8
+                // 项目 1-8
                 case Key.D1: ViewModel.SelectWorkspace(0); e.Handled = true; return;
                 case Key.D2: ViewModel.SelectWorkspace(1); e.Handled = true; return;
                 case Key.D3: ViewModel.SelectWorkspace(2); e.Handled = true; return;
@@ -331,7 +331,7 @@ public partial class MainWindow : Window
                 case Key.D6: ViewModel.SelectWorkspace(5); e.Handled = true; return;
                 case Key.D7: ViewModel.SelectWorkspace(6); e.Handled = true; return;
                 case Key.D8: ViewModel.SelectWorkspace(7); e.Handled = true; return;
-                case Key.D9: // 最后一个工作区
+                case Key.D9: // 最后一个项目
                     if (ViewModel.Workspaces.Count > 0)
                         ViewModel.SelectWorkspace(ViewModel.Workspaces.Count - 1);
                     e.Handled = true;
@@ -626,10 +626,10 @@ public partial class MainWindow : Window
     {
         return
         [
-            new() { Id = "new-workspace", Label = "新建工作区", Icon = "\uE710", Shortcut = "Ctrl+N", Category = "工作区", Execute = () => ViewModel.CreateNewWorkspace() },
+            new() { Id = "new-workspace", Label = "新建项目", Icon = "\uE710", Shortcut = "Ctrl+N", Category = "项目", Execute = () => ViewModel.CreateNewWorkspace() },
             new() { Id = "new-surface", Label = "新建标签页", Icon = "\uE710", Shortcut = "Ctrl+T", Category = "标签页", Execute = () => ViewModel.SelectedWorkspace?.CreateNewSurface() },
             new() { Id = "close-surface", Label = "关闭标签页", Icon = "\uE711", Shortcut = "Ctrl+W", Category = "标签页", Execute = () => { var s = ViewModel.SelectedWorkspace?.SelectedSurface; if (s != null) ViewModel.SelectedWorkspace?.CloseSurface(s); } },
-            new() { Id = "close-workspace", Label = "关闭工作区", Icon = "\uE711", Shortcut = "Ctrl+Shift+W", Category = "工作区", Execute = () => ViewModel.CloseWorkspace(ViewModel.SelectedWorkspace) },
+            new() { Id = "close-workspace", Label = "关闭项目", Icon = "\uE711", Shortcut = "Ctrl+Shift+W", Category = "项目", Execute = () => ViewModel.CloseWorkspace(ViewModel.SelectedWorkspace) },
             new() { Id = "split-right", Label = "向右分屏", Icon = "\uE26B", Shortcut = "Ctrl+D", Category = "面板", Execute = () => ViewModel.SelectedWorkspace?.SelectedSurface?.SplitRight() },
             new() { Id = "split-down", Label = "向下分屏", Icon = "\uE74B", Shortcut = "Ctrl+Shift+D", Category = "面板", Execute = () => ViewModel.SelectedWorkspace?.SelectedSurface?.SplitDown() },
             new() { Id = "toggle-sidebar", Label = "切换侧边栏", Icon = "\uE700", Shortcut = "Ctrl+B", Category = "视图", Execute = () => ViewModel.ToggleSidebar() },

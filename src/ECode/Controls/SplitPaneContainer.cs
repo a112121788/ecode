@@ -39,8 +39,8 @@ public class SplitPaneContainer : ContentControl
             oldSurface.PropertyChanged -= OnSurfacePropertyChanged;
         }
 
-        // 切换 Surface/工作区时清除终端缓存
-        // 防止重用来自其他工作区的终端
+        // 切换 Surface/项目时清除终端缓存
+        // 防止重用来自其他项目的终端
         _terminalCache.Clear();
 
         _surface = e.NewValue as SurfaceViewModel;

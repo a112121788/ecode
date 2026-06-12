@@ -435,7 +435,7 @@ public class CommandLogService
     /// 处理 OSC 133 提示符标记。
     /// </summary>
     /// <param name="paneId">发出该标记的面板。</param>
-    /// <param name="workspaceId">面板所属工作区。</param>
+    /// <param name="workspaceId">面板所属项目。</param>
     /// <param name="surfaceId">面板所属 Surface。</param>
     /// <param name="marker">'A'（提示符开始）、'B'（命令开始）、'C'（输出开始）、'D'（命令完成）之一。</param>
     /// <param name="payload">可选负载：'B' 通常是命令文本，'D' 是退出码。</param>

@@ -10,13 +10,13 @@ A dark, keyboard-first terminal multiplexer for Windows, inspired by tmux/cmux w
 
 | Why (problem) | Who (for) | What (feature) | How to use |
 |---|---|---|---|
-| You lose context across projects and shells | Developers juggling many repos/tasks | **Workspaces + surfaces (tabs)** | `Ctrl+N` new workspace, `Ctrl+T` new surface, switch with `Ctrl+1..9` |
+| You lose context across projects and shells | Developers juggling many repos/tasks | **Projects + surfaces (tabs)** | `Ctrl+N` new project, `Ctrl+T` new surface, switch with `Ctrl+1..9` |
 | One terminal is never enough | CLI-heavy users, agent workflows | **Split panes** (right/down) | `Ctrl+D` split right, `Ctrl+Shift+D` split down, `Ctrl+Alt+Arrow` focus pane |
 | You miss important agent outputs | AI-assisted coding users (Claude/Codex/etc.) | **OSC notifications + unread tracking** | `Ctrl+I` open notifications, `Ctrl+Shift+U` jump to latest unread |
 | You need auditability of executed commands | Security-conscious / debugging workflows | **Command logs + history picker** | `Ctrl+Shift+L` logs, `Ctrl+Alt+H` command history, insert/run from UI |
 | You want full session recall after crashes/restarts | Long-running sessions | **Session persistence + transcript capture** | Auto restore on startup + open **Session Vault** (`Ctrl+Shift+V`) |
 | You want searchable output history like Termius vault | Anyone reviewing terminal sessions | **Session Vault browser** | Open vault, filter captures, preview transcript, copy/open file |
-| You need dark theme consistency and personalization | Users who care about UX/readability | **Dark UI + terminal theme customization** | Settings (`Ctrl+,`) for colors/font/cursor + workspace accents |
+| You need dark theme consistency and personalization | Users who care about UX/readability | **Dark UI + terminal theme customization** | Settings (`Ctrl+,`) for colors/font/cursor + project accents |
 | You want quick actions without mouse hunting | Keyboard-first power users | **Command palette + shortcuts** | `Ctrl+Shift+P` command palette, menu mirrors key flows |
 | You need automation from scripts/tools | Integrators/agent hooks | **Named pipe CLI API** (`ecode`) | `ecode notify`, `ecode workspace`, `ecode split`, `ecode status` |
 
@@ -25,12 +25,12 @@ A dark, keyboard-first terminal multiplexer for Windows, inspired by tmux/cmux w
 ## Core capabilities
 
 - Native **ConPTY terminal emulation** (real Windows terminal backend)
-- Workspace sidebar with metadata (git branch, cwd, notifications)
+- Project sidebar with metadata (git branch, cwd, notifications)
 - Multi-surface tabs and split-pane layout management
 - Notification ingestion (OSC 9/99/777) for coding agents
 - Command logs/history with filtering and quick replay
 - Terminal transcript capture + Session Vault browsing
-- Persistent sessions (window + workspace/surface/pane state)
+- Persistent sessions (window + project/surface/pane state)
 - Dark desktop UI with keyboard-first navigation
 
 ---
@@ -40,8 +40,8 @@ A dark, keyboard-first terminal multiplexer for Windows, inspired by tmux/cmux w
 <details>
   <summary>Open screenshots</summary>
 
-  <p><strong>Main workspace view</strong></p>
-  <img src="assets/screenshots/1.jpg" alt="ECode main workspace" width="1000" />
+  <p><strong>Main project view</strong></p>
+  <img src="assets/screenshots/1.jpg" alt="ECode main project" width="1000" />
 
   <p><strong>Snippets panel</strong></p>
   <img src="assets/screenshots/2.jpg" alt="ECode snippets panel" width="700" />
@@ -122,7 +122,7 @@ Add `publish/ecode-cli` to `PATH` to use `ecode` globally.
 ## First 5 minutes (how to use)
 
 1. Launch `ecode-app.exe`
-2. `Ctrl+N` to create a workspace for your repo
+2. `Ctrl+N` to create a project for your repo
 3. `Ctrl+T` to create additional surfaces (tabs)
 4. Split panes with `Ctrl+D` / `Ctrl+Shift+D`
 5. Open command palette with `Ctrl+Shift+P` for quick actions
@@ -134,15 +134,15 @@ Add `publish/ecode-cli` to `PATH` to use `ecode` globally.
 
 ## Keyboard shortcuts
 
-### Workspaces
+### Projects
 
 | Shortcut | Action |
 |---|---|
-| `Ctrl+N` | New workspace |
-| `Ctrl+1..8` | Jump to workspace 1..8 |
-| `Ctrl+9` | Jump to last workspace |
-| `Ctrl+Shift+W` | Close workspace |
-| `Ctrl+Shift+R` | Rename workspace |
+| `Ctrl+N` | New project |
+| `Ctrl+1..8` | Jump to project 1..8 |
+| `Ctrl+9` | Jump to last project |
+| `Ctrl+Shift+W` | Close project |
+| `Ctrl+Shift+R` | Rename project |
 | `Ctrl+B` | Toggle sidebar |
 
 ### Surfaces (tabs)
@@ -183,7 +183,7 @@ Add `publish/ecode-cli` to `PATH` to use `ecode` globally.
 # Send a notification (e.g., from agent hooks)
 ecode notify --title "Claude Code" --body "Waiting for input"
 
-# Workspace management
+# Project management
 ecode workspace list
 ecode workspace create --name "My Project"
 ecode workspace select --index 0

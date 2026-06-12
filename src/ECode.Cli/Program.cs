@@ -11,7 +11,7 @@ namespace ECode.Cli;
 /// 用法：
 ///   ecode notify --title "Title" --body "Body"
 ///   ecode workspace list
-///   ecode workspace create --name "My Workspace"
+///   ecode workspace create --name "My Project"
 ///   ecode workspace select --index 0
 ///   ecode surface create
 ///   ecode split right
@@ -225,17 +225,17 @@ public static class Program
                 --body <text>       Notification body
                 --subtitle <text>   Notification subtitle
 
-              workspace             Manage workspaces
-                list                List all workspaces
-                create              Create a new workspace
-                  --name <text>     Workspace name
-                select              Select a workspace
-                  --index <n>       Workspace index (0-based)
-                  --id <id>         Workspace ID
-                next                Switch to next workspace
-                previous            Switch to previous workspace
+              workspace             Manage projects
+                list                List all projects
+                create              Create a new project
+                  --name <text>     Project name
+                select              Select a project
+                  --index <n>       Project index (0-based)
+                  --id <id>         Project ID
+                next                Switch to next project
+                previous            Switch to previous project
 
-              surface               Manage surfaces (tabs within workspace)
+              surface               Manage surfaces (tabs within project)
                 create              Create a new surface
                 next                Switch to next surface
                 previous            Switch to previous surface
@@ -247,10 +247,10 @@ public static class Program
               status                Show ecode status
 
             Keyboard Shortcuts (in the app):
-              Ctrl+N                New workspace
-              Ctrl+1-8              Jump to workspace 1-8
-              Ctrl+9                Jump to last workspace
-              Ctrl+Shift+W          Close workspace
+              Ctrl+N                New project
+              Ctrl+1-8              Jump to project 1-8
+              Ctrl+9                Jump to last project
+              Ctrl+Shift+W          Close project
               Ctrl+B                Toggle sidebar
               Ctrl+T                New surface (tab)
               Ctrl+W                Close surface
