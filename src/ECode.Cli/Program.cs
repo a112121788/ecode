@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Reflection;
 using ECode.Core.Config;
 using ECode.Core.IPC;
 
@@ -265,7 +266,13 @@ public static class Program
 
     private static int PrintVersion()
     {
-        Console.WriteLine("ecode 0.1.0 (Windows)");
+        var version = typeof(Program).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion
+            .Split('+', 2)[0]
+            ?? typeof(Program).Assembly.GetName().Version?.ToString()
+            ?? "0.1.0";
+        Console.WriteLine($"ecode {version} (Windows)");
         return 0;
     }
 

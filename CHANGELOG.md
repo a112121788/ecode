@@ -8,6 +8,10 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 
 ## [Unreleased]
 
+暂无。
+
+## [0.1.0] - 2026-06-12
+
 ### Breaking changes
 
 - 项目品牌与代码标识统一为 **ECode**（旧称 `cmux-windows`），覆盖以下外部契约：

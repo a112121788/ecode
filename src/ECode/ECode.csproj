@@ -6,7 +6,6 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>ECode</RootNamespace>
     <AssemblyName>ecode-app</AssemblyName>
-    <Version>0.1.0</Version>
     <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
   </PropertyGroup>
 

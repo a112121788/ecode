@@ -1,7 +1,5 @@
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using ECode.Core.Terminal;
 
 namespace ECode.Smoke;
@@ -50,7 +48,7 @@ internal static class Program
 
     private static async Task TestEnvironmentInjection()
     {
-        Log("\n[1] Environment injection (with direct pipe read)");
+        Log("\n[1] Environment injection (raw output event)");
         using var session = new TerminalSession("smoke-env", 120, 30);
         session.OutputReceived += () => Interlocked.Increment(ref _outputEvents);
         session.RawOutputReceived += bytes => Interlocked.Add(ref _outputBytes, bytes.Length);
@@ -69,42 +67,10 @@ internal static class Program
             try { var p = Process.GetProcessById(pid.Value); Log($"    [env] process after 3s, hasExited={p.HasExited}"); }
             catch (Exception ex) { Log($"    [env] process after 3s lookup failed: {ex.Message}"); }
         }
-        Log($"    [env] events={Interlocked.CompareExchange(ref _outputEvents, 0, 0)} bytes={Interlocked.CompareExchange(ref _outputBytes, 0, 0)}");
-        // 通过生产者任务同样使用的句柄直接读取读管道。
-        // 如果这里能读到数据但 events=0，说明问题出在 channel/解析器链路；
-        // 如果这里也读不到数据，说明 ConPTY 本身没有输出。
-        var consoleField = typeof(TerminalSession).GetField("_console", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        var console = (PseudoConsole?)consoleField.GetValue(session);
-        if (console != null)
-        {
-            Log("    [env] direct pipe read for 2s...");
-            using var fs = new FileStream(console.ReadPipe, FileAccess.Read, bufferSize: 4096, isAsync: false);
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-            var buf = new byte[4096];
-            try
-            {
-                int n = await fs.ReadAsync(buf, 0, buf.Length, cts.Token);
-                Log($"    [env] direct read returned {n} bytes: {EscapeBytes(buf, n)}");
-            }
-            catch (Exception ex)
-            {
-                Log($"    [env] direct read exception: {ex.Message}");
-            }
-        }
+        var events = Interlocked.CompareExchange(ref _outputEvents, 0, 0);
+        var bytes = Interlocked.CompareExchange(ref _outputBytes, 0, 0);
+        Log($"    [env] events={events} bytes={bytes}");
+        Check("ConPTY produced raw output", events > 0 && bytes > 0, $"events={events} bytes={bytes}");
     }
 
-    private static string EscapeBytes(byte[] buf, int n)
-    {
-        var sb = new StringBuilder();
-        for (int i = 0; i < Math.Min(n, 200); i++)
-        {
-            byte b = buf[i];
-            if (b >= 0x20 && b < 0x7F) sb.Append((char)b);
-            else if (b == 0x1B) sb.Append("\\e");
-            else if (b == 0x0A) sb.Append("\\n");
-            else if (b == 0x0D) sb.Append("\\r");
-            else sb.Append($"\\x{b:X2}");
-        }
-        return sb.ToString();
-    }
 }
