@@ -1,10 +1,8 @@
-> English version: [README.en.md](README.en.md)
-
 # ECode（Windows 版）
 
 一款运行在 Windows 上的深色、键盘优先的终端复用器，灵感来自 tmux/cmux 的工作流，但底层使用 WPF + ConPTY 原生构建。
 
-> 旧称 `cmux-windows`。本仓库已迁移到 `ECode` 品牌；CLI 主二进制为 `ecode-app.exe`，CLI 工具为 `ecode.exe`，守护进程为 `ecode-daemon.exe`。详细迁移与兼容说明见 `CHANGELOG.md` 与 `spec/06-roadmap.md`。
+CLI 主二进制为 `ecode-app.exe`，CLI 工具为 `ecode.exe`，守护进程为 `ecode-daemon.exe`。
 
 ---
 
