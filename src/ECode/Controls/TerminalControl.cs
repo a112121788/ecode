@@ -745,25 +745,23 @@ public class TerminalControl : FrameworkElement
             RemoveVisualChild(_imeProxy);
             RemoveLogicalChild(_imeProxy);
 
-        // 创建用于 TSF 输入法支持的 TextBox（必须可获得焦点）
-        _imeProxy = new TextBox
-        {
-            Width = 1,
-            Height = 1,
-            Opacity = 0,
-            IsHitTestVisible = false,
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            Focusable = true,  // 必须可获得焦点
-            AcceptsReturn = true,
-            AcceptsTab = true,
-            IsEnabled = true,
-            IsReadOnly = false
-        };
-        InputMethod.SetIsInputMethodEnabled(_imeProxy, true);
-        _imeProxy.PreviewKeyDown += OnImeProxyPreviewKeyDown;
-        _imeProxy.TextChanged += OnImeProxyTextChanged;
-        _imeProxy.PreviewTextInput += OnImeProxyPreviewTextInput;
+            // 创建用于 TSF 输入法支持的 TextBox（必须可获得焦点）。
+            _imeProxy = new TextBox
+            {
+                Width = 1,
+                Height = 1,
+                Opacity = 0,
+                IsHitTestVisible = false,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Focusable = true,
+                AcceptsReturn = true,
+                AcceptsTab = true,
+                IsEnabled = true,
+                IsReadOnly = false
+            };
+            InputMethod.SetIsInputMethodEnabled(_imeProxy, true);
+            _imeProxy.PreviewKeyDown += OnImeProxyPreviewKeyDown;
             _imeProxy.TextChanged += OnImeProxyTextChanged;
             _imeProxy.PreviewTextInput += OnImeProxyPreviewTextInput;
             AddVisualChild(_imeProxy);
@@ -2062,7 +2060,10 @@ public class TerminalControl : FrameworkElement
 
     private void OnImeProxyPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        // 截获所有键盘事件并转发给 TerminalControl
+        if (!ShouldForwardImeProxyKeyDown(e))
+            return;
+
+        // 只截获功能键和组合键；普通字符交给 TextInput，否则会被 PreviewKeyDown 吃掉。
         e.Handled = true;
 
         // 触发 TerminalControl 的 KeyDown 处理
@@ -2071,6 +2072,29 @@ public class TerminalControl : FrameworkElement
             RoutedEvent = Keyboard.KeyDownEvent
         };
         RaiseEvent(args);
+    }
+
+    private static bool ShouldForwardImeProxyKeyDown(KeyEventArgs e)
+    {
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        var modifiers = Keyboard.Modifiers;
+
+        if (modifiers.HasFlag(ModifierKeys.Control) || modifiers.HasFlag(ModifierKeys.Alt))
+            return true;
+
+        if (key is Key.Back or Key.Enter or Key.Tab or Key.Escape or Key.Insert or Key.Delete)
+            return true;
+
+        if (key >= Key.Left && key <= Key.Down)
+            return true;
+
+        if (key >= Key.Home && key <= Key.PageDown)
+            return true;
+
+        if (key >= Key.F1 && key <= Key.F24)
+            return true;
+
+        return false;
     }
 
     private void OnImeProxyPreviewTextInput(object sender, TextCompositionEventArgs e)
