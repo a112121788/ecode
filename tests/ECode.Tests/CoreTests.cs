@@ -278,6 +278,84 @@ public class DaemonLogFormatTests
 }
 
 /// <summary>
+/// ResumeBinding DTO 测试 - 验证 resume.json 根对象与 binding 字段可稳定 JSON 往返
+/// </summary>
+public class ResumeBindingDtoTests
+{
+    [Fact]
+    public void ResumeBindingFile_RoundTripsJson()
+    {
+        var createdAt = new DateTime(2026, 6, 14, 1, 2, 3, DateTimeKind.Utc);
+        var updatedAt = new DateTime(2026, 6, 14, 4, 5, 6, DateTimeKind.Utc);
+        var file = new ResumeBindingFile
+        {
+            Version = 1,
+            Bindings =
+            [
+                new ResumeBinding
+                {
+                    Id = "binding-1",
+                    WorkspaceId = "workspace-1",
+                    SurfaceId = "surface-1",
+                    PaneId = "pane-1",
+                    Kind = ResumeBindingKinds.Agent,
+                    Checkpoint = "work",
+                    Shell = "codex resume abc123",
+                    WorkingDirectory = @"C:\repo",
+                    Environment = new Dictionary<string, string>
+                    {
+                        ["SAFE_KEY"] = "value",
+                    },
+                    Trusted = true,
+                    TrustReason = "user-approved-prefix",
+                    ApprovedPrefix = "codex resume",
+                    CreatedAtUtc = createdAt,
+                    UpdatedAtUtc = updatedAt,
+                },
+            ],
+        };
+
+        var json = JsonSerializer.Serialize(file);
+        var roundTripped = JsonSerializer.Deserialize<ResumeBindingFile>(json);
+
+        roundTripped.Should().NotBeNull();
+        roundTripped!.Version.Should().Be(1);
+        roundTripped.Bindings.Should().ContainSingle();
+
+        var binding = roundTripped.Bindings.Single();
+        binding.Id.Should().Be("binding-1");
+        binding.WorkspaceId.Should().Be("workspace-1");
+        binding.SurfaceId.Should().Be("surface-1");
+        binding.PaneId.Should().Be("pane-1");
+        binding.Kind.Should().Be(ResumeBindingKinds.Agent);
+        binding.Checkpoint.Should().Be("work");
+        binding.Shell.Should().Be("codex resume abc123");
+        binding.WorkingDirectory.Should().Be(@"C:\repo");
+        binding.Environment.Should().ContainKey("SAFE_KEY").WhoseValue.Should().Be("value");
+        binding.Trusted.Should().BeTrue();
+        binding.TrustReason.Should().Be("user-approved-prefix");
+        binding.ApprovedPrefix.Should().Be("codex resume");
+        binding.CreatedAtUtc.Should().Be(createdAt);
+        binding.UpdatedAtUtc.Should().Be(updatedAt);
+    }
+
+    [Fact]
+    public void ResumeBinding_DefaultsToVersionOneAndCustomKind()
+    {
+        var file = new ResumeBindingFile();
+        var binding = new ResumeBinding();
+
+        file.Version.Should().Be(1);
+        file.Bindings.Should().BeEmpty();
+        binding.Id.Should().NotBeNullOrWhiteSpace();
+        binding.Kind.Should().Be(ResumeBindingKinds.Custom);
+        binding.Environment.Should().BeEmpty();
+        binding.CreatedAtUtc.Kind.Should().Be(DateTimeKind.Utc);
+        binding.UpdatedAtUtc.Kind.Should().Be(DateTimeKind.Utc);
+    }
+}
+
+/// <summary>
 /// ecode.json 配置服务测试 - 验证全局配置与本地配置的加载、合并、验证和 JSONC 支持
 /// </summary>
 public class EcodeJsonServiceTests

@@ -28,6 +28,7 @@
 | `Models/Surface.cs` | `Surface` | 标签页 Model：`RootSplitNode / FocusedPaneId / PaneCustomNames / PaneSnapshots` |
 | `Models/SessionState.cs` | `SessionState / WorkspaceState / SurfaceState / SplitNodeState / WindowState` | 持久化 DTO，`[JsonPropertyName]` 全部小写 |
 | `Models/PaneStateSnapshot.cs` | `PaneStateSnapshot` | 单面板快照：cwd + shell + 命令历史 + `TerminalBufferSnapshot` |
+| `Models/ResumeBinding.cs` | `ResumeBindingFile / ResumeBinding / ResumeBindingKinds` | `%USERPROFILE%/.ecode/resume.json` DTO；记录 workspace/surface/pane 与可恢复 shell 命令、cwd、安全环境、信任前缀和更新时间 |
 | `Models/CommandLogEntry.cs` | `CommandLogEntry` | 命令日志项：起止时间、退出码、状态图标（`\uE916 / \uE73E / \uE711`）、时长格式化 |
 | `Models/TerminalNotification.cs` | `TerminalNotification / AppNotification / NotificationSource` | OSC 通知或 CLI 通知，统一带 `IsRead`、`Source`（Osc9/Osc99/Osc777/Cli） |
 | `Models/TerminalTranscriptEntry.cs` | `TerminalTranscriptEntry` | 脚本文件元数据：`FilePath / CapturedAt / Reason / SizeBytes` |
