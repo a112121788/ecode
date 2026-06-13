@@ -40,6 +40,8 @@ public partial class MainViewModel : ObservableObject
 
     public NotificationService NotificationService => _notificationService;
 
+    public event Action? WorkspaceOrderChanged;
+
     public MainViewModel()
     {
         _notificationService = App.NotificationService;
@@ -182,6 +184,27 @@ public partial class MainViewModel : ObservableObject
         {
             SelectedWorkspace = Workspaces[index];
         }
+    }
+
+    public bool MoveWorkspace(WorkspaceViewModel workspace, int targetIndex)
+    {
+        var sourceIndex = Workspaces.IndexOf(workspace);
+        if (sourceIndex < 0)
+            return false;
+
+        targetIndex = Math.Clamp(targetIndex, 0, Workspaces.Count - 1);
+        if (sourceIndex == targetIndex)
+            return false;
+
+        Workspaces.Move(sourceIndex, targetIndex);
+        WorkspaceOrderChanged?.Invoke();
+        return true;
+    }
+
+    public bool MoveWorkspaceBefore(WorkspaceViewModel workspace, WorkspaceViewModel target)
+    {
+        var targetIndex = Workspaces.IndexOf(target);
+        return targetIndex >= 0 && MoveWorkspace(workspace, targetIndex);
     }
 
     [RelayCommand]

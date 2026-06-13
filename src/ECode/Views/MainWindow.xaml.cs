@@ -42,6 +42,7 @@ public partial class MainWindow : Window
         SurfaceTabBarControl.SearchTextChanged += OnSearchTextChanged;
         SurfaceTabBarControl.NextMatchRequested += OnSearchNext;
         SurfaceTabBarControl.PreviousMatchRequested += OnSearchPrevious;
+        SurfaceTabBarControl.SurfaceOrderChanged += PersistCurrentSession;
 
         // 连接终端 Surface 的事件
         SplitPaneContainerControl.SearchRequested += () =>
@@ -64,6 +65,7 @@ public partial class MainWindow : Window
         OnSettingsChanged();
 
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        ViewModel.WorkspaceOrderChanged += PersistCurrentSession;
     }
 
     private void OnSettingsChanged()
@@ -187,6 +189,13 @@ public partial class MainWindow : Window
         _uiRefreshTimer.Stop();
         _terminalFocusTimer.Stop();
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        ViewModel.WorkspaceOrderChanged -= PersistCurrentSession;
+        SurfaceTabBarControl.SurfaceOrderChanged -= PersistCurrentSession;
+        PersistCurrentSession();
+    }
+
+    private void PersistCurrentSession()
+    {
         ViewModel.SaveSession(Left, Top, Width, Height, WindowState == WindowState.Maximized);
     }
 
@@ -497,7 +506,7 @@ public partial class MainWindow : Window
 
         if (sourceIndex >= 0 && targetIndex >= 0)
         {
-            ViewModel.Workspaces.Move(sourceIndex, targetIndex);
+            ViewModel.MoveWorkspace(sourceWorkspace, targetIndex);
         }
     }
 

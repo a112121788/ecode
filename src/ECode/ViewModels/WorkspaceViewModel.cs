@@ -107,6 +107,23 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         }
     }
 
+    public bool MoveSurface(SurfaceViewModel surface, int targetIndex)
+    {
+        var sourceIndex = Surfaces.IndexOf(surface);
+        if (sourceIndex < 0)
+            return false;
+
+        targetIndex = Math.Clamp(targetIndex, 0, Surfaces.Count - 1);
+        if (sourceIndex == targetIndex)
+            return false;
+
+        Surfaces.Move(sourceIndex, targetIndex);
+        Workspace.Surfaces.Remove(surface.Surface);
+        Workspace.Surfaces.Insert(targetIndex, surface.Surface);
+        Workspace.SelectedSurface = SelectedSurface?.Surface;
+        return true;
+    }
+
     [RelayCommand]
     public void NextSurface()
     {

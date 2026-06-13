@@ -9,10 +9,13 @@ namespace ECode.Controls;
 public partial class SurfaceTabBar : UserControl
 {
     private SurfaceViewModel? _renamingSurface;
+    private Point _dragStartPoint;
+    private SurfaceViewModel? _dragSurface;
 
     public event Action<string>? SearchTextChanged;
     public event Action? NextMatchRequested;
     public event Action? PreviousMatchRequested;
+    public event Action? SurfaceOrderChanged;
 
     public SurfaceTabBar()
     {
@@ -78,6 +81,47 @@ public partial class SurfaceTabBar : UserControl
             }
             if (DataContext is WorkspaceViewModel workspace)
                 workspace.SelectedSurface = surface;
+        }
+    }
+
+    private void Tab_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _dragStartPoint = e.GetPosition(null);
+        _dragSurface = (sender as FrameworkElement)?.DataContext as SurfaceViewModel;
+    }
+
+    private void Tab_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _dragSurface == null)
+            return;
+
+        var diff = _dragStartPoint - e.GetPosition(null);
+        if (Math.Abs(diff.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(diff.Y) < SystemParameters.MinimumVerticalDragDistance)
+            return;
+
+        DragDrop.DoDragDrop((DependencyObject)sender, _dragSurface, DragDropEffects.Move);
+        _dragSurface = null;
+    }
+
+    private void Tab_Drop(object sender, DragEventArgs e)
+    {
+        if (DataContext is not WorkspaceViewModel workspace)
+            return;
+
+        if ((sender as FrameworkElement)?.DataContext is not SurfaceViewModel targetSurface)
+            return;
+
+        var sourceSurface = e.Data.GetData(typeof(SurfaceViewModel)) as SurfaceViewModel;
+        if (sourceSurface == null || sourceSurface == targetSurface)
+            return;
+
+        var targetIndex = workspace.Surfaces.IndexOf(targetSurface);
+        if (targetIndex >= 0 && workspace.MoveSurface(sourceSurface, targetIndex))
+        {
+            workspace.SelectedSurface = sourceSurface;
+            SurfaceOrderChanged?.Invoke();
+            e.Handled = true;
         }
     }
 

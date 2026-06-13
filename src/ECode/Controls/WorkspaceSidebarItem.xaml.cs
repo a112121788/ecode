@@ -38,7 +38,7 @@ public partial class WorkspaceSidebarItem : UserControl
         if (MainVm is { } main && Vm is { } ws)
         {
             int idx = main.Workspaces.IndexOf(ws);
-            if (idx > 0) main.Workspaces.Move(idx, idx - 1);
+            if (idx > 0) main.MoveWorkspace(ws, idx - 1);
         }
     }
 
@@ -48,7 +48,7 @@ public partial class WorkspaceSidebarItem : UserControl
         {
             int idx = main.Workspaces.IndexOf(ws);
             if (idx >= 0 && idx < main.Workspaces.Count - 1)
-                main.Workspaces.Move(idx, idx + 1);
+                main.MoveWorkspace(ws, idx + 1);
         }
     }
 
