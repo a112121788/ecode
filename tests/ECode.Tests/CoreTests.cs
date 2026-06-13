@@ -412,6 +412,24 @@ public class ResumeBindingServiceTests
     }
 
     [Fact]
+    public void SetForPane_ReplacesExistingPaneBindings()
+    {
+        using var temp = TempDirectory.Create();
+        var service = new ResumeBindingService(Path.Combine(temp.Path, "resume.json"));
+        service.Add(CreateResumeBinding("old-1", "workspace-1", "surface-1", "pane-1"));
+        service.Add(CreateResumeBinding("old-2", "workspace-1", "surface-1", "pane-1", shell: "tmux attach -t old"));
+        service.Add(CreateResumeBinding("other-pane", "workspace-1", "surface-1", "pane-2"));
+
+        var updated = service.SetForPane(CreateResumeBinding("", "workspace-1", "surface-1", "pane-1", shell: "codex resume new"));
+
+        updated.Id.Should().NotBeNullOrWhiteSpace();
+        var loaded = service.Load().Bindings;
+        loaded.Where(b => b.PaneId == "pane-1").Should().ContainSingle()
+            .Which.Shell.Should().Be("codex resume new");
+        loaded.Should().Contain(b => b.Id == "other-pane");
+    }
+
+    [Fact]
     public void Remove_DeletesBindingById()
     {
         using var temp = TempDirectory.Create();
@@ -424,6 +442,23 @@ public class ResumeBindingServiceTests
         removed.Should().BeTrue();
         service.Load().Bindings.Select(b => b.Id).Should().Equal("binding-2");
         service.Remove("missing").Should().BeFalse();
+    }
+
+    [Fact]
+    public void RemoveForPane_DeletesOnlyMatchingPane()
+    {
+        using var temp = TempDirectory.Create();
+        var service = new ResumeBindingService(Path.Combine(temp.Path, "resume.json"));
+        service.Add(CreateResumeBinding("target-1", "workspace-1", "surface-1", "pane-1"));
+        service.Add(CreateResumeBinding("target-2", "workspace-1", "surface-1", "pane-1", shell: "tmux attach -t work"));
+        service.Add(CreateResumeBinding("other-pane", "workspace-1", "surface-1", "pane-2"));
+        service.Add(CreateResumeBinding("other-surface", "workspace-1", "surface-2", "pane-1"));
+
+        var removed = service.RemoveForPane("workspace-1", "surface-1", "pane-1");
+
+        removed.Should().Be(2);
+        service.Load().Bindings.Select(b => b.Id).Should().BeEquivalentTo("other-pane", "other-surface");
+        service.RemoveForPane("workspace-1", "surface-1", "missing").Should().Be(0);
     }
 
     [Fact]

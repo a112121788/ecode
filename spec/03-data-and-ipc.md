@@ -24,6 +24,7 @@ COMMAND [key1=value1] [key2=value2] ...
 ```
 
 - 命令名大写（服务端 `ToUpperInvariant` 后分派）
+- `ECode.Cli` 默认发送 `COMMAND {json}`，用于稳定传输带空格 / 引号的命令参数
 - 参数解析支持三种形态（`NamedPipeServer.ParseArgs`）：
   1. JSON 对象（首字符为 `{`）
   2. `key=value`，值带空格可用 `"..."` 或 `'...'`
@@ -47,6 +48,9 @@ CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超
 | `WORKSPACE.SELECT` | `index?` `id?` `name?` | 按 index（0/1-based）/ id / 名称匹配；`name` 支持精确与 `Contains`；返回 `{ok:true}` |
 | `SURFACE.CREATE` | — | 新建 Surface；返回 `{ok:true}` |
 | `SURFACE.SELECT` | `workspaceId?`/`workspaceName?`/`workspaceIndex?` + `surfaceId?`/`surfaceName?`/`surfaceIndex?` | 切换项目 + Surface；返回 `{ok, workspaceId, workspaceName, surfaceId, surfaceName}` |
+| `SURFACE.RESUME.SHOW` | 同上 + `paneId?`/`paneName?`/`paneIndex?` 或 `all=true` | 读取 `%USERPROFILE%\.ecode\resume.json`，返回 `{ok, workspace, surface, pane, bindings}`；默认只返回当前聚焦 pane |
+| `SURFACE.RESUME.SET` | 同上 + pane 定位 + `shell` 或 `_arg*`、`kind?`、`checkpoint?`、`workingDirectory?`/`cwd?`、`trusted?`、`approvedPrefix?` | 写入 / 替换当前 pane 的恢复绑定；`kind ∈ {agent, tmux, custom}`，默认 `custom`；未传 cwd 时使用当前 session cwd |
+| `SURFACE.RESUME.CLEAR` | `id?` 或同上 + pane 定位 | `id` 存在时按 binding ID 删除；否则删除当前 / 指定 pane 的所有绑定；返回 `{ok, removed, ...}` |
 | `SPLIT.RIGHT` / `SPLIT.DOWN` | — | 对当前聚焦面板分屏 |
 | `PANE.LIST` | `workspaceId?`/`workspaceName?`/`workspaceIndex?` + `surfaceId?`/`surfaceName?`/`surfaceIndex?` | 返回 `{workspace, surface, panes:[{index, id, name, customName, focused, workingDirectory}]}` |
 | `PANE.FOCUS` | 同上 + `paneId?`/`paneName?`/`paneIndex?` | 切换面板焦点；返回 `{ok, workspaceId, workspaceName, surfaceId, surfaceName, paneId, paneIndex, paneName}` |
@@ -67,6 +71,9 @@ ecode notify       --title <text> --body <text> --subtitle <text>
 ecode workspace    list | create [--name <text>] | select [--index <n>|--id <id>|--name <text>]
                   | next | previous | prev
 ecode surface      create | next | previous | prev
+ecode surface      resume show [--all] [--paneIndex <n>|--paneId <id>|--paneName <name>]
+ecode surface      resume set --shell <cmd> [--kind agent|tmux|custom] [--checkpoint <id>] [--cwd <path>] [--trusted true]
+ecode surface      resume clear [--id <bindingId>|--paneIndex <n>|--paneId <id>|--paneName <name>]
 ecode split        right | vertical | v | down | horizontal | h
 ecode status
 ecode help | --help | -h

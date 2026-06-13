@@ -444,10 +444,10 @@ CommandPalette item selected
 | ID | 任务 | 说明 | 文件 |
 |---|---|---|---|
 | M2-T01 | `ResumeBinding` DTO | 数据模型 + JSON serializer（已实现） | `ECode.Core/Models/ResumeBinding.cs` |
-| M2-T02 | `ResumeBindingService` | Load/Save/Add/Remove/FindForSurface/TrustPrefix（已实现） | `ECode.Core/Services/ResumeBindingService.cs` |
+| M2-T02 | `ResumeBindingService` | Load/Save/Add/SetForPane/Remove/RemoveForPane/FindForSurface/TrustPrefix（已实现） | `ECode.Core/Services/ResumeBindingService.cs` |
 | M2-T03 | 敏感环境剔除 | TOKEN/PASSWORD/SECRET/API_KEY 等丢弃（已实现） | 同上 |
 | M2-T04 | `ECODE_WORKSPACE_ID` 注入 | 启动 shell 时附带 env | `TerminalProcess.cs` |
-| M2-T05 | CLI surface resume | `ecode surface resume set/show/clear` | `ECode.Cli/Program.cs`、`MainViewModel.cs` |
+| M2-T05 | CLI surface resume | `ecode surface resume set/show/clear`（已实现） | `ECode.Cli/Program.cs`、`MainViewModel.cs` |
 | M2-T06 | 自动恢复开关 | `AutoResumeAgentSessions` | `ECodeSettings.cs`、`SettingsWindow.xaml` |
 | M2-T07 | 恢复确认 UI | 未信任 binding 显示提示条 | `SplitPaneContainer.cs` 或 `TerminalControl` overlay |
 | M2-T08 | Agent hook mapping | 为 Codex/Claude/OpenCode 预留 session id 存储 | `AgentConversationStoreService` 或新服务 |

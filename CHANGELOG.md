@@ -22,10 +22,12 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 - 新增 `ResumeBinding` / `ResumeBindingFile` DTO，为 M2 会话恢复增强的 `resume.json` 打基础。
 - 新增 `ResumeBindingService`，支持 `resume.json` 的加载、保存、增删、按 Surface 查询与信任前缀更新。
 - `ResumeBindingService` 保存 `resume.json` 前会剔除 TOKEN、PASSWORD、SECRET、API_KEY 等敏感环境变量。
+- 新增 `ecode surface resume set/show/clear`，可通过 CLI 保存、查看与清理当前 pane 的恢复绑定。
 
 ### Changed
 
 - 统一 CLI `ecode version` 与 IPC `STATUS.version` 的版本读取逻辑，均使用程序集 informational version，并去掉 source revision 后缀。
+- CLI 调用主应用管道时改为发送 JSON 参数体，避免带空格或引号的 shell 命令被拆分。
 
 ## [0.2.0] - 2026-06-12
 

@@ -102,7 +102,7 @@
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
 | `M2-A-01` | `[x]` `ResumeBinding` DTO + JSON | `ECode.Core/Models/ResumeBinding.cs` | roundtrip 测试 |
-| `M2-A-02` | `[x]` `ResumeBindingService`（Load/Save/Add/Remove/FindForSurface/TrustPrefix） | `ECode.Core/Services/ResumeBindingService.cs` | 覆盖所有 public method |
+| `M2-A-02` | `[x]` `ResumeBindingService`（Load/Save/Add/SetForPane/Remove/RemoveForPane/FindForSurface/TrustPrefix） | `ECode.Core/Services/ResumeBindingService.cs` | 覆盖所有 public method |
 | `M2-A-03` | `[x]` 敏感环境剔除（TOKEN / PASSWORD / SECRET / API_KEY 等） | 同上 | `DropsSensitiveEnv` 测试通过 |
 | `M2-A-04` | `ECODE_WORKSPACE_ID` 启动注入 | `TerminalProcess.cs` | `GetEnvironmentVariable("ECODE_WORKSPACE_ID")` 非空 |
 
@@ -118,7 +118,7 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M2-C-01` | CLI `surface resume {set,show,clear}` | `ECode.Cli/Program.cs`、`MainViewModel.cs` | contract 测试通过 |
+| `M2-C-01` | `[x]` CLI `surface resume {set,show,clear}` | `ECode.Cli/Program.cs`、`MainViewModel.cs` | build + ResumeBinding service 测试通过 |
 | `M2-C-02` | CLI `restore-session` / `Ctrl+Shift+O` 入口 | `MainWindow.xaml.cs` | UI 入口可用 |
 
 ### 包 D：Agent hook 预留
@@ -301,8 +301,9 @@
 5. `M2-A-01`（已完成：`ResumeBinding` DTO + JSON）
 6. `M1-A-01`（Pane 蓝环，macOS 核心体验首块拼图）
 7. `M2-A-03`（已完成：ResumeBinding 敏感环境剔除）
-8. `M2-C-01`（CLI `surface resume`）
-9. `M3-A-01` + `M3-A-02`（SurfaceKind + SessionState 扩展）
-10. `M3-C-01` + `M3-B-02`（CLI `browser open` + BrowserControl 升级）
+8. `M2-C-01`（已完成：CLI `surface resume`）
+9. `M2-A-04`（`ECODE_WORKSPACE_ID` 启动注入）
+10. `M3-A-01` + `M3-A-02`（SurfaceKind + SessionState 扩展）
+11. `M3-C-01` + `M3-B-02`（CLI `browser open` + BrowserControl 升级）
 
 > 进入 M4 / M5 前必须先冻结 v1 CLI 行为并完成 v1 contract 测试固化，避免 v2 协议破坏现有 agent 集成。

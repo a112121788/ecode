@@ -74,6 +74,44 @@ public sealed class ResumeBindingService
         return binding;
     }
 
+    public ResumeBinding SetForPane(ResumeBinding binding)
+    {
+        if (string.IsNullOrWhiteSpace(binding.WorkspaceId))
+            throw new ArgumentException("WorkspaceId is required.", nameof(binding));
+        if (string.IsNullOrWhiteSpace(binding.SurfaceId))
+            throw new ArgumentException("SurfaceId is required.", nameof(binding));
+        if (string.IsNullOrWhiteSpace(binding.PaneId))
+            throw new ArgumentException("PaneId is required.", nameof(binding));
+
+        var file = Load();
+        var now = DateTime.UtcNow;
+        var existing = file.Bindings
+            .Where(b =>
+                string.Equals(b.WorkspaceId, binding.WorkspaceId, StringComparison.Ordinal) &&
+                string.Equals(b.SurfaceId, binding.SurfaceId, StringComparison.Ordinal) &&
+                string.Equals(b.PaneId, binding.PaneId, StringComparison.Ordinal))
+            .OrderByDescending(b => b.UpdatedAtUtc)
+            .FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(binding.Id))
+            binding.Id = existing?.Id ?? Guid.NewGuid().ToString();
+
+        if (binding.CreatedAtUtc == default)
+            binding.CreatedAtUtc = existing?.CreatedAtUtc ?? now;
+
+        binding.Environment = DropSensitiveEnvironment(binding.Environment);
+        binding.UpdatedAtUtc = now;
+
+        file.Bindings.RemoveAll(b =>
+            string.Equals(b.WorkspaceId, binding.WorkspaceId, StringComparison.Ordinal) &&
+            string.Equals(b.SurfaceId, binding.SurfaceId, StringComparison.Ordinal) &&
+            string.Equals(b.PaneId, binding.PaneId, StringComparison.Ordinal));
+        file.Bindings.Add(binding);
+
+        Save(file);
+        return binding;
+    }
+
     public bool Remove(string bindingId)
     {
         if (string.IsNullOrWhiteSpace(bindingId))
@@ -82,6 +120,27 @@ public sealed class ResumeBindingService
         var file = Load();
         var removed = file.Bindings.RemoveAll(b => string.Equals(b.Id, bindingId, StringComparison.Ordinal)) > 0;
         if (removed)
+            Save(file);
+
+        return removed;
+    }
+
+    public int RemoveForPane(string workspaceId, string surfaceId, string paneId)
+    {
+        if (string.IsNullOrWhiteSpace(workspaceId) ||
+            string.IsNullOrWhiteSpace(surfaceId) ||
+            string.IsNullOrWhiteSpace(paneId))
+        {
+            return 0;
+        }
+
+        var file = Load();
+        var removed = file.Bindings.RemoveAll(b =>
+            string.Equals(b.WorkspaceId, workspaceId, StringComparison.Ordinal) &&
+            string.Equals(b.SurfaceId, surfaceId, StringComparison.Ordinal) &&
+            string.Equals(b.PaneId, paneId, StringComparison.Ordinal));
+
+        if (removed > 0)
             Save(file);
 
         return removed;

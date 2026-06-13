@@ -13,7 +13,7 @@
   - 长选项 `--key value` / `--key`（后者等价于 `--key true`）
   - 短选项 `-k value`
   - 位置参数 `_arg0 / _arg1 / …`
-- 值含空格时需加引号（`ECode.Cli` 自动用 `"…"` 包裹）
+- CLI 通过 JSON 参数体发送到主应用管道，带空格 / 引号的 shell 命令可稳定传输
 
 ### 1.2 命令
 
@@ -39,11 +39,14 @@
 
 #### `surface`
 
-| 子命令 | 行为 |
-|---|---|
-| `create` / `new` | `SURFACE.CREATE` |
-| `next` | `SURFACE.NEXT` |
-| `previous` / `prev` | `SURFACE.PREVIOUS` |
+| 子命令 | 选项 | 行为 |
+|---|---|---|
+| `create` / `new` | — | `SURFACE.CREATE` |
+| `next` | — | `SURFACE.NEXT` |
+| `previous` / `prev` | — | `SURFACE.PREVIOUS` |
+| `resume show` / `ls` / `list` | `--all` + 项目 / Surface / pane 定位参数 | `SURFACE.RESUME.SHOW`，默认显示当前聚焦 pane 的恢复绑定 |
+| `resume set` | `--shell <cmd>` 或位置参数、`--kind <agent|tmux|custom>`、`--checkpoint <id>`、`--cwd <path>`、`--trusted <bool>`、`--approvedPrefix <prefix>` | `SURFACE.RESUME.SET`，为当前 / 指定 pane 保存一条可恢复命令 |
+| `resume clear` / `rm` / `remove` | `--id <bindingId>` 或项目 / Surface / pane 定位参数 | `SURFACE.RESUME.CLEAR`，按 ID 或当前 / 指定 pane 清理绑定 |
 
 #### `split`
 
@@ -97,6 +100,9 @@ COMMAND [k=v [k=v ...]]
 | `SURFACE.CREATE` | — | — | 当前项目新增 Surface |
 | `SURFACE.SELECT` | `workspaceId/Name/Index` + `surfaceId/Name/Index` | 当前项目 / Surface | 切换 Surface（`index` 支持 0/1-based，越界返回错误） |
 | `SURFACE.NEXT` / `SURFACE.PREVIOUS` | — | — | 同 Surface 内切换 |
+| `SURFACE.RESUME.SHOW` | 项目 + Surface + `paneId/Name/Index` 或 `all=true` | 当前聚焦 pane | 返回 `{ok, workspace, surface, pane, bindings}` |
+| `SURFACE.RESUME.SET` | 项目 + Surface + pane + `shell` / `_arg*` + `kind` + `checkpoint` + `workingDirectory/cwd` + `trusted` + `approvedPrefix` | 当前聚焦 pane / `kind=custom` / session cwd | 写入 `resume.json`，同 pane 旧绑定会被替换 |
+| `SURFACE.RESUME.CLEAR` | `id` 或项目 + Surface + pane | 当前聚焦 pane | 按 binding ID 删除，或删除当前 / 指定 pane 的绑定 |
 | `SPLIT.RIGHT` / `SPLIT.DOWN` | — | — | 对当前聚焦面板分屏 |
 | `PANE.LIST` | 项目 + Surface 定位参数 | 当前选中 | 返回 `{workspace, surface, panes:[{index,id,name,customName,focused,workingDirectory}]}` |
 | `PANE.FOCUS` | 项目 + Surface + `paneId/Name/Index` | 当前聚焦 | 切换面板焦点 |
@@ -192,7 +198,24 @@ COMMAND [k=v [k=v ...]]
 ecode notify --title "Claude Code" --body "等待输入"
 ```
 
-### 4.2 自动化建会话并写入命令
+### 4.2 保存 / 查看恢复绑定
+
+```powershell
+# 保存当前 pane 的 Codex resume 命令
+ecode surface resume set --kind agent --shell "codex resume abc123" --checkpoint "sprint-1" --trusted true --approvedPrefix "codex resume"
+
+# 查看当前 pane 绑定
+ecode surface resume show
+
+# 查看当前 Surface 下全部绑定
+ecode surface resume show --all
+
+# 清理当前 pane 绑定，或用 --id 精确删除
+ecode surface resume clear
+ecode surface resume clear --id <binding-id>
+```
+
+### 4.3 自动化建会话并写入命令
 
 ```powershell
 # 创建项目
@@ -210,7 +233,7 @@ ecode status
 ecode pane read --lines 50
 ```
 
-### 4.3 编程方式直接调 IPC（PowerShell）
+### 4.4 编程方式直接调 IPC（PowerShell）
 
 ```powershell
 $pipe = New-Object System.IO.Pipes.NamedPipeClientStream('.', 'ecode', 'InOut')
@@ -222,7 +245,7 @@ $reader.ReadLine() | ConvertFrom-Json
 $pipe.Close()
 ```
 
-### 4.4 让 Agent 触发回车
+### 4.5 让 Agent 触发回车
 
 `PANE.WRITE` 的 `submitKey` 关键字：
 
