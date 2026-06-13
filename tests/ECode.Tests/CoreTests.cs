@@ -11,6 +11,9 @@ using Xunit;
 
 namespace ECode.Tests;
 
+/// <summary>
+/// 命令日志脱敏测试 - 验证敏感信息（密钥、密码、Token）在存储前被正确脱敏
+/// </summary>
 public class CommandLogSanitizationTests
 {
     [Theory]
@@ -57,6 +60,9 @@ public class CommandLogSanitizationTests
     }
 }
 
+/// <summary>
+/// 通知服务测试 - 验证已读/未读状态管理、排序逻辑和按作用域过滤
+/// </summary>
 public class NotificationServiceTests
 {
     [Fact]
@@ -141,6 +147,9 @@ public class NotificationServiceTests
     };
 }
 
+/// <summary>
+/// Daemon 消息序列化测试 - 验证 IPC 消息（请求/响应/事件）的 JSON 序列化和反序列化
+/// </summary>
 public class DaemonMessageRoundTripTests
 {
     [Fact]
@@ -236,6 +245,9 @@ public class DaemonMessageRoundTripTests
     }
 }
 
+/// <summary>
+/// ecode.json 配置服务测试 - 验证全局配置与本地配置的加载、合并、验证和 JSONC 支持
+/// </summary>
 public class EcodeJsonServiceTests
 {
     [Fact]
@@ -386,6 +398,9 @@ public class EcodeJsonServiceTests
     }
 }
 
+/// <summary>
+/// 版本服务测试 - 验证版本号提取逻辑（去除源代码版本控制后缀）
+/// </summary>
 public class VersionServiceTests
 {
     [Fact]
@@ -404,6 +419,9 @@ public class VersionServiceTests
     }
 }
 
+/// <summary>
+/// VT 解析器测试 - 验证终端转义序列解析（CSI、OSC、ESC 序列及 UTF-8 处理）
+/// </summary>
 public class VtParserTests
 {
     [Fact]
@@ -601,6 +619,9 @@ public class VtParserTests
     }
 }
 
+/// <summary>
+/// 终端缓冲区测试 - 验证字符写入、光标移动、滚动、擦除、CJK 字符处理和窗口调整
+/// </summary>
 public class TerminalBufferTests
 {
     [Fact]
@@ -730,6 +751,9 @@ public class TerminalBufferTests
     }
 }
 
+/// <summary>
+/// OSC 处理器测试 - 验证 OSC 命令解析（标题、工作目录、通知、Shell 提示标记）
+/// </summary>
 public class OscHandlerTests
 {
     [Fact]
@@ -807,6 +831,9 @@ public class OscHandlerTests
     }
 }
 
+/// <summary>
+/// 分屏布局树测试 - 验证叶节点和容器节点的创建、分割、合并、导航和布局调整
+/// </summary>
 public class SplitNodeTests
 {
     [Fact]
@@ -1018,6 +1045,9 @@ public class SplitNodeTests
     }
 }
 
+/// <summary>
+/// 终端颜色测试 - 验证 256 色索引和 RGB 颜色的创建与解析
+/// </summary>
 public class TerminalColorTests
 {
     [Fact]
@@ -1062,6 +1092,9 @@ public class TerminalColorTests
     }
 }
 
+/// <summary>
+/// 终端选择测试 - 验证文本选择的开始、扩展、清除和跨行选择提取
+/// </summary>
 public class TerminalSelectionTests
 {
     [Fact]
@@ -1128,6 +1161,9 @@ public class TerminalSelectionTests
 }
 
 
+/// <summary>
+/// 备用屏幕缓冲区测试 - 验证主屏幕和备用屏幕的切换及状态保存/恢复
+/// </summary>
 public class AlternateScreenBufferTests
 {
     [Fact]
@@ -1191,6 +1227,9 @@ public class AlternateScreenBufferTests
     }
 }
 
+/// <summary>
+/// 终端模式测试 - 验证光标键模式和括号粘贴模式的默认值和设置
+/// </summary>
 public class TerminalModeTests
 {
     [Fact]
@@ -1224,6 +1263,9 @@ public class TerminalModeTests
     }
 }
 
+/// <summary>
+/// URL 检测器测试 - 验证从终端缓冲区行中检测和提取 HTTP/HTTPS URL
+/// </summary>
 public class UrlDetectorTests
 {
     [Fact]
@@ -1261,6 +1303,9 @@ public class UrlDetectorTests
     }
 }
 
+/// <summary>
+/// 鼠标模式测试 - 验证鼠标跟踪模式（Normal/Button/Any）和 SGR 扩展模式的默认值和启用状态
+/// </summary>
 public class MouseModeTests
 {
     [Fact]
