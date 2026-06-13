@@ -47,7 +47,7 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M0-C-01` | 守护进程日志字段标准化：`component/event/paneId/ts` | `DaemonClient.cs`、`DaemonPipeServer.cs` | 单次 attach 可被 grep 串起来 |
+| `M0-C-01` | `[x]` 守护进程日志字段标准化：`component/event/paneId/ts` | `DaemonClient.cs`、`DaemonPipeServer.cs` | 单次 attach 可被 grep 串起来 |
 
 ### 包 D：文档
 

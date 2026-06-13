@@ -247,7 +247,10 @@ public sealed class TerminalSession : IDisposable
             if (!_daemonWriteLogged)
             {
                 _daemonWriteLogged = true;
-                DaemonClient.LogDaemon($"[TerminalSession:{PaneId}] First DaemonWrite ({data.Length} bytes)");
+                DaemonClient.LogDaemon("terminal-session", "daemon-write.first", PaneId, "First daemon write", new Dictionary<string, object?>
+                {
+                    ["bytes"] = data.Length,
+                });
             }
             _ = DaemonWrite(data);
             return;
@@ -258,7 +261,7 @@ public sealed class TerminalSession : IDisposable
             if (!_localWriteNullLogged)
             {
                 _localWriteNullLogged = true;
-                DaemonClient.LogDaemon($"[TerminalSession:{PaneId}] Write called but _writeStream is null (no ConPTY started)");
+                DaemonClient.LogDaemon("terminal-session", "local-write.no-stream", PaneId, "Write called without a local ConPTY stream");
             }
             return;
         }

@@ -396,7 +396,8 @@ agent/
 `%USERPROFILE%/.ecode/daemon-debug.log`：
 
 - 由 `DaemonClient.LogDaemon` 写入（共享追加 `FileShare.ReadWrite`，避免客户端与守护进程互锁）
-- 行格式：`[HH:mm:ss.fff] <message>`
+- 行格式：`ts=<ISO8601> component=<name> event=<name> paneId=<id-or-> message=<quoted>`
+- 附加字段按 key 排序输出，例如 `requestType=SESSION_CREATE`、`clientId=...`、`activeSessions=...`
 - 守护进程 + WPF 客户端均写入；用于排查连接 / attach / 重连问题
 
 > 该日志**不做完整敏感信息脱敏**，仅供开发者本地诊断使用，避免写入密钥或令牌。

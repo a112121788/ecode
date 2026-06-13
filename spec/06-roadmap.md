@@ -190,7 +190,7 @@ M0 不追求新功能，重点是：
 | M0-T01 | 新增 `scripts/ci.ps1` | 串联 restore/build/test/smoke/publish dry-run | `scripts/ci.ps1` | `pwsh scripts/ci.ps1` 本地通过 |
 | M0-T02 | 新增 GitHub Actions CI | Windows runner，跑 build + tests | `.github/workflows/ci.yml` | PR 自动校验 |
 | M0-T03 | 统一版本源 | 从 `ECode.csproj` Version 读取到 CLI 与 STATUS | `ECode.Cli/Program.cs`、`MainViewModel.cs` | `ecode version` 与 `STATUS.version` 一致 |
-| M0-T04 | 守护进程可观测性 | 标准化 `daemon-debug.log` 字段：component/event/paneId | `DaemonClient.cs`、`DaemonPipeServer.cs` | 日志可被 grep 追踪一次 attach |
+| M0-T04 | 守护进程可观测性 | 标准化 `daemon-debug.log` 字段：component/event/paneId（已实现） | `DaemonClient.cs`、`DaemonPipeServer.cs` | 日志可被 grep 追踪一次 attach |
 | M0-T05 | 增补 VT parser tests | UTF-8 跨包、OSC ST、CSI private modes、invalid sequence | `tests/ECode.Tests/CoreTests.cs` | 新增 ≥20 个 parser 测试 |
 | M0-T06 | 增补 TerminalBuffer tests | 宽字符、alternate screen、scroll region、snapshot roundtrip | 同上 | 新增 ≥20 个 buffer 测试 |
 | M0-T07 | 增补 SplitNode tests | remove/swap/resize/equalize/factory layout | 同上 | 覆盖所有 public method |

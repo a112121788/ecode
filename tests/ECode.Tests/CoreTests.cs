@@ -246,6 +246,38 @@ public class DaemonMessageRoundTripTests
 }
 
 /// <summary>
+/// Daemon 日志格式测试 - 验证日志行包含稳定的结构化字段，便于 grep 串联 attach 流程
+/// </summary>
+public class DaemonLogFormatTests
+{
+    [Fact]
+    public void FormatDaemonLogLine_IncludesRequiredFieldsAndEscapesValues()
+    {
+        var timestamp = new DateTimeOffset(2026, 6, 14, 5, 30, 0, TimeSpan.FromHours(8));
+
+        var line = DaemonClient.FormatDaemonLogLine(
+            timestamp,
+            "daemon-client",
+            "request.send",
+            "pane-1",
+            "Sending daemon request",
+            new Dictionary<string, object?>
+            {
+                ["requestType"] = DaemonMessageTypes.SessionCreate,
+                ["path"] = @"C:\Users\mac\my repo",
+            });
+
+        line.Should().Contain("ts=2026-06-14T05:30:00.0000000+08:00");
+        line.Should().Contain("component=daemon-client");
+        line.Should().Contain("event=request.send");
+        line.Should().Contain("paneId=pane-1");
+        line.Should().Contain("message=\"Sending daemon request\"");
+        line.Should().Contain("requestType=SESSION_CREATE");
+        line.Should().Contain("path=\"C:\\\\Users\\\\mac\\\\my repo\"");
+    }
+}
+
+/// <summary>
 /// ecode.json 配置服务测试 - 验证全局配置与本地配置的加载、合并、验证和 JSONC 支持
 /// </summary>
 public class EcodeJsonServiceTests
