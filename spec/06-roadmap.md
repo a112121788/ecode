@@ -286,7 +286,7 @@ ecode-cli/ecode.exe        yes     72.8    ...
 | M1-B03 | 文件拖入终端 | drop 文件时写入 quoted path | `TerminalControl.cs` |
 | M1-B04 | 图片拖入远期占位 | 本期仅写入路径，不做 scp upload | `TerminalControl.cs` |
 | M1-B05 | 右键菜单 | Workspace rename / close / duplicate；Notification read/unread | `MainWindow.xaml.cs`、`NotificationPanel.xaml.cs` |
-| M1-B06 | Close active tab 按钮常显 | 当前 active surface close 按钮不只 hover 出现 | `SurfaceTabBar.xaml` |
+| M1-B06 | Close active tab 按钮常显 | 当前 active surface close 按钮不只 hover 出现（已实现） | `SurfaceTabBar.xaml` |
 
 #### M1-C `ecode.json` 基础
 

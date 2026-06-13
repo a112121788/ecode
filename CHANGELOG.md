@@ -18,6 +18,7 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 - 新增 SplitNode 布局测试，覆盖嵌套移除、焦点循环、预设布局、等分、resize clamp 与 pane swap。
 - 新增 `ecode reload-config` 与 `Ctrl+Shift+,`，可热重载 `ecode.json` 并刷新已打开的命令面板。
 - 标准化 daemon debug log 字段，统一输出 `ts/component/event/paneId`，便于 grep 串联 attach 与请求流程。
+- 当前 active surface tab 的关闭按钮改为常显，非 active tab 仍保持 hover 显示。
 
 ### Changed
 
