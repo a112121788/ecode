@@ -18,6 +18,7 @@ public class SplitPaneContainer : ContentControl
 {
     private SurfaceViewModel? _surface;
     private readonly Dictionary<string, TerminalControl> _terminalCache = [];
+    private int _lastAttentionVersion;
 
     public event Action? SearchRequested;
 
@@ -46,11 +47,13 @@ public class SplitPaneContainer : ContentControl
         _terminalCache.Clear();
 
         _surface = e.NewValue as SurfaceViewModel;
+        _lastAttentionVersion = 0;
 
         if (_surface != null)
         {
             _surface.PropertyChanged += OnSurfacePropertyChanged;
             Rebuild();
+            ApplyAttentionPulse();
             QueueFocusCurrentPane();
         }
         else
@@ -73,6 +76,10 @@ public class SplitPaneContainer : ContentControl
         else if (e.PropertyName is nameof(SurfaceViewModel.NotificationVersion))
         {
             Dispatcher.BeginInvoke(UpdateNotificationState);
+        }
+        else if (e.PropertyName is nameof(SurfaceViewModel.AttentionVersion))
+        {
+            Dispatcher.BeginInvoke(ApplyAttentionPulse);
         }
     }
 
@@ -129,6 +136,23 @@ public class SplitPaneContainer : ContentControl
 
         Content = BuildNode(_surface.RootNode);
         QueueFocusCurrentPane();
+    }
+
+    private void ApplyAttentionPulse()
+    {
+        if (_surface == null || _surface.AttentionVersion == _lastAttentionVersion)
+            return;
+
+        _lastAttentionVersion = _surface.AttentionVersion;
+        if (DateTime.UtcNow - _surface.AttentionRequestedAtUtc > TimeSpan.FromSeconds(2))
+            return;
+
+        var paneId = _surface.AttentionPaneId;
+        if (!string.IsNullOrWhiteSpace(paneId) &&
+            _terminalCache.TryGetValue(paneId, out var terminal))
+        {
+            terminal.FlashAttention();
+        }
     }
 
     private UIElement BuildNode(SplitNode node)

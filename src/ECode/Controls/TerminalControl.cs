@@ -61,6 +61,10 @@ public class TerminalControl : FrameworkElement
     private DateTime _bellFlashUntil;
     private System.Windows.Threading.DispatcherTimer? _bellTimer;
 
+    // 通知跳转后的短暂定位闪烁
+    private DateTime _attentionFlashUntil;
+    private System.Windows.Threading.DispatcherTimer? _attentionTimer;
+
     // URL 检测
     private (int row, int startCol, int endCol, string url)? _hoveredUrl;
     private int _lastUrlRow = -1;
@@ -287,6 +291,27 @@ public class TerminalControl : FrameworkElement
         RequestRender();
     }
 
+    public void FlashAttention()
+    {
+        _attentionFlashUntil = DateTime.UtcNow.AddMilliseconds(420);
+        RequestRender(System.Windows.Threading.DispatcherPriority.Render);
+
+        _attentionTimer ??= new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(440),
+        };
+        _attentionTimer.Stop();
+        _attentionTimer.Tick -= OnAttentionTimerTick;
+        _attentionTimer.Tick += OnAttentionTimerTick;
+        _attentionTimer.Start();
+    }
+
+    private void OnAttentionTimerTick(object? sender, EventArgs e)
+    {
+        _attentionTimer?.Stop();
+        RequestRender(System.Windows.Threading.DispatcherPriority.Render);
+    }
+
     // --- 搜索支持 ---
 
     public void SetSearchHighlights(List<(int row, int col, int length)> matches, int currentIndex)
@@ -434,6 +459,16 @@ public class TerminalControl : FrameworkElement
             {
                 dc.DrawRectangle(GetCachedBrush(Color.FromArgb(25, 255, 255, 255)), null,
                     new Rect(0, 0, ActualWidth, ActualHeight));
+            }
+
+            // 通知跳转定位闪烁
+            if (DateTime.UtcNow < _attentionFlashUntil)
+            {
+                dc.DrawRectangle(GetCachedBrush(Color.FromArgb(38, 0x1F, 0xA0, 0xFF)), null,
+                    new Rect(0, 0, ActualWidth, ActualHeight));
+                var attentionPen = new Pen(GetCachedBrush(Color.FromArgb(230, 0x1F, 0xA0, 0xFF)), 3);
+                attentionPen.Freeze();
+                dc.DrawRoundedRectangle(null, attentionPen, new Rect(2, 2, ActualWidth - 4, ActualHeight - 4), 6, 6);
             }
 
             // 通知光环

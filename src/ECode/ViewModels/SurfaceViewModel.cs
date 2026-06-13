@@ -45,6 +45,15 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _notificationVersion;
 
+    [ObservableProperty]
+    private string? _attentionPaneId;
+
+    [ObservableProperty]
+    private int _attentionVersion;
+
+    [ObservableProperty]
+    private DateTime _attentionRequestedAtUtc;
+
     public event Action<string>? WorkingDirectoryChanged;
 
     /// <summary>Gets the shell process PID from the focused pane session.</summary>
@@ -133,6 +142,16 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
         }
 
         NotificationVersion++;
+    }
+
+    public void FlashPaneAttention(string paneId)
+    {
+        if (RootNode.FindNode(paneId) == null)
+            return;
+
+        AttentionPaneId = paneId;
+        AttentionRequestedAtUtc = DateTime.UtcNow;
+        AttentionVersion++;
     }
 
     private void OnDaemonRawOutput(string paneId, byte[] data)

@@ -249,6 +249,7 @@ public partial class MainViewModel : ObservableObject
                 if (notification.PaneId != null)
                 {
                     surface.FocusPane(notification.PaneId);
+                    surface.FlashPaneAttention(notification.PaneId);
                 }
             }
             _notificationService.MarkAsRead(notification.Id);
