@@ -494,7 +494,13 @@ public sealed class DaemonClient : IDisposable
             .Replace("\n", "\\n", StringComparison.Ordinal) + "\"";
     }
 
-    public async Task<DaemonSessionInfo?> CreateSessionAsync(string paneId, int cols, int rows, string? workingDirectory = null, string? command = null)
+    public async Task<DaemonSessionInfo?> CreateSessionAsync(
+        string paneId,
+        int cols,
+        int rows,
+        string? workingDirectory = null,
+        string? command = null,
+        string? workspaceId = null)
     {
         var response = await SendRequestAsync(new DaemonRequest
         {
@@ -502,6 +508,7 @@ public sealed class DaemonClient : IDisposable
             PaneId = paneId,
             Cols = cols,
             Rows = rows,
+            WorkspaceId = workspaceId,
             WorkingDirectory = workingDirectory,
             Command = command,
         });

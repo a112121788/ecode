@@ -284,7 +284,8 @@ public sealed class DaemonPipeServer
             request.Cols ?? 120,
             request.Rows ?? 30,
             request.WorkingDirectory,
-            request.Command);
+            request.Command,
+            request.WorkspaceId);
 
         return JsonSerializer.Serialize(new DaemonResponse { Success = true, Data = JsonSerializer.Serialize(info) });
     }

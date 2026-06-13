@@ -132,7 +132,7 @@ COMMAND [k=v [k=v ...]]
 ```jsonc
 // 请求
 { "type": "SESSION_CREATE", "paneId": "pane-uuid", "cols": 120, "rows": 30,
-  "workingDirectory": "C:\\repo", "command": "pwsh.exe" }
+  "workspaceId": "workspace-uuid", "workingDirectory": "C:\\repo", "command": "pwsh.exe" }
 { "type": "SESSION_WRITE",  "paneId": "pane-uuid", "data": "SGVsbG8=" }
 { "type": "SESSION_RESIZE", "paneId": "pane-uuid", "cols": 132, "rows": 40 }
 { "type": "SESSION_CLOSE",  "paneId": "pane-uuid" }

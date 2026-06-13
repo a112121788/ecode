@@ -124,6 +124,7 @@ public static class DaemonMessageTypes {
   "paneId": "pane-uuid",
   "cols":   120,                   // CREATE / RESIZE
   "rows":   30,
+  "workspaceId": "workspace-uuid", // 可选，CREATE；注入为 ECODE_WORKSPACE_ID
   "workingDirectory": "C:\\repo",  // 可选，CREATE
   "command": "pwsh.exe",           // 可选，CREATE（覆盖默认 shell）
   "data":   "SGVsbG8="             // Base64 字节；WRITE

@@ -21,7 +21,13 @@ public sealed class DaemonSessionManager : IDisposable
 
     public int ActiveSessionCount => _sessions.Count;
 
-    public DaemonSessionInfo CreateSession(string paneId, int cols, int rows, string? workingDirectory, string? command)
+    public DaemonSessionInfo CreateSession(
+        string paneId,
+        int cols,
+        int rows,
+        string? workingDirectory,
+        string? command,
+        string? workspaceId)
     {
         // 如果会话已存在，则返回其信息（attach/重连语义）
         if (_sessions.TryGetValue(paneId, out var existing))
@@ -49,6 +55,7 @@ public sealed class DaemonSessionManager : IDisposable
             ["command"] = command,
             ["cwd"] = workingDirectory,
             ["rows"] = rows,
+            ["workspaceId"] = workspaceId,
         });
         var session = new TerminalSession(paneId, cols, rows);
 
@@ -78,7 +85,10 @@ public sealed class DaemonSessionManager : IDisposable
         };
 
         _sessions[paneId] = session;
-        session.Start(command: command, workingDirectory: workingDirectory);
+        session.Start(
+            command: command,
+            workingDirectory: workingDirectory,
+            environment: TerminalEnvironmentVariables.ForWorkspace(workspaceId));
 
         SessionCreated?.Invoke(paneId);
 

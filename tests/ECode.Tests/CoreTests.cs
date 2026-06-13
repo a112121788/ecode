@@ -161,6 +161,7 @@ public class DaemonMessageRoundTripTests
             PaneId = "pane-1",
             Cols = 120,
             Rows = 40,
+            WorkspaceId = "workspace-1",
             WorkingDirectory = @"C:\repo",
             Command = "pwsh",
             Data = "hello",
@@ -172,6 +173,7 @@ public class DaemonMessageRoundTripTests
         roundTripped.PaneId.Should().Be("pane-1");
         roundTripped.Cols.Should().Be(120);
         roundTripped.Rows.Should().Be(40);
+        roundTripped.WorkspaceId.Should().Be("workspace-1");
         roundTripped.WorkingDirectory.Should().Be(@"C:\repo");
         roundTripped.Command.Should().Be("pwsh");
         roundTripped.Data.Should().Be("hello");
@@ -242,6 +244,38 @@ public class DaemonMessageRoundTripTests
         var roundTripped = JsonSerializer.Deserialize<T>(json);
         roundTripped.Should().NotBeNull();
         return roundTripped!;
+    }
+}
+
+/// <summary>
+/// 终端环境变量测试 - 验证启动 shell 前注入 ecode 上下文变量。
+/// </summary>
+public class TerminalEnvironmentVariablesTests
+{
+    [Fact]
+    public void ForWorkspace_AddsEcodeWorkspaceId()
+    {
+        var environment = TerminalEnvironmentVariables.ForWorkspace("workspace-1");
+
+        environment.Should().ContainKey(TerminalEnvironmentVariables.WorkspaceId)
+            .WhoseValue.Should().Be("workspace-1");
+    }
+
+    [Fact]
+    public void MergeWithCurrent_OverridesExistingValuesAndSkipsInvalidNames()
+    {
+        var merged = TerminalEnvironmentVariables.MergeWithCurrent(new Dictionary<string, string>
+        {
+            ["PATH"] = "test-path",
+            [TerminalEnvironmentVariables.WorkspaceId] = "workspace-1",
+            ["BAD=NAME"] = "ignored",
+            [""] = "ignored",
+        });
+
+        merged["PATH"].Should().Be("test-path");
+        merged[TerminalEnvironmentVariables.WorkspaceId].Should().Be("workspace-1");
+        merged.Should().NotContainKey("BAD=NAME");
+        merged.Should().NotContainKey("");
     }
 }
 
