@@ -230,24 +230,33 @@ public partial class MainViewModel : ObservableObject
     public void JumpToLatestUnread()
     {
         var latest = _notificationService.GetLatestUnread();
-        if (latest == null) return;
+        JumpToNotification(latest);
+    }
+
+    public bool JumpToNotification(TerminalNotification? notification)
+    {
+        if (notification == null) return false;
 
         // 找到对应的项目和 Surface
-        var workspace = Workspaces.FirstOrDefault(w => w.Workspace.Id == latest.WorkspaceId);
+        var workspace = Workspaces.FirstOrDefault(w => w.Workspace.Id == notification.WorkspaceId);
         if (workspace != null)
         {
             SelectedWorkspace = workspace;
-            var surface = workspace.Surfaces.FirstOrDefault(s => s.Surface.Id == latest.SurfaceId);
+            var surface = workspace.Surfaces.FirstOrDefault(s => s.Surface.Id == notification.SurfaceId);
             if (surface != null)
             {
                 workspace.SelectedSurface = surface;
-                if (latest.PaneId != null)
+                if (notification.PaneId != null)
                 {
-                    surface.FocusPane(latest.PaneId);
+                    surface.FocusPane(notification.PaneId);
                 }
             }
-            _notificationService.MarkAsRead(latest.Id);
+            _notificationService.MarkAsRead(notification.Id);
+            NotificationPanelVisible = false;
+            return true;
         }
+
+        return false;
     }
 
     [RelayCommand]

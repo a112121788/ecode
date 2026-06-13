@@ -27,6 +27,9 @@
 .PARAMETER OutputRoot
   输出根目录。默认值：<repo>\publish。
 
+.PARAMETER MinimumExeBytes
+  产物 exe 的最小字节数阈值。默认值：65536。
+
 .EXAMPLE
   pwsh ./scripts/publish.ps1
   pwsh ./scripts/publish.ps1 -Flavor SelfContained
@@ -45,7 +48,10 @@ param(
     [ValidateSet('All', 'Framework', 'SelfContained', 'Cli')]
     [string]$Flavor = 'All',
 
-    [string]$OutputRoot
+    [string]$OutputRoot,
+
+    [ValidateRange(1, [int]::MaxValue)]
+    [int]$MinimumExeBytes = 65536
 )
 
 $ErrorActionPreference = 'Stop'
@@ -61,6 +67,7 @@ if ($OutputRoot) {
 
 $MainProj = Join-Path $RepoRoot 'src/ECode/ECode.csproj'
 $CliProj  = Join-Path $RepoRoot 'src/ECode.Cli/ECode.Cli.csproj'
+$Validations = @()
 
 function Invoke-DotnetPublish {
     param(
@@ -100,6 +107,64 @@ function Reset-PublishDir([string]$path) {
     Ensure-Dir $full
 }
 
+function Add-PublishValidation {
+    param(
+        [Parameter(Mandatory)][string]$FlavorName,
+        [Parameter(Mandatory)][string]$ExePath,
+        [int]$MinimumBytes = $MinimumExeBytes
+    )
+
+    $full = [System.IO.Path]::GetFullPath($ExePath)
+    $exists = Test-Path -LiteralPath $full -PathType Leaf
+    $size = 0L
+    $sha256 = ''
+    $version = ''
+    $status = 'OK'
+    $errorText = ''
+
+    if (-not $exists) {
+        $status = 'FAIL'
+        $errorText = 'missing'
+    } else {
+        $item = Get-Item -LiteralPath $full
+        $size = $item.Length
+        if ($size -lt $MinimumBytes) {
+            $status = 'FAIL'
+            $errorText = "size<$MinimumBytes"
+        }
+
+        $sha256 = (Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash.ToLowerInvariant()
+        $version = $item.VersionInfo.FileVersion
+        if ([string]::IsNullOrWhiteSpace($version)) {
+            $status = 'FAIL'
+            $errorText = if ($errorText) { "$errorText;no-version" } else { 'no-version' }
+        }
+    }
+
+    $script:Validations += [pscustomobject]@{
+        Flavor  = $FlavorName
+        File    = $full
+        Exists  = $exists
+        SizeMB  = [Math]::Round($size / 1MB, 2)
+        Version = $version
+        Sha256  = $sha256
+        Status  = if ($errorText) { "$status ($errorText)" } else { $status }
+    }
+}
+
+function Write-ValidationTable {
+    if ($Validations.Count -eq 0) { return }
+
+    Write-Host ""
+    Write-Host "=== artifact validation ===" -ForegroundColor Yellow
+    $Validations | Format-Table Flavor, Exists, SizeMB, Version, Sha256, File, Status -AutoSize
+
+    $failed = @($Validations | Where-Object { $_.Status -notlike 'OK*' })
+    if ($failed.Count -gt 0) {
+        throw "Publish artifact validation failed for $($failed.Count) artifact(s)."
+    }
+}
+
 Ensure-Dir $OutputRoot
 # 把 MSBuild 的 bin/obj 放进发布目录下的隔离缓存，避免覆盖正在运行的开发版 exe。
 $BuildRoot = Join-Path $OutputRoot '.build'
@@ -119,7 +184,9 @@ if ($Flavor -in @('All', 'Framework')) {
         '--self-contained', 'false',
         '-o', $out
     )
-    $ran += "Framework      -> $out\ecode-app.exe"
+    $exe = Join-Path $out 'ecode-app.exe'
+    Add-PublishValidation -FlavorName 'Framework' -ExePath $exe
+    $ran += "Framework      -> $exe"
 }
 
 if ($Flavor -in @('All', 'SelfContained')) {
@@ -132,7 +199,9 @@ if ($Flavor -in @('All', 'SelfContained')) {
         '--self-contained', 'true',
         '-o', $out
     )
-    $ran += "SelfContained  -> $out\ecode-app.exe"
+    $exe = Join-Path $out 'ecode-app.exe'
+    Add-PublishValidation -FlavorName 'SelfContained' -ExePath $exe
+    $ran += "SelfContained  -> $exe"
 }
 
 if ($Flavor -in @('All', 'Cli')) {
@@ -145,9 +214,12 @@ if ($Flavor -in @('All', 'Cli')) {
         '--self-contained', 'true',
         '-o', $out
     )
-    $ran += "Cli            -> $out\ecode.exe"
+    $exe = Join-Path $out 'ecode.exe'
+    Add-PublishValidation -FlavorName 'Cli' -ExePath $exe
+    $ran += "Cli            -> $exe"
 }
 
 Write-Host ""
 Write-Host "=== done ===" -ForegroundColor Green
 foreach ($r in $ran) { Write-Host "  $r" }
+Write-ValidationTable

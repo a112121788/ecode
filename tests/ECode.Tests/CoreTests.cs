@@ -57,6 +57,56 @@ public class CommandLogSanitizationTests
     }
 }
 
+public class NotificationServiceTests
+{
+    [Fact]
+    public void MarkAsRead_KeepsUnreadFirstThenNewestRead()
+    {
+        var service = new NotificationService();
+        var unreadOld = CreateNotification("unread-old", isRead: false, timestamp: new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc));
+        var readNewest = CreateNotification("read-newest", isRead: true, timestamp: new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc));
+        var unreadMiddle = CreateNotification("unread-middle", isRead: false, timestamp: new DateTime(2026, 1, 1, 11, 0, 0, DateTimeKind.Utc));
+        service.Notifications.Add(readNewest);
+        service.Notifications.Add(unreadOld);
+        service.Notifications.Add(unreadMiddle);
+
+        service.MarkAsRead(unreadMiddle.Id);
+
+        service.Notifications.Select(n => n.Id)
+            .Should().Equal("unread-old", "read-newest", "unread-middle");
+        service.UnreadCount.Should().Be(1);
+    }
+
+    [Fact]
+    public void MarkAsUnread_MovesNewestUnreadBeforeOlderUnread()
+    {
+        var service = new NotificationService();
+        var unreadOld = CreateNotification("unread-old", isRead: false, timestamp: new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc));
+        var readNewest = CreateNotification("read-newest", isRead: true, timestamp: new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc));
+        service.Notifications.Add(unreadOld);
+        service.Notifications.Add(readNewest);
+
+        service.MarkAsUnread(readNewest.Id);
+
+        service.Notifications.Select(n => n.Id)
+            .Should().Equal("read-newest", "unread-old");
+        service.UnreadCount.Should().Be(2);
+    }
+
+    private static TerminalNotification CreateNotification(string id, bool isRead, DateTime timestamp) => new()
+    {
+        Id = id,
+        WorkspaceId = "workspace-1",
+        SurfaceId = "surface-1",
+        PaneId = "pane-1",
+        IsRead = isRead,
+        Title = id,
+        Body = "body",
+        Timestamp = timestamp,
+        Source = NotificationSource.Cli,
+    };
+}
+
 public class DaemonMessageRoundTripTests
 {
     [Fact]

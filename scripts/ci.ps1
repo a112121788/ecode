@@ -80,7 +80,7 @@ function Invoke-Checked {
     Write-Host (">> {0} {1}" -f $FilePath, ($Arguments -join ' ')) -ForegroundColor DarkGray
     & $FilePath @Arguments
     if ($LASTEXITCODE -ne 0) {
-        throw "Command failed with exit code $LASTEXITCODE: $FilePath $($Arguments -join ' ')"
+        throw "Command failed with exit code ${LASTEXITCODE}: $FilePath $($Arguments -join ' ')"
     }
 }
 
@@ -100,6 +100,71 @@ function Test-PowerShellScriptSyntax {
         $messages = $errors | ForEach-Object { "{0}:{1}: {2}" -f $_.Extent.StartLineNumber, $_.Extent.StartColumnNumber, $_.Message }
         throw "PowerShell syntax errors in ${Path}:`n$($messages -join "`n")"
     }
+}
+
+function Test-MarkdownRelativeLinks {
+    param([Parameter(Mandatory)][string]$Root)
+
+    $candidatePaths = @(
+        (Join-Path $Root 'README.md'),
+        (Join-Path $Root 'spec'),
+        (Join-Path $Root 'docs')
+    )
+
+    $markdownFiles = @()
+    foreach ($path in $candidatePaths) {
+        if (Test-Path -LiteralPath $path -PathType Leaf) {
+            $markdownFiles += Get-Item -LiteralPath $path
+        } elseif (Test-Path -LiteralPath $path -PathType Container) {
+            $markdownFiles += Get-ChildItem -LiteralPath $path -Filter '*.md' -File -Recurse
+        }
+    }
+
+    $missing = New-Object System.Collections.Generic.List[string]
+    $linkPattern = '(!?\[[^\]]*\]\((?<target>[^)]+)\))'
+
+    foreach ($file in $markdownFiles) {
+        $content = Get-Content -LiteralPath $file.FullName -Raw
+        foreach ($match in [regex]::Matches($content, $linkPattern)) {
+            $target = $match.Groups['target'].Value.Trim()
+            if ([string]::IsNullOrWhiteSpace($target) -or $target.StartsWith('#')) {
+                continue
+            }
+
+            if ($target.StartsWith('<') -and $target.EndsWith('>')) {
+                $target = $target.Substring(1, $target.Length - 2)
+            }
+
+            if ($target -match '^[a-z][a-z0-9+.-]*:') {
+                continue
+            }
+
+            $pathOnly = ($target -split '#', 2)[0]
+            $pathOnly = ($pathOnly -split '\?', 2)[0]
+            $pathOnly = ($pathOnly -split '\s+', 2)[0]
+            if ([string]::IsNullOrWhiteSpace($pathOnly)) {
+                continue
+            }
+
+            $baseDir = Split-Path -Parent $file.FullName
+            if ($pathOnly.StartsWith('/')) {
+                $resolved = Join-Path $Root $pathOnly.TrimStart('/', '\')
+            } else {
+                $resolved = Join-Path $baseDir $pathOnly
+            }
+
+            if (-not (Test-Path -LiteralPath $resolved)) {
+                $relativeFile = [System.IO.Path]::GetRelativePath($Root, $file.FullName)
+                $missing.Add("${relativeFile}: missing link target '$target'")
+            }
+        }
+    }
+
+    if ($missing.Count -gt 0) {
+        throw "Markdown relative link check failed:`n$($missing -join "`n")"
+    }
+
+    Write-Host "Markdown relative links OK ($($markdownFiles.Count) files)." -ForegroundColor Green
 }
 
 Push-Location $RepoRoot
@@ -130,6 +195,9 @@ try {
     Test-PowerShellScriptSyntax (Join-Path $RepoRoot 'scripts/ci.ps1')
     Test-PowerShellScriptSyntax $PublishScript
     Write-Host 'PowerShell syntax OK.' -ForegroundColor Green
+
+    Write-Step 'Validate documentation links'
+    Test-MarkdownRelativeLinks $RepoRoot
 
     Write-Step 'Smoke test gate'
     if ($IncludeSmoke) {

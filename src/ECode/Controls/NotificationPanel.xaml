@@ -46,9 +46,11 @@
             </Border>
 
             <!-- 通知列表 -->
-            <ListBox Grid.Row="1"
+            <ListBox x:Name="NotificationsList" Grid.Row="1"
                      ItemsSource="{Binding NotificationService.Notifications}"
                      Background="Transparent" BorderThickness="0"
+                     MouseDoubleClick="NotificationsList_MouseDoubleClick"
+                     KeyDown="NotificationsList_KeyDown"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
@@ -56,6 +58,8 @@
                                 BorderThickness="0,0,0,1">
                             <Border.ContextMenu>
                                 <ContextMenu>
+                                    <MenuItem Header="跳转到面板" Click="JumpToNotification_Click" />
+                                    <Separator />
                                     <MenuItem Header="标记为已读" Click="MarkRead_Click" />
                                     <MenuItem Header="标记为未读" Click="MarkUnread_Click" />
                                     <Separator />
