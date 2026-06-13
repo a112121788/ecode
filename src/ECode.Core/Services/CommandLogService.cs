@@ -33,7 +33,7 @@ public class CommandLogService
     private DateOnly? _lastTranscriptRetentionSweepDate;
 
     private static readonly Regex SecretEnvAssignmentRegex = new(
-        @"(\b[A-Za-z0-9_]*(?:PASSWORD|PASSWD|TOKEN|SECRET|API_KEY|ACCESS_KEY)[A-Za-z0-9_]*\s*=\s*)(\""[^\""\r\n]*\""|'[^'\r\n]*'|[^\s\r\n]+)",
+        @"(^|[\s;])([A-Za-z_][A-Za-z0-9_]*\s*=\s*)(\""[^\""\r\n]*\""|'[^'\r\n]*'|[^\s\r\n]+)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex SecretFlagRegex = new(
@@ -388,7 +388,7 @@ public class CommandLogService
         if (LooksLikeSecretInput(sanitized))
             return null;
 
-        sanitized = SecretEnvAssignmentRegex.Replace(sanitized, "$1[REDACTED]");
+        sanitized = RedactSecretEnvAssignments(sanitized);
         sanitized = SecretFlagRegex.Replace(sanitized, "$1[REDACTED]");
         sanitized = UriCredentialsRegex.Replace(sanitized, "$1[REDACTED]$3");
 
@@ -738,11 +738,39 @@ public class CommandLogService
         if (string.IsNullOrWhiteSpace(text))
             return string.Empty;
 
-        var sanitized = SecretEnvAssignmentRegex.Replace(text, "$1[REDACTED]");
+        var sanitized = RedactSecretEnvAssignments(text);
         sanitized = SecretFlagRegex.Replace(sanitized, "$1[REDACTED]");
         sanitized = UriCredentialsRegex.Replace(sanitized, "$1[REDACTED]$3");
 
         return sanitized;
+    }
+
+    private static string RedactSecretEnvAssignments(string text)
+    {
+        return SecretEnvAssignmentRegex.Replace(text, match =>
+        {
+            var assignmentPrefix = match.Groups[2].Value;
+            var equalsIndex = assignmentPrefix.IndexOf('=');
+            var key = equalsIndex >= 0 ? assignmentPrefix[..equalsIndex].Trim() : assignmentPrefix.Trim();
+
+            return IsSensitiveEnvName(key)
+                ? $"{match.Groups[1].Value}{assignmentPrefix}[REDACTED]"
+                : match.Value;
+        });
+    }
+
+    private static bool IsSensitiveEnvName(string key)
+    {
+        var upper = key.ToUpperInvariant();
+        return upper.Contains("PASSWORD", StringComparison.Ordinal) ||
+               upper.Contains("PASSWD", StringComparison.Ordinal) ||
+               upper.Contains("SECRET", StringComparison.Ordinal) ||
+               upper.Contains("API_KEY", StringComparison.Ordinal) ||
+               upper.Contains("ACCESS_KEY", StringComparison.Ordinal) ||
+               upper is "TOKEN" ||
+               upper.EndsWith("_TOKEN", StringComparison.Ordinal) ||
+               upper.Contains("_TOKEN_", StringComparison.Ordinal) ||
+               upper.StartsWith("TOKEN_", StringComparison.Ordinal);
     }
 
     private static string ShortId(string? value)

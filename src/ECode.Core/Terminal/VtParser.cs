@@ -21,6 +21,7 @@ public class VtParser
         CsiIntermediate,
         CsiIgnore,
         OscString,
+        OscStringEscape,
         DcsEntry,
         DcsParam,
         DcsIntermediate,
@@ -109,6 +110,12 @@ public class VtParser
         switch (b)
         {
             case 0x1B: // ESC（转义）
+                if (_state == State.OscString)
+                {
+                    _state = State.OscStringEscape;
+                    return;
+                }
+
                 _state = State.Escape;
                 _intermediates.Clear();
                 _params.Clear();
@@ -144,6 +151,9 @@ public class VtParser
                 break;
             case State.OscString:
                 ProcessOscString(b);
+                break;
+            case State.OscStringEscape:
+                ProcessOscStringEscape(b);
                 break;
             case State.DcsEntry:
             case State.DcsParam:
@@ -362,10 +372,7 @@ public class VtParser
 
         if (b == 0x1B) // 可能的 ST（ESC \）
         {
-            // 将在下一个字节处理 — 不需要前探，
-            // ESC 处理器会触发。但需要先分派。
-            OnOscDispatch?.Invoke(_oscString.ToString());
-            _state = State.Escape;
+            _state = State.OscStringEscape;
             return;
         }
 
@@ -373,6 +380,19 @@ public class VtParser
         {
             _oscString.Append((char)b);
         }
+    }
+
+    private void ProcessOscStringEscape(byte b)
+    {
+        if (b == (byte)'\\')
+        {
+            OnOscDispatch?.Invoke(_oscString.ToString());
+            _state = State.Ground;
+            return;
+        }
+
+        _state = State.Escape;
+        ProcessEscape(b);
     }
 
     private void ProcessDcs(byte b)

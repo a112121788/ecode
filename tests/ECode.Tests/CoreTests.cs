@@ -152,6 +152,156 @@ public class DaemonMessageRoundTripTests
     }
 }
 
+public class EcodeJsonServiceTests
+{
+    [Fact]
+    public void Load_MergesLocalOverGlobal()
+    {
+        using var temp = TempDirectory.Create();
+        var workspaceDir = Path.Combine(temp.Path, "workspace");
+        var localDir = Path.Combine(workspaceDir, ".ecode");
+        Directory.CreateDirectory(localDir);
+
+        var globalPath = Path.Combine(temp.Path, "global.json");
+        File.WriteAllText(globalPath, """
+            {
+              "commands": [
+                {
+                  "name": "Run Tests",
+                  "description": "global test command",
+                  "command": "dotnet test --no-build"
+                },
+                {
+                  "name": "Format",
+                  "command": "dotnet format"
+                }
+              ],
+              "actions": {
+                "codex": {
+                  "type": "command",
+                  "title": "Codex",
+                  "command": "codex",
+                  "target": "currentTerminal"
+                }
+              }
+            }
+            """);
+
+        File.WriteAllText(Path.Combine(localDir, "ecode.json"), """
+            {
+              "commands": [
+                {
+                  "name": "Run Tests",
+                  "description": "local override",
+                  "keywords": ["test", "verify", "test"],
+                  "command": "dotnet test",
+                  "confirm": true
+                }
+              ],
+              "actions": {
+                "codex": {
+                  "type": "command",
+                  "title": "Codex Local",
+                  "command": "codex --full-auto",
+                  "target": "newTabInCurrentPane",
+                  "palette": true,
+                  "confirm": true
+                }
+              }
+            }
+            """);
+
+        var result = new EcodeJsonService().Load(workspaceDir, globalPath);
+
+        result.Diagnostics.Should().BeEmpty();
+        result.LoadedPaths.Should().HaveCount(2);
+        result.Config.Commands.Should().HaveCount(2);
+        result.Config.Commands.Single(c => c.Name == "Run Tests").Command.Should().Be("dotnet test");
+        result.Config.Commands.Single(c => c.Name == "Run Tests").Confirm.Should().BeTrue();
+        result.Config.Commands.Single(c => c.Name == "Run Tests").Keywords.Should().Equal("test", "verify");
+        result.Config.Commands.Single(c => c.Name == "Format").Command.Should().Be("dotnet format");
+        result.Config.Actions["codex"].Title.Should().Be("Codex Local");
+        result.Config.Actions["codex"].Target.Should().Be(EcodeActionTargets.NewTabInCurrentPane);
+    }
+
+    [Fact]
+    public void Load_InvalidSchema_ReturnsDiagnostic()
+    {
+        using var temp = TempDirectory.Create();
+        var path = Path.Combine(temp.Path, "ecode.json");
+        File.WriteAllText(path, """
+            {
+              "commands": [
+                {
+                  "name": "",
+                  "command": ""
+                }
+              ],
+              "actions": {
+                "broken": {
+                  "type": "command",
+                  "title": "Broken"
+                }
+              }
+            }
+            """);
+
+        var result = new EcodeJsonService().LoadFromFiles([path]);
+
+        result.HasErrors.Should().BeTrue();
+        result.Diagnostics.Should().Contain(d => d.Severity == EcodeJsonDiagnosticSeverity.Error
+            && d.Message.Contains("commands[0].name", StringComparison.Ordinal));
+        result.Diagnostics.Should().Contain(d => d.Severity == EcodeJsonDiagnosticSeverity.Error
+            && d.Message.Contains("commands[0].command", StringComparison.Ordinal));
+        result.Diagnostics.Should().Contain(d => d.Severity == EcodeJsonDiagnosticSeverity.Error
+            && d.Message.Contains("actions.broken.command", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Load_SupportsJsonCommentsAndTrailingCommas()
+    {
+        using var temp = TempDirectory.Create();
+        var path = Path.Combine(temp.Path, "ecode.json");
+        File.WriteAllText(path, """
+            {
+              // ecode accepts jsonc-style project files.
+              "commands": [
+                {
+                  "name": "Build",
+                  "command": "dotnet build",
+                },
+              ],
+            }
+            """);
+
+        var result = new EcodeJsonService().LoadFromFiles([path]);
+
+        result.Diagnostics.Should().BeEmpty();
+        result.Config.Commands.Single().Name.Should().Be("Build");
+        result.Config.Commands.Single().Command.Should().Be("dotnet build");
+    }
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(),
+            "ecode-tests-" + Guid.NewGuid().ToString("N"));
+
+        private TempDirectory()
+        {
+            Directory.CreateDirectory(Path);
+        }
+
+        public static TempDirectory Create() => new();
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+                Directory.Delete(Path, recursive: true);
+        }
+    }
+}
+
 public class VersionServiceTests
 {
     [Fact]
@@ -360,7 +510,7 @@ public class VtParserTests
         parser.OnPrint = c => printed.Add(c);
         parser.OnCsiDispatch = (_, _, _) => dispatched = true;
 
-        parser.Feed("\x1b[31\x18A");
+        parser.Feed("\u001b[31\u0018A");
 
         dispatched.Should().BeFalse();
         printed.Should().Equal('A');
