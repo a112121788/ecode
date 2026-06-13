@@ -16,6 +16,7 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 - 新增命令日志脱敏测试，覆盖环境变量、命令行 flag、URI credential 与独立密钥输入。
 - 新增 VT parser 回归测试，覆盖 OSC ST 终止、UTF-8 跨包、无效 UTF-8 恢复与 CAN 取消 CSI。
 - 新增 SplitNode 布局测试，覆盖嵌套移除、焦点循环、预设布局、等分、resize clamp 与 pane swap。
+- 新增 `ecode reload-config` 与 `Ctrl+Shift+,`，可热重载 `ecode.json` 并刷新已打开的命令面板。
 
 ### Changed
 

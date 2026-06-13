@@ -297,8 +297,8 @@
 1. `M0-A-01` + `M0-A-02`（建立 CI 安全网）
 2. `M0-A-03`（版本号统一）
 3. `M0-B-01` ~ `M0-B-05`（核心测试补齐）
-4. `M1-C-01` ~ `M1-C-04`（已完成：`ecode.json` Core + CommandPalette 接入）
-5. `M1-C-05`（CLI `ecode reload-config` + `Ctrl+Shift+,`）
+4. `M1-C-01` ~ `M1-C-05`（已完成：`ecode.json` Core + CommandPalette 接入 + reload config）
+5. `M2-A-01`（`ResumeBinding` DTO + JSON，开启 M2 会话恢复增强）
 6. `M1-A-01`（Pane 蓝环，macOS 核心体验首块拼图）
 7. `M2-A-01` ~ `M2-A-03`（ResumeBinding 数据与服务）
 8. `M2-C-01`（CLI `surface resume`）

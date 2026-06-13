@@ -334,7 +334,7 @@ M1 只实现子集：
 - 已支持全局 / 本地合并；本地同名 command 或 action 覆盖全局定义。
 - 已支持在 `Ctrl+Shift+P` 命令面板展示 `commands` 与 `actions`（`type:"command"` 且 `palette:true`）。
 - 已支持 `confirm:true` 弹窗确认、`currentTerminal` / `newTabInCurrentPane` 两种目标执行。
-- 暂未实现 CLI `ecode reload-config`；当前命令面板每次打开都会重新读取配置。
+- 已支持 CLI `ecode reload-config` 与 `Ctrl+Shift+,` 热重载；命令面板打开时会保留搜索词并刷新配置项。
 
 | ID | 任务 | 说明 | 文件 |
 |---|---|---|---|
@@ -343,7 +343,7 @@ M1 只实现子集：
 | M1-C03 | schema error | 失败时返回可显示错误项（已实现：命令面板诊断项） | 同上 |
 | M1-C04 | 命令面板接入 | `CommandPalette` 数据源追加 custom commands（已实现） | `CommandPalette.xaml.cs`、`MainWindow.xaml.cs` |
 | M1-C05 | 执行动作 | `currentTerminal` 或 `newTabInCurrentPane`（已实现） | `MainWindow.xaml.cs` |
-| M1-C06 | reload config | CLI `ecode reload-config` + `Ctrl+Shift+,` | `Program.cs`、`MainWindow.xaml.cs` |
+| M1-C06 | reload config | CLI `ecode reload-config` + `Ctrl+Shift+,`（已实现） | `Program.cs`、`MainWindow.xaml.cs` |
 
 ### M1.3 实现建议
 
@@ -384,6 +384,7 @@ CommandPalette item selected
 - OSC 通知进入后，pane/tab/workspace 三层都显示未读态。
 - `Ctrl+Shift+U` 能跳转到目标 pane 并清除该通知未读。
 - `.ecode/ecode.json` 简单命令出现在命令面板；schema 错误在命令面板可见。
+- `ecode reload-config` / `Ctrl+Shift+,` 能重新读取配置，并刷新已打开的命令面板。
 - 文件拖入终端会输入正确 quoted path。
 - Surface 重排后 session 不丢失。
 
