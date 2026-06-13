@@ -135,6 +135,56 @@ dotnet publish src/ECode.Cli/ECode.Cli.csproj -c Release -r win-x64 --self-conta
 
 ---
 
+## 项目命令：`ecode.json`
+
+ECode 会在当前项目目录读取项目级命令，并把它们显示到命令面板（`Ctrl+Shift+P`）里。
+
+读取顺序：
+
+1. `%USERPROFILE%\.config\ecode\ecode.json`
+2. `<当前项目>\.ecode\ecode.json`
+3. `<当前项目>\ecode.json`
+
+本地项目配置会覆盖全局同名命令 / action。配置文件支持 JSONC 注释和尾随逗号；解析错误会以“ecode.json 配置错误/警告”的形式出现在命令面板中。
+
+示例：
+
+```jsonc
+{
+  "commands": [
+    {
+      "name": "Run Tests",
+      "description": "Run project tests",
+      "keywords": ["test", "check"],
+      "command": "dotnet test",
+      "confirm": true
+    }
+  ],
+  "actions": {
+    "codex": {
+      "type": "command",
+      "title": "Codex",
+      "subtitle": "Start Codex in a new tab",
+      "command": "codex",
+      "target": "newTabInCurrentPane",
+      "palette": true,
+      "confirm": true
+    }
+  }
+}
+```
+
+支持的 `target`：
+
+| target | 行为 |
+| ------ | ---- |
+| `currentTerminal` | 在当前聚焦终端写入命令并回车 |
+| `newTabInCurrentPane` | 新建标签页后写入命令并回车 |
+
+> 安全提示：仓库里的 `ecode.json` 可能包含任意 shell 命令。建议对会修改文件、安装依赖或访问凭据的命令设置 `confirm: true`。
+
+---
+
 ## 快捷键
 
 ### 项目

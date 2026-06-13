@@ -91,7 +91,7 @@ ECode 不是一个新的 IDE，也不是强流程的 Agent 编排器，而是 Wi
 | Vertical + horizontal tabs | 侧栏展示 branch/cwd/port/notification | 大部分已有 | P0 | M1 补 ports display、PR 状态占位 |
 | In-app browser | 终端旁 split browser + agent-browser API | `BrowserControl` 仅辅助 Vault | P1 | M3/M4 分两阶段 |
 | Browser import | 导入 Chrome/Firefox/Arc sessions | 缺失 | P2 | M4 后半或 M6 |
-| Custom commands | `ecode.json` commands/actions/layout/buttons | 缺失 | P0 | M1 基础，M3 浏览器 surface，M5 v2 |
+| Custom commands | `ecode.json` commands/actions/layout/buttons | M1 command 子集已接入命令面板 | P0 | M3 browser surface，M5 v2 |
 | Scriptable socket API | 创建 workspace/pane、send keys、browser automation | v1 CLI 很窄 | P0 | M5 v2 协议 |
 | SSH workspace | `ecode ssh` + remote browser route | 缺失 | P3 | 远期评估，不进主线 |
 | Claude Code Teams | 一键 teammate 模式 | 缺失 | P2 | M6 hooks/integrations |
@@ -327,13 +327,22 @@ M1 只实现子集：
 }
 ```
 
+当前实现状态（Windows 版）：
+
+- 已支持 JSONC 注释与尾随逗号。
+- 已支持读取 `%USERPROFILE%\.config\ecode\ecode.json`、`<workspace cwd>\.ecode\ecode.json`、`<workspace cwd>\ecode.json`。
+- 已支持全局 / 本地合并；本地同名 command 或 action 覆盖全局定义。
+- 已支持在 `Ctrl+Shift+P` 命令面板展示 `commands` 与 `actions`（`type:"command"` 且 `palette:true`）。
+- 已支持 `confirm:true` 弹窗确认、`currentTerminal` / `newTabInCurrentPane` 两种目标执行。
+- 暂未实现 CLI `ecode reload-config`；当前命令面板每次打开都会重新读取配置。
+
 | ID | 任务 | 说明 | 文件 |
 |---|---|---|---|
-| M1-C01 | 新增 DTO | `EcodeJsonConfig / EcodeCommand / EcodeAction` | `ECode.Core/Models/EcodeJsonConfig.cs` |
-| M1-C02 | 解析服务 | 路径搜索、JSON 解析、全局/本地 merge | `ECode.Core/Services/EcodeJsonService.cs` |
-| M1-C03 | schema error | 失败时返回可显示错误项 | 同上 |
-| M1-C04 | 命令面板接入 | `CommandPalette` 数据源追加 custom commands | `CommandPalette.xaml.cs` |
-| M1-C05 | 执行动作 | `currentTerminal` 或 `newTabInCurrentPane` | `SurfaceViewModel.cs` |
+| M1-C01 | 新增 DTO | `EcodeJsonConfig / EcodeCommand / EcodeAction`（已实现） | `ECode.Core/Models/EcodeJsonConfig.cs` |
+| M1-C02 | 解析服务 | 路径搜索、JSON 解析、全局/本地 merge（已实现） | `ECode.Core/Services/EcodeJsonService.cs` |
+| M1-C03 | schema error | 失败时返回可显示错误项（已实现：命令面板诊断项） | 同上 |
+| M1-C04 | 命令面板接入 | `CommandPalette` 数据源追加 custom commands（已实现） | `CommandPalette.xaml.cs`、`MainWindow.xaml.cs` |
+| M1-C05 | 执行动作 | `currentTerminal` 或 `newTabInCurrentPane`（已实现） | `MainWindow.xaml.cs` |
 | M1-C06 | reload config | CLI `ecode reload-config` + `Ctrl+Shift+,` | `Program.cs`、`MainWindow.xaml.cs` |
 
 ### M1.3 实现建议
@@ -365,9 +374,9 @@ public sealed class EcodeAction
 ```text
 CommandPalette item selected
   -> MainWindow executes action
-  -> if confirm then TextPromptWindow / MessageBox
+  -> if confirm then MessageBox
   -> if target=currentTerminal then focused session.Write(command + CR)
-  -> if target=newTabInCurrentPane then create surface then start command
+  -> if target=newTabInCurrentPane then create surface then focused session.Write(command + CR)
 ```
 
 ### M1.4 验收
@@ -385,6 +394,7 @@ CommandPalette item selected
 | `NotificationService_MarkUnread_MovesLatestUnreadCorrectly` | xUnit |
 | `EcodeJsonService_MergesLocalOverGlobal` | xUnit |
 | `EcodeJsonService_InvalidSchema_ReturnsDiagnostic` | xUnit |
+| `EcodeJsonService_SupportsJsonCommentsAndTrailingCommas` | xUnit |
 | `SplitNode_SurfaceReorder_DoesNotChangePaneIds` | xUnit |
 | 手测：OSC 777 notify → 蓝环 → jump unread | smoke script |
 
