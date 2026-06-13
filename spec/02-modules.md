@@ -121,7 +121,7 @@
 | `src/ECode/Controls/NotificationPanel.xaml(.cs)` | `NotificationPanel` | 通知列表 + 标记已读 |
 | `src/ECode/Controls/SnippetPicker.xaml(.cs)` | `SnippetPicker` | 代码片段选择 + `{{key}}` 占位符填写 |
 | `src/ECode/Controls/WorkspaceSidebarItem.xaml(.cs)` | `WorkspaceSidebarItem` | 项目项 UI |
-| `src/ECode/Controls/BrowserControl.xaml(.cs)` | `BrowserControl` | WebView2 包装；维护 `BrowserPaneViewModel`，同步 NavigationStarting/Completed、SourceChanged、DocumentTitleChanged 与 HistoryChanged；WebView2 Runtime 缺失时显示下载提示 |
+| `src/ECode/Controls/BrowserControl.xaml(.cs)` | `BrowserControl` | WebView2 包装；维护 `BrowserPaneViewModel`，同步 NavigationStarting/Completed、SourceChanged、DocumentTitleChanged 与 HistoryChanged；工具栏含 back/forward/reload/stop/devtools/address；WebView2 Runtime 缺失时显示下载提示 |
 
 ### 8.4 视图（顶级 Window / Dialog）
 

@@ -143,7 +143,7 @@
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
 | `M3-B-01` | `[x]` `BrowserPaneViewModel` | `src/ECode/ViewModels/BrowserPaneViewModel.cs` | URL / Title / Loading / CanGoBack 等属性变更广播 |
-| `M3-B-02` | `BrowserControl` 升级（地址栏、back/forward/reload/devtools） | `Controls/BrowserControl.xaml(.cs)` | 视觉与 macOS 截图接近 |
+| `M3-B-02` | `[x]` `BrowserControl` 升级（地址栏、back/forward/reload/stop/devtools） | `Controls/BrowserControl.xaml(.cs)` | 工具栏状态与加载进度可用 |
 | `M3-B-03` | `[x]` `SplitPaneContainer` 支持 browser leaf | `Controls/SplitPaneContainer.cs` | `BuildLeaf` 分支渲染 BrowserControl |
 | `M3-B-04` | `[x]` WebView2 缺失时的友好提示 | `BrowserControl.xaml.cs` | 不崩溃，提示下载链接 |
 
@@ -307,6 +307,7 @@
 11. `M3-B-01`（已完成：BrowserPaneViewModel 状态层）
 12. `M3-B-03` + `M3-B-04`（已完成：Browser leaf 渲染 + WebView2 缺失提示）
 13. `M3-C-01` + `M3-C-03`（已完成：CLI/IPC browser open）
-14. `M3-B-02`（BrowserControl 视觉升级）
+14. `M3-B-02`（已完成：BrowserControl 工具栏升级）
+15. `M3-C-02`（ecode.json browser surface 解析）
 
 > 进入 M4 / M5 前必须先冻结 v1 CLI 行为并完成 v1 contract 测试固化，避免 v2 协议破坏现有 agent 集成。

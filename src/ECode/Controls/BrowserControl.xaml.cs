@@ -153,6 +153,22 @@ public partial class BrowserControl : UserControl
         WebView.CoreWebView2?.Reload();
     }
 
+    private void Stop_Click(object sender, RoutedEventArgs e)
+    {
+        WebView.CoreWebView2?.Stop();
+        Browser.CompleteNavigation(
+            WebView.CoreWebView2?.Source ?? WebView.Source?.ToString(),
+            WebView.CoreWebView2?.DocumentTitle,
+            WebView.CoreWebView2?.CanGoBack == true,
+            WebView.CoreWebView2?.CanGoForward == true,
+            success: true);
+    }
+
+    private void DevTools_Click(object sender, RoutedEventArgs e)
+    {
+        WebView.CoreWebView2?.OpenDevToolsWindow();
+    }
+
     private void DownloadWebView2_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -229,6 +245,10 @@ public partial class BrowserControl : UserControl
         BackButton.IsEnabled = Browser.IsWebViewAvailable && Browser.CanGoBack;
         ForwardButton.IsEnabled = Browser.IsWebViewAvailable && Browser.CanGoForward;
         ReloadButton.IsEnabled = Browser.IsWebViewAvailable && !Browser.IsLoading;
+        StopButton.IsEnabled = Browser.IsWebViewAvailable && Browser.IsLoading;
+        StopButton.Visibility = Browser.IsLoading ? Visibility.Visible : Visibility.Collapsed;
+        DevToolsButton.IsEnabled = Browser.IsWebViewAvailable && WebView.CoreWebView2 != null;
+        LoadingProgress.Visibility = Browser.IsLoading ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ShowWebViewError(string message)

@@ -28,6 +28,7 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 - 新增 `BrowserPaneViewModel`，为 Browser pane 暴露 URL、标题、加载中、前进/后退能力与历史状态。
 - `SplitPaneContainer` 现在可渲染 Browser surface，且 WebView2 Runtime 缺失时会显示下载提示。
 - 新增 `ecode browser open|new|open-split <url>` 与 `BROWSER.OPEN*` IPC，可从 CLI 创建或复用 Browser Surface。
+- Browser 工具栏新增停止加载、开发者工具与加载进度状态。
 
 ### Changed
 
