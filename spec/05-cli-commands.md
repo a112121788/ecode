@@ -55,6 +55,14 @@
 | `right` / `vertical` / `v` | `SPLIT.RIGHT` |
 | `down` / `horizontal` / `h` | `SPLIT.DOWN` |
 
+#### `browser`
+
+| 子命令 | 选项 | 行为 |
+|---|---|---|
+| `open <url>` | `--workspaceId/Name/Index`、`--surfaceId/Name/Index`、`--name <text>` | `BROWSER.OPEN`；若当前/指定 Surface 是 Browser 则复用，否则创建 Browser Surface |
+| `new <url>` | `--workspaceId/Name/Index`、`--name <text>` | `BROWSER.NEW`；始终创建并选中新 Browser Surface |
+| `open-split <url>` / `split <url>` | `--direction <right|down>`、`--workspaceId/Name/Index`、`--name <text>` | `BROWSER.OPEN_SPLIT`；v1 兼容入口，当前以 `fallbackMode:"new-surface"` 创建 Browser Surface |
+
 #### `status`
 
 - 无参数，调用 `STATUS`
@@ -103,6 +111,9 @@ COMMAND [k=v [k=v ...]]
 | `SURFACE.RESUME.SHOW` | 项目 + Surface + `paneId/Name/Index` 或 `all=true` | 当前聚焦 pane | 返回 `{ok, workspace, surface, pane, bindings}` |
 | `SURFACE.RESUME.SET` | 项目 + Surface + pane + `shell` / `_arg*` + `kind` + `checkpoint` + `workingDirectory/cwd` + `trusted` + `approvedPrefix` | 当前聚焦 pane / `kind=custom` / session cwd | 写入 `resume.json`，同 pane 旧绑定会被替换 |
 | `SURFACE.RESUME.CLEAR` | `id` 或项目 + Surface + pane | 当前聚焦 pane | 按 binding ID 删除，或删除当前 / 指定 pane 的绑定 |
+| `BROWSER.OPEN` | `url` / `_arg0` + 项目 + 可选 Surface 定位 + `name/title` | 当前项目 / Surface | 打开 URL；复用 Browser Surface 或创建新 Browser Surface |
+| `BROWSER.NEW` | `url` / `_arg0` + 项目 + `name/title` | 当前项目 | 创建并选中新 Browser Surface |
+| `BROWSER.OPEN_SPLIT` | `url` / `_arg0` + 项目 + `direction` | 当前项目 / `direction=right` | v1 兼容入口；当前返回 `fallbackMode:"new-surface"` 并创建 Browser Surface |
 | `SPLIT.RIGHT` / `SPLIT.DOWN` | — | — | 对当前聚焦面板分屏 |
 | `PANE.LIST` | 项目 + Surface 定位参数 | 当前选中 | 返回 `{workspace, surface, panes:[{index,id,name,customName,focused,workingDirectory}]}` |
 | `PANE.FOCUS` | 项目 + Surface + `paneId/Name/Index` | 当前聚焦 | 切换面板焦点 |

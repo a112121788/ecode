@@ -83,6 +83,10 @@ public class SplitPaneContainer : ContentControl
         {
             Dispatcher.BeginInvoke(ApplyAttentionPulse);
         }
+        else if (e.PropertyName is nameof(SurfaceViewModel.BrowserNavigationVersion))
+        {
+            Dispatcher.BeginInvoke(NavigateBrowserLeaves);
+        }
     }
 
     /// <summary>
@@ -431,7 +435,12 @@ public class SplitPaneContainer : ContentControl
             DetachFromParent(browser);
         }
 
-        if (string.IsNullOrWhiteSpace(browser.Browser.Url))
+        if (!string.IsNullOrWhiteSpace(_surface.Surface.BrowserUrl) &&
+            !string.Equals(browser.Browser.Url, _surface.Surface.BrowserUrl, StringComparison.Ordinal))
+        {
+            browser.Navigate(_surface.Surface.BrowserUrl);
+        }
+        else if (string.IsNullOrWhiteSpace(browser.Browser.Url))
             browser.Navigate(string.IsNullOrWhiteSpace(_surface.Surface.BrowserUrl)
                 ? "about:blank"
                 : _surface.Surface.BrowserUrl);
@@ -462,6 +471,21 @@ public class SplitPaneContainer : ContentControl
         _surface.Surface.BrowserUrl = browser.Browser.Url;
         _surface.Surface.BrowserTitle = browser.Browser.Title;
         _surface.Surface.BrowserHistory = browser.Browser.History.ToList();
+    }
+
+    private void NavigateBrowserLeaves()
+    {
+        if (_surface == null || _surface.Surface.Kind != SurfaceKind.Browser)
+            return;
+
+        foreach (var browser in _browserCache.Values)
+        {
+            if (!string.IsNullOrWhiteSpace(_surface.Surface.BrowserUrl) &&
+                !string.Equals(browser.Browser.Url, _surface.Surface.BrowserUrl, StringComparison.Ordinal))
+            {
+                browser.Navigate(_surface.Surface.BrowserUrl);
+            }
+        }
     }
 
     private static void DetachFromParent(UIElement element)

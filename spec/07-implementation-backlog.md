@@ -151,9 +151,9 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M3-C-01` | `ecode browser open|open-split|new <url>` | `ECode.Cli/Program.cs`、`MainViewModel.cs` | contract 测试 |
+| `M3-C-01` | `[x]` `ecode browser open|open-split|new <url>` | `ECode.Cli/Program.cs`、`MainViewModel.cs` | build 通过；open-split v1 回退为 new-surface |
 | `M3-C-02` | `.ecode/ecode.json` workspace 中 `type:"browser"` surface 解析 | `EcodeJsonService.cs` | 在 layout 中可创建 |
-| `M3-C-03` | v1 IPC `BROWSER.OPEN_SPLIT` 文本参数 | `MainViewModel.HandlePipeCommand` | 端到端 smoke 通过 |
+| `M3-C-03` | `[x]` v1 IPC `BROWSER.OPEN_SPLIT` 文本参数 | `MainViewModel.HandlePipeCommand` | v1 响应含 `fallbackMode:"new-surface"` |
 
 ---
 
@@ -306,6 +306,7 @@
 10. `M3-A-01` + `M3-A-02`（已完成：SurfaceKind + SessionState 扩展）
 11. `M3-B-01`（已完成：BrowserPaneViewModel 状态层）
 12. `M3-B-03` + `M3-B-04`（已完成：Browser leaf 渲染 + WebView2 缺失提示）
-13. `M3-C-01` + `M3-B-02`（CLI `browser open` + BrowserControl 升级）
+13. `M3-C-01` + `M3-C-03`（已完成：CLI/IPC browser open）
+14. `M3-B-02`（BrowserControl 视觉升级）
 
 > 进入 M4 / M5 前必须先冻结 v1 CLI 行为并完成 v1 contract 测试固化，避免 v2 协议破坏现有 agent 集成。

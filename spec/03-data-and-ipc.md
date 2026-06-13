@@ -51,6 +51,9 @@ CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超
 | `SURFACE.RESUME.SHOW` | 同上 + `paneId?`/`paneName?`/`paneIndex?` 或 `all=true` | 读取 `%USERPROFILE%\.ecode\resume.json`，返回 `{ok, workspace, surface, pane, bindings}`；默认只返回当前聚焦 pane |
 | `SURFACE.RESUME.SET` | 同上 + pane 定位 + `shell` 或 `_arg*`、`kind?`、`checkpoint?`、`workingDirectory?`/`cwd?`、`trusted?`、`approvedPrefix?` | 写入 / 替换当前 pane 的恢复绑定；`kind ∈ {agent, tmux, custom}`，默认 `custom`；未传 cwd 时使用当前 session cwd |
 | `SURFACE.RESUME.CLEAR` | `id?` 或同上 + pane 定位 | `id` 存在时按 binding ID 删除；否则删除当前 / 指定 pane 的所有绑定；返回 `{ok, removed, ...}` |
+| `BROWSER.OPEN` | `url?`/`_arg0?` + `workspaceId?`/`workspaceName?`/`workspaceIndex?` + `surfaceId?`/`surfaceName?`/`surfaceIndex?` + `name?`/`title?` | 打开 URL；若目标 Surface 是 Browser 则复用，否则创建 Browser Surface；返回 `{ok, created, workspaceId, workspaceName, surfaceId, surfaceName, kind, url, title}` |
+| `BROWSER.NEW` | `url?`/`_arg0?` + workspace 定位 + `name?`/`title?` | 始终创建并选中新 Browser Surface |
+| `BROWSER.OPEN_SPLIT` | `url?`/`_arg0?` + workspace 定位 + `direction?` | v1 兼容入口；当前创建 Browser Surface 并返回 `fallbackMode:"new-surface"`，为后续 mixed pane split 保留 `direction` |
 | `SPLIT.RIGHT` / `SPLIT.DOWN` | — | 对当前聚焦面板分屏 |
 | `PANE.LIST` | `workspaceId?`/`workspaceName?`/`workspaceIndex?` + `surfaceId?`/`surfaceName?`/`surfaceIndex?` | 返回 `{workspace, surface, panes:[{index, id, name, customName, focused, workingDirectory}]}` |
 | `PANE.FOCUS` | 同上 + `paneId?`/`paneName?`/`paneIndex?` | 切换面板焦点；返回 `{ok, workspaceId, workspaceName, surfaceId, surfaceName, paneId, paneIndex, paneName}` |
@@ -74,6 +77,9 @@ ecode surface      create | next | previous | prev
 ecode surface      resume show [--all] [--paneIndex <n>|--paneId <id>|--paneName <name>]
 ecode surface      resume set --shell <cmd> [--kind agent|tmux|custom] [--checkpoint <id>] [--cwd <path>] [--trusted true]
 ecode surface      resume clear [--id <bindingId>|--paneIndex <n>|--paneId <id>|--paneName <name>]
+ecode browser      open <url> [--workspaceName <name>|--surfaceName <name>]
+ecode browser      new <url> [--workspaceName <name>] [--name <surface-name>]
+ecode browser      open-split <url> [--direction right|down]
 ecode split        right | vertical | v | down | horizontal | h
 ecode status
 ecode help | --help | -h

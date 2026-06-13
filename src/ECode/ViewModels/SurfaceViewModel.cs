@@ -55,9 +55,31 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private DateTime _attentionRequestedAtUtc;
 
+    [ObservableProperty]
+    private int _browserNavigationVersion;
+
     public event Action<string>? WorkingDirectoryChanged;
 
     public bool IsBrowser => Surface.Kind == SurfaceKind.Browser;
+
+    public void OpenBrowserUrl(string url)
+    {
+        if (!IsBrowser)
+            return;
+
+        var normalized = BrowserPaneViewModel.NormalizeUrl(url);
+        if (string.IsNullOrWhiteSpace(normalized))
+            return;
+
+        Surface.BrowserUrl = normalized;
+        if (Surface.BrowserHistory.Count == 0 ||
+            !string.Equals(Surface.BrowserHistory[^1], normalized, StringComparison.Ordinal))
+        {
+            Surface.BrowserHistory.Add(normalized);
+        }
+
+        BrowserNavigationVersion++;
+    }
 
     /// <summary>Gets the shell process PID from the focused pane session.</summary>
     public int? ShellPid

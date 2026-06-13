@@ -46,6 +46,7 @@ public static class Program
                 "notify" => await HandleNotify(args[1..]),
                 "workspace" => await HandleWorkspace(args[1..]),
                 "surface" => await HandleSurface(args[1..]),
+                "browser" => await HandleBrowser(args[1..]),
                 "split" => await HandleSplit(args[1..]),
                 "reload-config" => await HandleReloadConfig(),
                 "status" => await HandleStatus(),
@@ -166,6 +167,27 @@ public static class Program
         };
     }
 
+    private static async Task<int> HandleBrowser(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            Console.Error.WriteLine("Usage: ecode browser <open|new|open-split> <url>");
+            return 1;
+        }
+
+        var subcommand = args[0].ToLowerInvariant();
+        var parsed = ParseArgs(args[1..]);
+        NormalizeBrowserArgs(parsed);
+
+        return subcommand switch
+        {
+            "open" => await SendAndPrint("BROWSER.OPEN", parsed),
+            "new" => await SendAndPrint("BROWSER.NEW", parsed),
+            "open-split" or "split" => await SendAndPrint("BROWSER.OPEN_SPLIT", parsed),
+            _ => Error($"Unknown browser command: {subcommand}"),
+        };
+    }
+
     private static async Task<int> HandleStatus()
     {
         return await SendAndPrint("STATUS");
@@ -248,6 +270,13 @@ public static class Program
         CopyAlias(args, "cwd", "workingDirectory");
     }
 
+    private static void NormalizeBrowserArgs(Dictionary<string, string> args)
+    {
+        CopyAlias(args, "_arg0", "url");
+        CopyAlias(args, "workspace", "workspaceName");
+        CopyAlias(args, "surface", "surfaceName");
+    }
+
     private static void CopyAlias(Dictionary<string, string> args, string source, string target)
     {
         if (args.ContainsKey(target))
@@ -298,6 +327,12 @@ public static class Program
               split                 Split the focused pane
                 right               Split vertically (left/right)
                 down                Split horizontally (top/bottom)
+
+              browser               Open browser surfaces
+                open <url>          Open URL in current browser surface or a new one
+                new <url>           Create a new browser surface
+                open-split <url>    v1 compatibility entry; opens a browser surface
+                  --direction <dir> right | down (reserved for mixed-pane support)
 
               reload-config         Reload ecode.json commands/actions
 

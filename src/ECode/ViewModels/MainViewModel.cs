@@ -464,6 +464,9 @@ public partial class MainViewModel : ObservableObject
                 "SURFACE.RESUME.SHOW" => HandleSurfaceResumeShow(args),
                 "SURFACE.RESUME.SET" => HandleSurfaceResumeSet(args),
                 "SURFACE.RESUME.CLEAR" => HandleSurfaceResumeClear(args),
+                "BROWSER.OPEN" => HandleBrowserOpen(args),
+                "BROWSER.NEW" => HandleBrowserNew(args),
+                "BROWSER.OPEN_SPLIT" => HandleBrowserOpenSplit(args),
                 "SPLIT.RIGHT" => HandleSplit(SplitDirection.Vertical),
                 "SPLIT.DOWN" => HandleSplit(SplitDirection.Horizontal),
                 "PANE.LIST" => HandlePaneList(args),
@@ -722,6 +725,95 @@ public partial class MainViewModel : ObservableObject
         });
     }
 
+    private string HandleBrowserOpen(Dictionary<string, string> args)
+    {
+        if (!TryResolveWorkspace(args, out var workspace, out var error))
+            return JsonSerializer.Serialize(new { error });
+
+        var url = GetBrowserUrl(args);
+        if (string.IsNullOrWhiteSpace(url))
+            return JsonSerializer.Serialize(new { error = "Missing required argument: url" });
+
+        SurfaceViewModel? surface = null;
+        if (HasSurfaceSelector(args))
+        {
+            if (!TryResolveSurface(workspace, args, out var resolvedSurface, out error))
+                return JsonSerializer.Serialize(new { error });
+
+            surface = resolvedSurface;
+            if (surface.Surface.Kind != SurfaceKind.Browser)
+                surface = null;
+        }
+        else if (workspace.SelectedSurface?.Surface.Kind == SurfaceKind.Browser)
+        {
+            surface = workspace.SelectedSurface;
+        }
+
+        var created = surface == null;
+        surface ??= workspace.CreateBrowserSurface(url, GetArg(args, "name", "title"));
+        surface.OpenBrowserUrl(url);
+        SelectedWorkspace = workspace;
+        workspace.SelectedSurface = surface;
+
+        return CreateBrowserResponse(workspace, surface, created, fallbackMode: null);
+    }
+
+    private string HandleBrowserNew(Dictionary<string, string> args)
+    {
+        if (!TryResolveWorkspace(args, out var workspace, out var error))
+            return JsonSerializer.Serialize(new { error });
+
+        var url = GetBrowserUrl(args);
+        if (string.IsNullOrWhiteSpace(url))
+            return JsonSerializer.Serialize(new { error = "Missing required argument: url" });
+
+        var surface = workspace.CreateBrowserSurface(url, GetArg(args, "name", "title"));
+        SelectedWorkspace = workspace;
+        return CreateBrowserResponse(workspace, surface, created: true, fallbackMode: null);
+    }
+
+    private string HandleBrowserOpenSplit(Dictionary<string, string> args)
+    {
+        if (!TryResolveWorkspace(args, out var workspace, out var error))
+            return JsonSerializer.Serialize(new { error });
+
+        var url = GetBrowserUrl(args);
+        if (string.IsNullOrWhiteSpace(url))
+            return JsonSerializer.Serialize(new { error = "Missing required argument: url" });
+
+        var surface = workspace.CreateBrowserSurface(url, GetArg(args, "name", "title"));
+        SelectedWorkspace = workspace;
+        return CreateBrowserResponse(
+            workspace,
+            surface,
+            created: true,
+            fallbackMode: "new-surface",
+            direction: GetArg(args, "direction") ?? "right");
+    }
+
+    private static string CreateBrowserResponse(
+        WorkspaceViewModel workspace,
+        SurfaceViewModel surface,
+        bool created,
+        string? fallbackMode,
+        string? direction = null)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            ok = true,
+            created,
+            fallbackMode,
+            direction,
+            workspaceId = workspace.Workspace.Id,
+            workspaceName = workspace.Name,
+            surfaceId = surface.Surface.Id,
+            surfaceName = surface.Name,
+            kind = surface.Surface.Kind.ToString(),
+            url = surface.Surface.BrowserUrl,
+            title = surface.Surface.BrowserTitle,
+        });
+    }
+
     private string HandleSplit(SplitDirection direction)
     {
         SelectedWorkspace?.SelectedSurface?.SplitFocused(direction);
@@ -939,6 +1031,18 @@ public partial class MainViewModel : ObservableObject
         }
 
         return null;
+    }
+
+    private static string? GetBrowserUrl(Dictionary<string, string> args)
+    {
+        return BrowserPaneViewModel.NormalizeUrl(GetArg(args, "url", "href", "_arg0") ?? "");
+    }
+
+    private static bool HasSurfaceSelector(Dictionary<string, string> args)
+    {
+        return args.ContainsKey("surfaceId") ||
+               args.ContainsKey("surfaceName") ||
+               args.ContainsKey("surfaceIndex");
     }
 
     private static string GetJoinedPositionals(Dictionary<string, string> args)
