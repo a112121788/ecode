@@ -54,6 +54,14 @@
                     <DataTemplate>
                         <Border Padding="16,10" BorderBrush="{StaticResource BorderBrush}"
                                 BorderThickness="0,0,0,1">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="标记为已读" Click="MarkRead_Click" />
+                                    <MenuItem Header="标记为未读" Click="MarkUnread_Click" />
+                                    <Separator />
+                                    <MenuItem Header="复制内容" Click="CopyBody_Click" />
+                                </ContextMenu>
+                            </Border.ContextMenu>
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />

@@ -62,12 +62,32 @@ public class NotificationService
         lock (_lock)
         {
             var notification = _notifications.FirstOrDefault(n => n.Id == notificationId);
-            if (notification != null)
-            {
-                notification.IsRead = true;
-                UnreadCountChanged?.Invoke();
-            }
+            if (notification == null || notification.IsRead)
+                return;
+
+            notification.IsRead = true;
+            SortNotifications();
         }
+
+        UnreadCountChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// 将通知标记为未读。
+    /// </summary>
+    public void MarkAsUnread(string notificationId)
+    {
+        lock (_lock)
+        {
+            var notification = _notifications.FirstOrDefault(n => n.Id == notificationId);
+            if (notification == null || !notification.IsRead)
+                return;
+
+            notification.IsRead = false;
+            SortNotifications();
+        }
+
+        UnreadCountChanged?.Invoke();
     }
 
     /// <summary>
@@ -79,6 +99,8 @@ public class NotificationService
         {
             foreach (var n in _notifications.Where(n => n.WorkspaceId == workspaceId && !n.IsRead))
                 n.IsRead = true;
+
+            SortNotifications();
         }
         UnreadCountChanged?.Invoke();
     }
@@ -92,6 +114,8 @@ public class NotificationService
         {
             foreach (var n in _notifications.Where(n => !n.IsRead))
                 n.IsRead = true;
+
+            SortNotifications();
         }
         UnreadCountChanged?.Invoke();
     }
@@ -103,7 +127,10 @@ public class NotificationService
     {
         lock (_lock)
         {
-            return _notifications.FirstOrDefault(n => !n.IsRead);
+            return _notifications
+                .Where(n => !n.IsRead)
+                .OrderByDescending(n => n.Timestamp)
+                .FirstOrDefault();
         }
     }
 
@@ -125,7 +152,10 @@ public class NotificationService
     {
         lock (_lock)
         {
-            var latest = _notifications.FirstOrDefault(n => n.WorkspaceId == workspaceId);
+            var latest = _notifications
+                .Where(n => n.WorkspaceId == workspaceId)
+                .OrderByDescending(n => n.Timestamp)
+                .FirstOrDefault();
             return latest?.Body;
         }
     }
@@ -140,5 +170,24 @@ public class NotificationService
             _notifications.Clear();
         }
         UnreadCountChanged?.Invoke();
+    }
+
+    private void SortNotifications()
+    {
+        var sorted = _notifications
+            .Select((notification, index) => new { notification, index })
+            .OrderBy(x => x.notification.IsRead)
+            .ThenByDescending(x => x.notification.Timestamp)
+            .ThenBy(x => x.index)
+            .Select(x => x.notification)
+            .ToList();
+
+        for (var targetIndex = 0; targetIndex < sorted.Count; targetIndex++)
+        {
+            var notification = sorted[targetIndex];
+            var currentIndex = _notifications.IndexOf(notification);
+            if (currentIndex >= 0 && currentIndex != targetIndex)
+                _notifications.Move(currentIndex, targetIndex);
+        }
     }
 }
