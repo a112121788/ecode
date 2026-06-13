@@ -42,6 +42,7 @@ public partial class MainViewModel : ObservableObject
     public NotificationService NotificationService => _notificationService;
 
     public event Action? WorkspaceOrderChanged;
+    public event Func<string>? ConfigReloadRequested;
 
     public MainViewModel()
     {
@@ -458,10 +459,23 @@ public partial class MainViewModel : ObservableObject
                 "PANE.FOCUS" => HandlePaneFocus(args),
                 "PANE.WRITE" => HandlePaneWrite(args),
                 "PANE.READ" => HandlePaneRead(args),
+                "CONFIG.RELOAD" => HandleConfigReload(),
                 "STATUS" => HandleStatus(),
                 _ => JsonSerializer.Serialize(new { error = $"Unknown command: {command}" }),
             };
         });
+    }
+
+    private string HandleConfigReload()
+    {
+        return ConfigReloadRequested?.Invoke()
+            ?? JsonSerializer.Serialize(new
+            {
+                ok = true,
+                loadedPaths = Array.Empty<string>(),
+                diagnostics = Array.Empty<object>(),
+                note = "No config reload handler registered.",
+            });
     }
 
     private string HandleNotifyCommand(Dictionary<string, string> args)

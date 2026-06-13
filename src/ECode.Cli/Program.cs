@@ -47,6 +47,7 @@ public static class Program
                 "workspace" => await HandleWorkspace(args[1..]),
                 "surface" => await HandleSurface(args[1..]),
                 "split" => await HandleSplit(args[1..]),
+                "reload-config" => await HandleReloadConfig(),
                 "status" => await HandleStatus(),
                 "help" or "--help" or "-h" => PrintHelp(),
                 "version" or "--version" or "-v" => PrintVersion(),
@@ -148,6 +149,11 @@ public static class Program
         return await SendAndPrint("STATUS");
     }
 
+    private static async Task<int> HandleReloadConfig()
+    {
+        return await SendAndPrint("CONFIG.RELOAD");
+    }
+
     private static async Task<int> SendAndPrint(string command, Dictionary<string, string>? args = null)
     {
         var response = await NamedPipeClient.SendCommand(command, args);
@@ -245,6 +251,8 @@ public static class Program
                 right               Split vertically (left/right)
                 down                Split horizontally (top/bottom)
 
+              reload-config         Reload ecode.json commands/actions
+
               status                Show ecode status
 
             Keyboard Shortcuts (in the app):
@@ -260,6 +268,7 @@ public static class Program
               Ctrl+Alt+Arrow        Focus pane directionally
               Ctrl+I                Toggle notification panel
               Ctrl+Shift+U          Jump to latest unread
+              Ctrl+Shift+,          Reload ecode.json
             """);
         return 0;
     }

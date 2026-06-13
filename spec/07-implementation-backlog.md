@@ -91,7 +91,7 @@
 | `M1-C-02` | `[x]` `EcodeJsonService` 解析（路径搜索 / 全局本地合并 / schema 错误） | `ECode.Core/Services/EcodeJsonService.cs` | 含 `MergesLocalOverGlobal`、`InvalidSchema_ReturnsDiagnostic`、JSONC 测试 |
 | `M1-C-03` | `[x]` CommandPalette 接入 custom commands | `Controls/CommandPalette.xaml.cs`、`Views/MainWindow.xaml.cs` | 命令出现在面板，keywords/action id 可搜索 |
 | `M1-C-04` | `[x]` `currentTerminal` / `newTabInCurrentPane` 目标执行 | `Views/MainWindow.xaml.cs` | 含 `confirm` 弹窗路径；执行时记录命令日志 |
-| `M1-C-05` | CLI `ecode reload-config` + `Ctrl+Shift+,` | `ECode.Cli/Program.cs`、`MainWindow.xaml.cs` | 重载后命令面板刷新 |
+| `M1-C-05` | `[x]` CLI `ecode reload-config` + `Ctrl+Shift+,` | `ECode.Cli/Program.cs`、`MainWindow.xaml.cs` | 重载后命令面板刷新 |
 
 ---
 
