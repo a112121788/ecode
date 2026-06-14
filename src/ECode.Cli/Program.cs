@@ -131,18 +131,22 @@ public static class Program
     {
         if (args.Length == 0)
         {
-            Console.Error.WriteLine("Usage: ecode workspace <list|create|select>");
+            Console.Error.WriteLine("Usage: ecode workspace <list|create|select|close|rename|reorder>");
             return 1;
         }
 
         var subcommand = args[0].ToLowerInvariant();
         var parsed = ParseArgs(args[1..]);
+        NormalizeWorkspaceArgs(subcommand, parsed);
 
         return subcommand switch
         {
-            "list" or "ls" => await SendAndPrint("WORKSPACE.LIST"),
-            "create" or "new" => await SendAndPrint("WORKSPACE.CREATE", parsed),
-            "select" => await SendAndPrint("WORKSPACE.SELECT", parsed),
+            "list" or "ls" => await SendV2AndPrint("workspace.list", parsed),
+            "create" or "new" => await SendV2AndPrint("workspace.create", parsed),
+            "select" => await SendV2AndPrint("workspace.select", parsed),
+            "close" => await SendV2AndPrint("workspace.close", parsed),
+            "rename" => await SendV2AndPrint("workspace.rename", parsed),
+            "reorder" => await SendV2AndPrint("workspace.reorder", parsed),
             "next" => await SendAndPrint("WORKSPACE.NEXT"),
             "previous" or "prev" => await SendAndPrint("WORKSPACE.PREVIOUS"),
             _ => Error($"Unknown workspace command: {subcommand}"),
@@ -400,6 +404,25 @@ public static class Program
         CopyAlias(args, "surface", "surfaceName");
     }
 
+    private static void NormalizeWorkspaceArgs(string subcommand, Dictionary<string, string> args)
+    {
+        if (subcommand is "select" or "close")
+            CopyAlias(args, "_arg0", "target");
+        else if (subcommand is "create" or "new")
+            CopyAlias(args, "_arg0", "name");
+        else if (subcommand is "rename")
+        {
+            CopyAlias(args, "_arg0", "target");
+            CopyAlias(args, "_arg1", "name");
+        }
+        else if (subcommand is "reorder")
+        {
+            CopyAlias(args, "_arg0", "order");
+        }
+
+        CopyAlias(args, "workspace-ref", "target");
+    }
+
     private static void NormalizeWindowArgs(string subcommand, Dictionary<string, string> args)
     {
         if (subcommand is "focus" or "close")
@@ -462,8 +485,12 @@ public static class Program
                 create              Create a new project
                   --name <text>     Project name
                 select              Select a project
-                  --index <n>       Project index (0-based)
-                  --id <id>         Project ID
+                  <ref|id|name>     Project ref, ID, or name
+                close [ref|id|name] Close selected or target project
+                rename <ref|id> <name>
+                                    Rename a project
+                reorder <order>     Reorder projects, e.g. "workspace:2,workspace:1"
+                  --target <value>  Project ref, ID, or name
                 next                Switch to next project
                 previous            Switch to previous project
 

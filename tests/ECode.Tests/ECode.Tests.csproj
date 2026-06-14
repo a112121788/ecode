@@ -16,6 +16,7 @@
     <Compile Include="..\..\src\ECode\Services\SurfaceApiService.cs" Link="Services\SurfaceApiService.cs" />
     <Compile Include="..\..\src\ECode\Services\WindowApiService.cs" Link="Services\WindowApiService.cs" />
     <Compile Include="..\..\src\ECode\Services\WindowManagerService.cs" Link="Services\WindowManagerService.cs" />
+    <Compile Include="..\..\src\ECode\Services\WorkspaceApiService.cs" Link="Services\WorkspaceApiService.cs" />
   </ItemGroup>
 
   <ItemGroup>

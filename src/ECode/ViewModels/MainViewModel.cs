@@ -11,6 +11,8 @@ using BrowserScriptingRuntime = ECode.Services.BrowserScriptingRuntime;
 using SurfaceV2ApiService = ECode.Services.SurfaceApiService<ECode.ViewModels.WorkspaceViewModel, ECode.ViewModels.SurfaceViewModel>;
 using SurfaceV2ApiSurface = ECode.Services.SurfaceApiSurface<ECode.ViewModels.SurfaceViewModel>;
 using SurfaceV2ApiWorkspace = ECode.Services.SurfaceApiWorkspace<ECode.ViewModels.WorkspaceViewModel, ECode.ViewModels.SurfaceViewModel>;
+using WorkspaceV2ApiService = ECode.Services.WorkspaceApiService<ECode.ViewModels.WorkspaceViewModel>;
+using WorkspaceV2ApiWorkspace = ECode.Services.WorkspaceApiWorkspace<ECode.ViewModels.WorkspaceViewModel>;
 
 namespace ECode.ViewModels;
 
@@ -59,6 +61,7 @@ public partial class MainViewModel : ObservableObject
     private readonly NotificationService _notificationService;
     private readonly BrowserScriptingService _browserScriptingService;
     private readonly SurfaceV2ApiService _surfaceApiService;
+    private readonly WorkspaceV2ApiService _workspaceApiService;
 
     public NotificationService NotificationService => _notificationService;
 
@@ -89,6 +92,13 @@ public partial class MainViewModel : ObservableObject
             MoveSurfaceForV2Api,
             ReorderSurfacesForV2Api,
             SelectSurfaceForV2Api);
+        _workspaceApiService = new WorkspaceV2ApiService(
+            CreateWorkspaceApiWorkspaces,
+            CreateWorkspaceForV2Api,
+            SelectWorkspaceForV2Api,
+            CloseWorkspaceForV2Api,
+            RenameWorkspaceForV2Api,
+            ReorderWorkspacesForV2Api);
 
         // 连接命名管道的命令处理程序
         if (App.PipeServer != null)
@@ -112,7 +122,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public void CreateNewWorkspace()
     {
-        var workspace = new Workspace { Name = $"项目 {Workspaces.Count + 1}" };
+        CreateWorkspace();
+    }
+
+    private WorkspaceViewModel CreateWorkspace(string? name = null)
+    {
+        var workspace = new Workspace { Name = string.IsNullOrWhiteSpace(name) ? $"项目 {Workspaces.Count + 1}" : name.Trim() };
         var surface = new Surface { Name = "Terminal 1" };
         workspace.Surfaces.Add(surface);
         workspace.SelectedSurface = surface;
@@ -120,6 +135,7 @@ public partial class MainViewModel : ObservableObject
         var vm = new WorkspaceViewModel(workspace, _notificationService);
         Workspaces.Add(vm);
         SelectedWorkspace = vm;
+        return vm;
     }
 
     public void DuplicateWorkspace(WorkspaceViewModel source)
@@ -531,6 +547,7 @@ public partial class MainViewModel : ObservableObject
                 return request.Method switch
                 {
                     var method when ECode.Services.WindowApiService<Window>.CanHandle(method) => App.WindowApi.HandleRequest(request),
+                    var method when WorkspaceV2ApiService.CanHandle(method) => _workspaceApiService.HandleRequest(request),
                     var method when SurfaceV2ApiService.CanHandle(method) => _surfaceApiService.HandleRequest(request),
                     "status" => V2Response.FromResult(request.Id, ParseJsonElement(HandleStatus())),
                     _ => V2Response.FromStableError(
@@ -1239,6 +1256,73 @@ public partial class MainViewModel : ObservableObject
             Kind: surface.Surface.Kind,
             Url: surface.Surface.BrowserUrl,
             Title: surface.Surface.BrowserTitle));
+    }
+
+    private IEnumerable<WorkspaceV2ApiWorkspace> CreateWorkspaceApiWorkspaces()
+    {
+        return Workspaces.Select((workspace, index) =>
+            new WorkspaceV2ApiWorkspace(
+                Workspace: workspace,
+                WorkspaceId: workspace.Workspace.Id,
+                WorkspaceName: workspace.Name,
+                WorkspaceRef: new ShortRef(ShortRefKind.Workspace, index + 1),
+                IsCurrent: workspace == SelectedWorkspace,
+                SurfaceCount: workspace.Surfaces.Count,
+                WorkingDirectory: workspace.WorkingDirectory));
+    }
+
+    private WorkspaceViewModel CreateWorkspaceForV2Api(string? name)
+    {
+        var workspace = CreateWorkspace(name);
+        WorkspaceOrderChanged?.Invoke();
+        return workspace;
+    }
+
+    private void SelectWorkspaceForV2Api(WorkspaceViewModel workspace)
+    {
+        SelectedWorkspace = workspace;
+    }
+
+    private bool CloseWorkspaceForV2Api(WorkspaceViewModel workspace)
+    {
+        if (Workspaces.Count <= 1 || !Workspaces.Contains(workspace))
+            return false;
+
+        CloseWorkspace(workspace);
+        WorkspaceOrderChanged?.Invoke();
+        return true;
+    }
+
+    private bool RenameWorkspaceForV2Api(WorkspaceViewModel workspace, string name)
+    {
+        if (!Workspaces.Contains(workspace) || string.IsNullOrWhiteSpace(name))
+            return false;
+
+        workspace.Name = name.Trim();
+        WorkspaceOrderChanged?.Invoke();
+        return true;
+    }
+
+    private bool ReorderWorkspacesForV2Api(IReadOnlyList<string> workspaceIds)
+    {
+        if (workspaceIds.Count != Workspaces.Count)
+            return false;
+
+        var currentOrder = Workspaces.Select(workspace => workspace.Workspace.Id).ToList();
+        if (currentOrder.SequenceEqual(workspaceIds))
+            return true;
+
+        for (var targetIndex = 0; targetIndex < workspaceIds.Count; targetIndex++)
+        {
+            var workspace = Workspaces.FirstOrDefault(item => item.Workspace.Id == workspaceIds[targetIndex]);
+            if (workspace == null)
+                return false;
+
+            MoveWorkspace(workspace, targetIndex);
+        }
+
+        WorkspaceOrderChanged?.Invoke();
+        return true;
     }
 
     private IEnumerable<SurfaceV2ApiWorkspace> CreateSurfaceApiWorkspaces()

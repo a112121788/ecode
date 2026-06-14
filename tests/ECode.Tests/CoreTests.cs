@@ -931,6 +931,195 @@ public class SurfaceApiServiceTests
     private sealed record TestSurface(string Id, string Name, string Kind = "Terminal");
 }
 
+public class WorkspaceApiServiceTests
+{
+    [Fact]
+    public void WorkspaceList_ReturnsRefsAndIdsForAllWorkspaces()
+    {
+        var workspaces = new List<TestWorkspace>
+        {
+            new("workspace-a", "Alpha", 2),
+            new("workspace-b", "Beta", 1),
+        };
+        workspaces[1].IsCurrent = true;
+        var api = CreateWorkspaceApi(workspaces);
+
+        var response = api.HandleRequest(CreateV2Request("workspace.list", """{"idFormat":"both"}"""));
+
+        response.Error.Should().BeNull();
+        using var result = ParseResult(response);
+        var items = result.RootElement.GetProperty("workspaces");
+        items.GetArrayLength().Should().Be(2);
+        items[0].GetProperty("ref").GetString().Should().Be("workspace:1");
+        items[0].GetProperty("id").GetString().Should().Be("workspace-a");
+        items[0].GetProperty("surfaces").GetInt32().Should().Be(2);
+        result.RootElement.GetProperty("current").GetProperty("id").GetString().Should().Be("workspace-b");
+    }
+
+    [Fact]
+    public void WorkspaceCreateSelectRenameAndClose_UpdateLifecycle()
+    {
+        var workspaces = new List<TestWorkspace>
+        {
+            new("workspace-a", "Alpha", 1) { IsCurrent = true },
+        };
+        var api = CreateWorkspaceApi(workspaces);
+
+        var create = api.HandleRequest(CreateV2Request("workspace.create", """{"name":"Beta","idFormat":"both"}"""));
+
+        create.Error.Should().BeNull();
+        workspaces.Should().HaveCount(2);
+        workspaces[1].Name.Should().Be("Beta");
+        workspaces[1].IsCurrent.Should().BeTrue();
+        using var createResult = ParseResult(create);
+        var createdId = createResult.RootElement.GetProperty("workspace").GetProperty("id").GetString();
+
+        var select = api.HandleRequest(CreateV2Request("workspace.select", """{"target":"workspace:1","idFormat":"both"}"""));
+
+        select.Error.Should().BeNull();
+        workspaces[0].IsCurrent.Should().BeTrue();
+
+        var rename = api.HandleRequest(CreateV2Request("workspace.rename", $$"""{"id":"{{createdId}}","name":"Renamed","idFormat":"both"}"""));
+
+        rename.Error.Should().BeNull();
+        workspaces[1].Name.Should().Be("Renamed");
+        using var renameResult = ParseResult(rename);
+        renameResult.RootElement.GetProperty("workspace").GetProperty("name").GetString().Should().Be("Renamed");
+
+        var close = api.HandleRequest(CreateV2Request("workspace.close", $$"""{"id":"{{createdId}}","idFormat":"both"}"""));
+
+        close.Error.Should().BeNull();
+        workspaces.Select(workspace => workspace.Id).Should().Equal("workspace-a");
+        using var closeResult = ParseResult(close);
+        closeResult.RootElement.GetProperty("closed").GetBoolean().Should().BeTrue();
+        closeResult.RootElement.GetProperty("workspace").GetProperty("id").GetString().Should().Be(createdId);
+    }
+
+    [Fact]
+    public void WorkspaceReorder_AcceptsFullRefOrder()
+    {
+        var workspaces = new List<TestWorkspace>
+        {
+            new("workspace-a", "Alpha", 1),
+            new("workspace-b", "Beta", 1),
+            new("workspace-c", "Gamma", 1),
+        };
+        workspaces[0].IsCurrent = true;
+        var api = CreateWorkspaceApi(workspaces);
+
+        var response = api.HandleRequest(CreateV2Request("workspace.reorder", """{"order":["workspace:3","workspace:1","workspace:2"],"idFormat":"refs"}"""));
+
+        response.Error.Should().BeNull();
+        workspaces.Select(workspace => workspace.Id).Should().Equal("workspace-c", "workspace-a", "workspace-b");
+        using var result = ParseResult(response);
+        var items = result.RootElement.GetProperty("workspaces");
+        items[0].GetProperty("ref").GetString().Should().Be("workspace:1");
+        items[0].GetProperty("name").GetString().Should().Be("Gamma");
+        items[0].TryGetProperty("id", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void WorkspaceReorder_RejectsIncompleteOrder()
+    {
+        var workspaces = new List<TestWorkspace>
+        {
+            new("workspace-a", "Alpha", 1),
+            new("workspace-b", "Beta", 1),
+        };
+        var api = CreateWorkspaceApi(workspaces);
+
+        var response = api.HandleRequest(CreateV2Request("workspace.reorder", """{"order":["workspace:1"]}"""));
+
+        response.Error.Should().NotBeNull();
+        response.Error!.Code.Should().Be(V2ErrorCodes.InvalidRef);
+        workspaces.Select(workspace => workspace.Id).Should().Equal("workspace-a", "workspace-b");
+    }
+
+    private static ECode.Services.WorkspaceApiService<TestWorkspace> CreateWorkspaceApi(List<TestWorkspace> workspaces)
+    {
+        return new ECode.Services.WorkspaceApiService<TestWorkspace>(
+            workspaceProvider: () => workspaces.Select((workspace, index) =>
+                new ECode.Services.WorkspaceApiWorkspace<TestWorkspace>(
+                    Workspace: workspace,
+                    WorkspaceId: workspace.Id,
+                    WorkspaceName: workspace.Name,
+                    WorkspaceRef: new ShortRef(ShortRefKind.Workspace, index + 1),
+                    IsCurrent: workspace.IsCurrent,
+                    SurfaceCount: workspace.SurfaceCount,
+                    WorkingDirectory: workspace.WorkingDirectory)),
+            createWorkspace: name =>
+            {
+                foreach (var workspace in workspaces)
+                    workspace.IsCurrent = false;
+
+                var created = new TestWorkspace($"workspace-{workspaces.Count + 1}", name ?? $"Project {workspaces.Count + 1}", 1)
+                {
+                    IsCurrent = true,
+                };
+                workspaces.Add(created);
+                return created;
+            },
+            selectWorkspace: selected =>
+            {
+                foreach (var workspace in workspaces)
+                    workspace.IsCurrent = ReferenceEquals(workspace, selected);
+            },
+            closeWorkspace: workspace =>
+            {
+                if (workspaces.Count <= 1 || !workspaces.Remove(workspace))
+                    return false;
+
+                if (workspace.IsCurrent && workspaces.Count > 0)
+                    workspaces[0].IsCurrent = true;
+                return true;
+            },
+            renameWorkspace: (workspace, name) =>
+            {
+                workspace.Name = name;
+                return true;
+            },
+            reorderWorkspaces: workspaceIds =>
+            {
+                var reordered = workspaceIds
+                    .Select(id => workspaces.FirstOrDefault(workspace => workspace.Id == id))
+                    .ToList();
+                if (reordered.Any(workspace => workspace == null))
+                    return false;
+
+                workspaces.Clear();
+                foreach (var workspace in reordered)
+                    workspaces.Add(workspace!);
+
+                return true;
+            });
+    }
+
+    private static V2Request CreateV2Request(string method, string parameters)
+    {
+        return new V2Request
+        {
+            Id = JsonSerializer.SerializeToElement("test-request"),
+            Method = method,
+            Params = JsonDocument.Parse(parameters).RootElement.Clone(),
+        };
+    }
+
+    private static JsonDocument ParseResult(V2Response response)
+    {
+        response.Result.Should().NotBeNull();
+        return JsonDocument.Parse(JsonSerializer.Serialize(response.Result));
+    }
+
+    private sealed class TestWorkspace(string id, string name, int surfaceCount)
+    {
+        public string Id { get; } = id;
+        public string Name { get; set; } = name;
+        public int SurfaceCount { get; } = surfaceCount;
+        public bool IsCurrent { get; set; }
+        public string? WorkingDirectory { get; set; }
+    }
+}
+
 public class BrowserScriptingServiceTests
 {
     [Fact]
