@@ -517,6 +517,42 @@ public class BrowserScriptingServiceTests
         second.Nodes[0].NodeId.Should().Be("cancel");
     }
 
+    [Fact]
+    public void Fill_ExecutesWithEmptyStringValue()
+    {
+        var (service, surfaceRef, requests) = CreateActionService();
+
+        var result = service.Fill(surfaceRef, BrowserScriptingLocator.TestId("email-input"), "");
+
+        result.Success.Should().BeTrue();
+        requests.Should().ContainSingle();
+        requests[0].Action.Should().Be(BrowserScriptingActionKind.Fill);
+        requests[0].Node!.NodeId.Should().Be("email");
+        requests[0].Value.Should().Be("");
+    }
+
+    [Fact]
+    public void BrowserActions_DispatchExpectedActionRequests()
+    {
+        var (service, surfaceRef, requests) = CreateActionService();
+
+        service.Click(surfaceRef, BrowserScriptingLocator.Role("button", "Save")).Success.Should().BeTrue();
+        service.Hover(surfaceRef, BrowserScriptingLocator.Role("button", "Cancel")).Success.Should().BeTrue();
+        service.Press(surfaceRef, BrowserScriptingLocator.TestId("email-input"), "Enter").Success.Should().BeTrue();
+        service.Eval(surfaceRef, "document.title").Success.Should().BeTrue();
+        service.Screenshot(surfaceRef).Success.Should().BeTrue();
+
+        requests.Select(request => request.Action).Should().Equal(
+            BrowserScriptingActionKind.Click,
+            BrowserScriptingActionKind.Hover,
+            BrowserScriptingActionKind.Press,
+            BrowserScriptingActionKind.Eval,
+            BrowserScriptingActionKind.Screenshot);
+        requests[2].Key.Should().Be("Enter");
+        requests[3].Script.Should().Be("document.title");
+        requests[4].Node.Should().BeNull();
+    }
+
     private static BrowserScriptingSurfaceDescriptor CreateSurface(string surfaceId, SurfaceKind kind)
     {
         return new BrowserScriptingSurfaceDescriptor(
@@ -544,6 +580,29 @@ public class BrowserScriptingServiceTests
             surfaceId => snapshots.TryGetValue(surfaceId, out var snapshot) ? snapshot : null);
 
         return (service, BrowserScriptingService.CreateSurfaceRef("browser-1"));
+    }
+
+    private static (BrowserScriptingService Service, string SurfaceRef, List<BrowserScriptingActionRequest> Requests) CreateActionService()
+    {
+        var surfaces = new List<BrowserScriptingSurfaceDescriptor>
+        {
+            CreateSurface("browser-1", SurfaceKind.Browser),
+        };
+        var snapshots = new Dictionary<string, BrowserScriptingSnapshot>
+        {
+            ["browser-1"] = CreateSnapshot(),
+        };
+        var requests = new List<BrowserScriptingActionRequest>();
+        var service = new BrowserScriptingService(
+            () => surfaces,
+            surfaceId => snapshots.TryGetValue(surfaceId, out var snapshot) ? snapshot : null,
+            request =>
+            {
+                requests.Add(request);
+                return BrowserScriptingActionOutcome.FromValue(new { ok = true });
+            });
+
+        return (service, BrowserScriptingService.CreateSurfaceRef("browser-1"), requests);
     }
 
     private static BrowserScriptingSnapshot CreateSnapshot()

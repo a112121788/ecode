@@ -11,14 +11,17 @@ public sealed class BrowserScriptingService
     private const string SurfaceRefPrefix = "surface:";
     private readonly Func<IEnumerable<BrowserScriptingSurfaceDescriptor>> _surfaceProvider;
     private readonly Func<string, BrowserScriptingSnapshot?> _snapshotProvider;
+    private readonly Func<BrowserScriptingActionRequest, BrowserScriptingActionOutcome>? _actionExecutor;
     private readonly Dictionary<string, BrowserScriptingRef> _surfaceRefs = new(StringComparer.Ordinal);
 
     public BrowserScriptingService(
         Func<IEnumerable<BrowserScriptingSurfaceDescriptor>> surfaceProvider,
-        Func<string, BrowserScriptingSnapshot?>? snapshotProvider = null)
+        Func<string, BrowserScriptingSnapshot?>? snapshotProvider = null,
+        Func<BrowserScriptingActionRequest, BrowserScriptingActionOutcome>? actionExecutor = null)
     {
         _surfaceProvider = surfaceProvider ?? throw new ArgumentNullException(nameof(surfaceProvider));
         _snapshotProvider = snapshotProvider ?? (_ => null);
+        _actionExecutor = actionExecutor;
     }
 
     public string TrackSurface(BrowserScriptingSurfaceDescriptor surface)
@@ -171,6 +174,36 @@ public sealed class BrowserScriptingService
             Diagnostics: snapshotResult.Diagnostics);
     }
 
+    public BrowserScriptingActionResult Click(string? surfaceRef, BrowserScriptingLocator locator)
+    {
+        return ExecuteNodeAction(surfaceRef, locator, BrowserScriptingActionKind.Click);
+    }
+
+    public BrowserScriptingActionResult Fill(string? surfaceRef, BrowserScriptingLocator locator, string value)
+    {
+        return ExecuteNodeAction(surfaceRef, locator, BrowserScriptingActionKind.Fill, value: value);
+    }
+
+    public BrowserScriptingActionResult Hover(string? surfaceRef, BrowserScriptingLocator locator)
+    {
+        return ExecuteNodeAction(surfaceRef, locator, BrowserScriptingActionKind.Hover);
+    }
+
+    public BrowserScriptingActionResult Press(string? surfaceRef, BrowserScriptingLocator locator, string key)
+    {
+        return ExecuteNodeAction(surfaceRef, locator, BrowserScriptingActionKind.Press, key: key);
+    }
+
+    public BrowserScriptingActionResult Eval(string? surfaceRef, string script)
+    {
+        return ExecuteSurfaceAction(surfaceRef, BrowserScriptingActionKind.Eval, script: script);
+    }
+
+    public BrowserScriptingActionResult Screenshot(string? surfaceRef)
+    {
+        return ExecuteSurfaceAction(surfaceRef, BrowserScriptingActionKind.Screenshot);
+    }
+
     public static string CreateSurfaceRef(string surfaceId)
     {
         return SurfaceRefPrefix + surfaceId;
@@ -221,6 +254,100 @@ public sealed class BrowserScriptingService
             RegisteredRefCount: _surfaceRefs.Count,
             SurfaceRef: surfaceRef,
             SurfaceId: surfaceId);
+    }
+
+    private BrowserScriptingActionResult ExecuteNodeAction(
+        string? surfaceRef,
+        BrowserScriptingLocator locator,
+        BrowserScriptingActionKind action,
+        string? value = null,
+        string? key = null)
+    {
+        var target = FindFirst(surfaceRef, locator);
+        if (!target.Success)
+        {
+            return new BrowserScriptingActionResult(
+                Success: false,
+                Value: null,
+                Error: target.Error,
+                Diagnostics: target.Diagnostics);
+        }
+
+        var request = new BrowserScriptingActionRequest(
+            SurfaceId: target.Diagnostics.SurfaceId ?? "",
+            Action: action,
+            Node: target.Nodes[0],
+            Value: value,
+            Key: key,
+            Script: null);
+
+        return ExecuteAction(request, target.Diagnostics);
+    }
+
+    private BrowserScriptingActionResult ExecuteSurfaceAction(
+        string? surfaceRef,
+        BrowserScriptingActionKind action,
+        string? script = null)
+    {
+        var resolved = ResolveSurfaceRef(surfaceRef);
+        if (!resolved.Success)
+        {
+            return new BrowserScriptingActionResult(
+                Success: false,
+                Value: null,
+                Error: resolved.Error,
+                Diagnostics: resolved.Diagnostics);
+        }
+
+        var request = new BrowserScriptingActionRequest(
+            SurfaceId: resolved.Surface!.SurfaceId,
+            Action: action,
+            Node: null,
+            Value: null,
+            Key: null,
+            Script: script);
+
+        return ExecuteAction(request, resolved.Diagnostics);
+    }
+
+    private BrowserScriptingActionResult ExecuteAction(
+        BrowserScriptingActionRequest request,
+        BrowserScriptingDiagnostics diagnostics)
+    {
+        if (_actionExecutor == null)
+        {
+            return new BrowserScriptingActionResult(
+                Success: false,
+                Value: null,
+                Error: new V2Error(V2ErrorCodes.NotSupported, $"Browser action is not wired: {request.Action}"),
+                Diagnostics: diagnostics);
+        }
+
+        try
+        {
+            var outcome = _actionExecutor(request);
+            return new BrowserScriptingActionResult(
+                Success: outcome.Success,
+                Value: outcome.Value,
+                Error: outcome.Error,
+                Diagnostics: diagnostics);
+        }
+        catch (TimeoutException ex)
+        {
+            return new BrowserScriptingActionResult(
+                Success: false,
+                Value: null,
+                Error: new V2Error(V2ErrorCodes.Timeout, ex.Message),
+                Diagnostics: diagnostics);
+        }
+        catch (Exception ex)
+        {
+            return new BrowserScriptingActionResult(
+                Success: false,
+                Value: null,
+                Error: new V2Error(V2ErrorCodes.InternalError, ex.Message),
+                Diagnostics: diagnostics);
+        }
     }
 
     private static IReadOnlyList<BrowserScriptingNode> EvaluateLocator(
@@ -367,5 +494,41 @@ public sealed record BrowserScriptingSnapshotResult(
 public sealed record BrowserScriptingLocatorResult(
     bool Success,
     IReadOnlyList<BrowserScriptingNode> Nodes,
+    V2Error? Error,
+    BrowserScriptingDiagnostics Diagnostics);
+
+public enum BrowserScriptingActionKind
+{
+    Click,
+    Fill,
+    Hover,
+    Press,
+    Eval,
+    Screenshot,
+}
+
+public sealed record BrowserScriptingActionRequest(
+    string SurfaceId,
+    BrowserScriptingActionKind Action,
+    BrowserScriptingNode? Node,
+    string? Value,
+    string? Key,
+    string? Script);
+
+public sealed record BrowserScriptingActionOutcome(
+    bool Success,
+    object? Value = null,
+    V2Error? Error = null)
+{
+    public static BrowserScriptingActionOutcome FromValue(object? value = null) =>
+        new(Success: true, Value: value, Error: null);
+
+    public static BrowserScriptingActionOutcome FromError(string code, string message) =>
+        new(Success: false, Value: null, Error: new V2Error(code, message));
+}
+
+public sealed record BrowserScriptingActionResult(
+    bool Success,
+    object? Value,
     V2Error? Error,
     BrowserScriptingDiagnostics Diagnostics);

@@ -15,10 +15,11 @@ public sealed class BrowserScriptingService
 
     public BrowserScriptingService(
         Func<IEnumerable<WorkspaceViewModel>> workspaceProvider,
-        Func<string, BrowserScriptingSnapshot?>? snapshotProvider = null)
+        Func<string, BrowserScriptingSnapshot?>? snapshotProvider = null,
+        Func<BrowserScriptingActionRequest, BrowserScriptingActionOutcome>? actionExecutor = null)
     {
         _workspaceProvider = workspaceProvider ?? throw new ArgumentNullException(nameof(workspaceProvider));
-        _core = new CoreBrowserScriptingService(GetSurfaceDescriptors, snapshotProvider);
+        _core = new CoreBrowserScriptingService(GetSurfaceDescriptors, snapshotProvider, actionExecutor);
     }
 
     public BrowserScriptingResolveResult ResolveSurfaceRef(string? surfaceRef)
@@ -69,6 +70,36 @@ public sealed class BrowserScriptingService
     public BrowserScriptingLocatorResult FindNth(string? surfaceRef, BrowserScriptingLocator locator, int index)
     {
         return _core.FindNth(surfaceRef, locator, index);
+    }
+
+    public BrowserScriptingActionResult Click(string? surfaceRef, BrowserScriptingLocator locator)
+    {
+        return _core.Click(surfaceRef, locator);
+    }
+
+    public BrowserScriptingActionResult Fill(string? surfaceRef, BrowserScriptingLocator locator, string value)
+    {
+        return _core.Fill(surfaceRef, locator, value);
+    }
+
+    public BrowserScriptingActionResult Hover(string? surfaceRef, BrowserScriptingLocator locator)
+    {
+        return _core.Hover(surfaceRef, locator);
+    }
+
+    public BrowserScriptingActionResult Press(string? surfaceRef, BrowserScriptingLocator locator, string key)
+    {
+        return _core.Press(surfaceRef, locator, key);
+    }
+
+    public BrowserScriptingActionResult Eval(string? surfaceRef, string script)
+    {
+        return _core.Eval(surfaceRef, script);
+    }
+
+    public BrowserScriptingActionResult Screenshot(string? surfaceRef)
+    {
+        return _core.Screenshot(surfaceRef);
     }
 
     private IEnumerable<BrowserScriptingSurfaceDescriptor> GetSurfaceDescriptors()
