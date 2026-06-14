@@ -3,6 +3,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Text.Json;
 using ECode.Core.IPC;
+using ECode.Core.IPC.V2;
 using ECode.Core.Models;
 using ECode.Core.Services;
 using ECode.Core.Terminal;
@@ -283,6 +284,45 @@ public class DaemonMessageRoundTripTests
         var roundTripped = JsonSerializer.Deserialize<T>(json);
         roundTripped.Should().NotBeNull();
         return roundTripped!;
+    }
+}
+
+public class V2ProtocolTests
+{
+    [Fact]
+    public void ParseRequest_AcceptsEcodeV2Request()
+    {
+        var parsed = V2Protocol.ParseRequest("""
+            {
+              "protocol": "ecode.v2",
+              "id": "req-1",
+              "method": "browser.snapshot",
+              "params": {
+                "surfaceRef": "surface:1"
+              }
+            }
+            """);
+
+        parsed.Success.Should().BeTrue();
+        parsed.Request.Should().NotBeNull();
+        parsed.Request!.Protocol.Should().Be(V2Protocol.ProtocolName);
+        parsed.Request.Method.Should().Be("browser.snapshot");
+        parsed.Request.Id!.Value.GetString().Should().Be("req-1");
+        parsed.Request.Params!.Value.GetProperty("surfaceRef").GetString().Should().Be("surface:1");
+    }
+
+    [Fact]
+    public void ParseRequest_RejectsUnsupportedProtocol()
+    {
+        var parsed = V2Protocol.ParseRequest("""
+            {"protocol":"other","id":"req-2","method":"status"}
+            """);
+
+        parsed.Success.Should().BeFalse();
+        parsed.ErrorResponse.Should().NotBeNull();
+        parsed.ErrorResponse!.Protocol.Should().Be(V2Protocol.ProtocolName);
+        parsed.ErrorResponse.Id!.Value.GetString().Should().Be("req-2");
+        parsed.ErrorResponse.Error!.Code.Should().Be("invalid_request");
     }
 }
 
