@@ -771,6 +771,24 @@ public class DocsSiteTests
         troubleshooting.Should().Contain("ecode update check");
         troubleshooting.Should().Contain("NuGetAudit=false");
     }
+
+    [Fact]
+    public void ContributingDocs_CoverBuildTestAndPullRequestFlow()
+    {
+        var contributing = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "CONTRIBUTING.md"));
+
+        contributing.Should().Contain(".NET 10 SDK");
+        contributing.Should().Contain("npm install");
+        contributing.Should().Contain("npm run docs:build");
+        contributing.Should().Contain("dotnet.exe test tests\\ECode.Tests\\ECode.Tests.csproj");
+        contributing.Should().Contain("scripts\\ci.ps1");
+        contributing.Should().Contain("-IncludeSmoke");
+        contributing.Should().Contain("-IncludeBrowserIntegration");
+        contributing.Should().Contain("Pull Request Flow");
+        contributing.Should().Contain("CHANGELOG.md");
+        contributing.Should().Contain("spec/07-implementation-backlog.md");
+        contributing.Should().Contain("skip-changelog");
+    }
 }
 
 public class MsixManifestTests

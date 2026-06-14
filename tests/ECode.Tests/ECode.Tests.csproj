@@ -35,6 +35,7 @@
     <None Include="..\..\.github\workflows\release.yml" Link=".github\workflows\release.yml" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\.github\release.yml" Link=".github\release.yml" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\.github\workflows\release-drafter.yml" Link=".github\workflows\release-drafter.yml" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\CONTRIBUTING.md" Link="CONTRIBUTING.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\package.json" Link="package.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\.vitepress\config.mts" Link="docs\.vitepress\config.mts" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\index.md" Link="docs\index.md" CopyToOutputDirectory="PreserveNewest" />
