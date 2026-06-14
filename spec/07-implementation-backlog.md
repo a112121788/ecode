@@ -79,7 +79,7 @@
 |---|---|---|---|
 | `M1-B-01` | `[x]` Surface 拖拽重排 | `Controls/SurfaceTabBar.xaml.cs` | 重排后 session 不丢 |
 | `M1-B-02` | `[x]` Workspace 拖拽重排 | `MainWindow.xaml.cs`、`WorkspaceSidebarItem.xaml.cs` | 拖动后顺序持久化 |
-| `M1-B-03` | 拖入文件 / 图片到终端 | `Controls/TerminalControl.cs` | 输出正确 quoted path |
+| `M1-B-03` | `[x]` 拖入文件 / 图片到终端 | `Controls/TerminalControl.cs` | 输出正确 quoted path |
 | `M1-B-04` | Workspace 右键菜单（重命名 / 关闭 / 复制 ID） | `MainWindow.xaml.cs` | 三项操作可用 |
 | `M1-B-05` | `[x]` Close active tab 按钮常显 | `Controls/SurfaceTabBar.xaml` | 视觉对比 macOS 截图 |
 | `M1-B-06` | 设置面板按"外观 / 终端 / 行为 / 键盘 / 高级"重排 | `Views/SettingsWindow.xaml` | 新增“自定义命令”页 |

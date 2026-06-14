@@ -60,6 +60,28 @@ public class CommandLogSanitizationTests
     }
 }
 
+public class ShellPathQuoterTests
+{
+    [Theory]
+    [InlineData(@"C:\work\file.txt", @"C:\work\file.txt")]
+    [InlineData(@"C:\work dir\file.txt", @"""C:\work dir\file.txt""")]
+    [InlineData("/tmp/with space/file.txt", "\"/tmp/with space/file.txt\"")]
+    [InlineData("path-with-\"quote\".txt", "\"path-with-\\\"quote\\\".txt\"")]
+    public void QuotePathForShell_QuotesOnlyWhenNeeded(string path, string expected)
+    {
+        ShellPathQuoter.QuotePathForShell(path).Should().Be(expected);
+    }
+
+    [Fact]
+    public void JoinQuotedPaths_QuotesAndSkipsBlankPaths()
+    {
+        var paths = new[] { @"C:\plain.txt", "", @"C:\with space\image.png", "   " };
+
+        ShellPathQuoter.JoinQuotedPaths(paths)
+            .Should().Be(@"C:\plain.txt ""C:\with space\image.png""");
+    }
+}
+
 /// <summary>
 /// 通知服务测试 - 验证已读/未读状态管理、排序逻辑和按作用域过滤
 /// </summary>

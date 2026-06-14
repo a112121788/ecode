@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ECode.Core.Config;
 using ECode.Core.Models;
+using ECode.Core.Services;
 using ECode.Core.Terminal;
 
 namespace ECode.Controls;
@@ -1581,7 +1582,7 @@ public class TerminalControl : FrameworkElement
 
                 if (paths.Length > 0)
                 {
-                    text = string.Join(" ", paths.Select(QuotePathForShell));
+                    text = ShellPathQuoter.JoinQuotedPaths(paths);
                     return true;
                 }
             }
@@ -1594,7 +1595,7 @@ public class TerminalControl : FrameworkElement
                     var tempPath = SaveBitmapSourceToTempFile(image);
                     if (!string.IsNullOrWhiteSpace(tempPath))
                     {
-                        text = QuotePathForShell(tempPath);
+                        text = ShellPathQuoter.QuotePathForShell(tempPath);
                         return true;
                     }
                 }
@@ -1632,14 +1633,6 @@ public class TerminalControl : FrameworkElement
         }
     }
 
-    private static string QuotePathForShell(string path)
-    {
-        if (path.IndexOfAny([' ', '\t', '\n', '\r', '"']) < 0)
-            return path;
-
-        return "\"" + path.Replace("\"", "\\\"") + "\"";
-    }
-
     private static bool HasDropContent(IDataObject? data)
     {
         if (data == null)
@@ -1671,9 +1664,7 @@ public class TerminalControl : FrameworkElement
                 data.GetData(DataFormats.FileDrop) is string[] files &&
                 files.Length > 0)
             {
-                text = string.Join(" ", files
-                    .Where(path => !string.IsNullOrWhiteSpace(path))
-                    .Select(QuotePathForShell));
+                text = ShellPathQuoter.JoinQuotedPaths(files);
                 return !string.IsNullOrWhiteSpace(text);
             }
 
@@ -1698,7 +1689,7 @@ public class TerminalControl : FrameworkElement
                 var tempPath = SaveBitmapSourceToTempFile(bitmap);
                 if (!string.IsNullOrWhiteSpace(tempPath))
                 {
-                    text = QuotePathForShell(tempPath);
+                    text = ShellPathQuoter.QuotePathForShell(tempPath);
                     return true;
                 }
             }

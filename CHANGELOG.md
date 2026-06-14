@@ -25,6 +25,7 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 - `NotificationPanel` 右键菜单支持跳转、标记已读、标记未读和复制内容。
 - Surface tab 拖拽重排现在会校验同一项目内的源 / 目标标签页，并在成功后立即持久化会话顺序。
 - Workspace 侧边栏拖拽重排现在会校验同一列表内的源 / 目标项目，并在成功后持久化项目顺序。
+- 拖入终端的文件 / 图片路径统一通过 `ShellPathQuoter` 生成 quoted path，并补充 Core 单元测试覆盖空白路径与带空格路径。
 - 新增 `ResumeBinding` / `ResumeBindingFile` DTO，为 M2 会话恢复增强的 `resume.json` 打基础。
 - 新增 `ResumeBindingService`，支持 `resume.json` 的加载、保存、增删、按 Surface 查询与信任前缀更新。
 - `ResumeBindingService` 保存 `resume.json` 前会剔除 TOKEN、PASSWORD、SECRET、API_KEY 等敏感环境变量。
