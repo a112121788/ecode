@@ -484,34 +484,43 @@ public partial class MainWindow : Window
     // --- Workspace drag-and-drop reordering ---
 
     private Point _dragStartPoint;
+    private WorkspaceViewModel? _dragWorkspace;
 
     private void WorkspaceItem_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
         _dragStartPoint = e.GetPosition(null);
+        _dragWorkspace = (sender as ListBoxItem)?.DataContext as WorkspaceViewModel;
     }
 
     private void WorkspaceItem_PreviewMouseMove(object sender, MouseEventArgs e)
     {
-        if (e.LeftButton != MouseButtonState.Pressed) return;
+        if (e.LeftButton != MouseButtonState.Pressed || _dragWorkspace == null) return;
 
         var diff = _dragStartPoint - e.GetPosition(null);
         if (Math.Abs(diff.X) < SystemParameters.MinimumHorizontalDragDistance &&
             Math.Abs(diff.Y) < SystemParameters.MinimumVerticalDragDistance)
             return;
 
-        if (sender is System.Windows.Controls.ListBoxItem item &&
-            item.DataContext is ViewModels.WorkspaceViewModel workspace)
+        if (sender is ListBoxItem item)
         {
-            DragDrop.DoDragDrop(item, workspace, DragDropEffects.Move);
+            DragDrop.DoDragDrop(item, _dragWorkspace, DragDropEffects.Move);
+            _dragWorkspace = null;
+            e.Handled = true;
         }
+    }
+
+    private void WorkspaceItem_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = CanDropWorkspaceOnItem(sender, e) ? DragDropEffects.Move : DragDropEffects.None;
+        e.Handled = true;
     }
 
     private void WorkspaceItem_Drop(object sender, DragEventArgs e)
     {
-        if (sender is not System.Windows.Controls.ListBoxItem targetItem) return;
-        if (targetItem.DataContext is not ViewModels.WorkspaceViewModel targetWorkspace) return;
+        if (sender is not ListBoxItem targetItem) return;
+        if (targetItem.DataContext is not WorkspaceViewModel targetWorkspace) return;
 
-        var sourceWorkspace = e.Data.GetData(typeof(ViewModels.WorkspaceViewModel)) as ViewModels.WorkspaceViewModel;
+        var sourceWorkspace = e.Data.GetData(typeof(WorkspaceViewModel)) as WorkspaceViewModel;
         if (sourceWorkspace == null || sourceWorkspace == targetWorkspace) return;
 
         int sourceIndex = ViewModel.Workspaces.IndexOf(sourceWorkspace);
@@ -519,8 +528,24 @@ public partial class MainWindow : Window
 
         if (sourceIndex >= 0 && targetIndex >= 0)
         {
-            ViewModel.MoveWorkspace(sourceWorkspace, targetIndex);
+            if (ViewModel.MoveWorkspace(sourceWorkspace, targetIndex))
+            {
+                e.Effects = DragDropEffects.Move;
+                e.Handled = true;
+            }
         }
+    }
+
+    private bool CanDropWorkspaceOnItem(object sender, DragEventArgs e)
+    {
+        if ((sender as ListBoxItem)?.DataContext is not WorkspaceViewModel targetWorkspace)
+            return false;
+
+        var sourceWorkspace = e.Data.GetData(typeof(WorkspaceViewModel)) as WorkspaceViewModel;
+        return sourceWorkspace != null &&
+               sourceWorkspace != targetWorkspace &&
+               ViewModel.Workspaces.Contains(sourceWorkspace) &&
+               ViewModel.Workspaces.Contains(targetWorkspace);
     }
 
     // 标题栏 + 菜单事件处理
@@ -1309,4 +1334,3 @@ public partial class MainWindow : Window
         settings.ShowDialog();
     }
 }
-

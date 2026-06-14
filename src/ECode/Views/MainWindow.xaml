@@ -324,6 +324,7 @@
                                     </Setter>
                                     <EventSetter Event="PreviewMouseLeftButtonDown" Handler="WorkspaceItem_PreviewMouseDown" />
                                     <EventSetter Event="PreviewMouseMove" Handler="WorkspaceItem_PreviewMouseMove" />
+                                    <EventSetter Event="DragOver" Handler="WorkspaceItem_DragOver" />
                                     <EventSetter Event="Drop" Handler="WorkspaceItem_Drop" />
                                 </Style>
                             </ListBox.ItemContainerStyle>
