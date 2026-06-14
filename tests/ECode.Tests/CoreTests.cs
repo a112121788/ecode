@@ -727,6 +727,30 @@ public class DocsSiteTests
         sessionRestore.Should().Contain("Ctrl+Shift+O");
         sessionRestore.Should().Contain("ECODE_WORKSPACE_ID");
     }
+
+    [Fact]
+    public void CliDocs_CoverGlobalFlagsV1V2AndOperationalCommands()
+    {
+        var cli = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "cli.md"));
+
+        cli.Should().Contain("--id-format");
+        cli.Should().Contain("--json");
+        cli.Should().Contain("v1 compatibility");
+        cli.Should().Contain("ecode.v2");
+        cli.Should().Contain("ecode notification list");
+        cli.Should().Contain("window.list");
+        cli.Should().Contain("workspace.reorder");
+        cli.Should().Contain("surface.move");
+        cli.Should().Contain("pane.write");
+        cli.Should().Contain("ecode browser open");
+        cli.Should().Contain("ecode reload-config");
+        cli.Should().Contain("ecode config reload");
+        cli.Should().Contain("ecode restore-session");
+        cli.Should().Contain("ecode setup install");
+        cli.Should().Contain("ecode update check");
+        cli.Should().Contain("ecode doctor");
+        cli.Should().Contain("completion powershell");
+    }
 }
 
 public class MsixManifestTests
