@@ -40,6 +40,7 @@
     <None Include="..\..\docs\index.md" Link="docs\index.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\installation.md" Link="docs\installation.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\getting-started.md" Link="docs\getting-started.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\docs\custom-commands.md" Link="docs\custom-commands.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\cli.md" Link="docs\cli.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\browser-api.md" Link="docs\browser-api.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\troubleshooting.md" Link="docs\troubleshooting.md" CopyToOutputDirectory="PreserveNewest" />

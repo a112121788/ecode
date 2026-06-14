@@ -635,7 +635,7 @@ public class DocsSiteTests
         config.Should().Contain("provider: 'local'");
         config.Should().Contain("link: '/getting-started'");
 
-        foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "cli.md", "browser-api.md", "troubleshooting.md" })
+        foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "custom-commands.md", "cli.md", "browser-api.md", "troubleshooting.md" })
             File.Exists(Path.Combine(docsRoot, page)).Should().BeTrue(page);
     }
 
@@ -663,6 +663,25 @@ public class DocsSiteTests
         gettingStarted.Should().Contain("ecode pane split right");
         gettingStarted.Should().Contain("ecode browser new");
         gettingStarted.Should().Contain("ecode restore-session");
+    }
+
+    [Fact]
+    public void CustomCommandsDocs_CoverSchemaTargetsLayoutAndReload()
+    {
+        var customCommands = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "custom-commands.md"));
+
+        customCommands.Should().Contain("%USERPROFILE%\\.config\\ecode\\ecode.json");
+        customCommands.Should().Contain("commands");
+        customCommands.Should().Contain("actions");
+        customCommands.Should().Contain("ui.surfaceTabBar.buttons");
+        customCommands.Should().Contain("currentTerminal");
+        customCommands.Should().Contain("newTabInCurrentPane");
+        customCommands.Should().Contain("workspace.surfaces");
+        customCommands.Should().Contain("selectedSurfaceIndex");
+        customCommands.Should().Contain("type\": \"browser\"");
+        customCommands.Should().Contain("ecode config reload");
+        customCommands.Should().Contain("ecode config diagnostics");
+        customCommands.Should().Contain("confirm: true");
     }
 }
 
