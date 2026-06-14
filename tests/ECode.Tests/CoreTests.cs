@@ -635,7 +635,7 @@ public class DocsSiteTests
         config.Should().Contain("provider: 'local'");
         config.Should().Contain("link: '/getting-started'");
 
-        foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "custom-commands.md", "cli.md", "browser-api.md", "troubleshooting.md" })
+        foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "custom-commands.md", "session-restore.md", "cli.md", "browser-api.md", "troubleshooting.md" })
             File.Exists(Path.Combine(docsRoot, page)).Should().BeTrue(page);
     }
 
@@ -706,6 +706,26 @@ public class DocsSiteTests
         browserApi.Should().Contain("browser.addinitscript");
         browserApi.Should().Contain("browser.network.route");
         browserApi.Should().Contain("not_supported");
+    }
+
+    [Fact]
+    public void SessionRestoreDocs_CoverRuntimeFilesSchemaTrustAndCli()
+    {
+        var sessionRestore = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "session-restore.md"));
+
+        sessionRestore.Should().Contain("%USERPROFILE%\\.ecode\\session.json");
+        sessionRestore.Should().Contain("%USERPROFILE%\\.ecode\\resume.json");
+        sessionRestore.Should().Contain("paneSnapshots");
+        sessionRestore.Should().Contain("browserHistory");
+        sessionRestore.Should().Contain("kind\": \"tmux\"");
+        sessionRestore.Should().Contain("trusted");
+        sessionRestore.Should().Contain("AutoResumeTrustedBindings");
+        sessionRestore.Should().Contain("ecode surface resume set");
+        sessionRestore.Should().Contain("ecode surface resume show");
+        sessionRestore.Should().Contain("ecode surface resume clear");
+        sessionRestore.Should().Contain("ecode restore-session");
+        sessionRestore.Should().Contain("Ctrl+Shift+O");
+        sessionRestore.Should().Contain("ECODE_WORKSPACE_ID");
     }
 }
 

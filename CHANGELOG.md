@@ -78,6 +78,7 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 - 新增中英双语 Getting Started 文档，覆盖首次启动、Workspace/Surface/Pane、Browser Surface、通知与恢复绑定。
 - 新增 Custom Commands 文档，覆盖 `ecode.json` 加载顺序、commands/actions、targets、workspace surfaces 与热重载诊断。
 - 新增 Browser API 文档，覆盖 surface refs、snapshot/locator、CLI 动作、M4 service contract 与 `not_supported` 矩阵。
+- 新增 Session Restore 文档，覆盖 `session.json`、`resume.json`、trusted bindings、CLI 恢复流程与安全策略。
 - 新增 `ecode browser open|new|open-split <url>` 与 `BROWSER.OPEN*` IPC，可从 CLI 创建或复用 Browser Surface。
 - Browser 工具栏新增停止加载、开发者工具与加载进度状态。
 - `.ecode/ecode.json` 新增 `workspace.surfaces` Browser Surface layout 支持，启动或重载配置时可创建 / 复用浏览器标签页。
