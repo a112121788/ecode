@@ -19,6 +19,7 @@ using PaneV2ApiService = ECode.Services.PaneApiService<ECode.ViewModels.Workspac
 using PaneV2ApiSurface = ECode.Services.PaneApiSurface<ECode.ViewModels.SurfaceViewModel, string>;
 using PaneV2ApiWorkspace = ECode.Services.PaneApiWorkspace<ECode.ViewModels.WorkspaceViewModel, ECode.ViewModels.SurfaceViewModel, string>;
 using NotificationV2ApiService = ECode.Services.NotificationApiService;
+using ConfigV2ApiService = ECode.Services.ConfigApiService;
 
 namespace ECode.ViewModels;
 
@@ -70,6 +71,7 @@ public partial class MainViewModel : ObservableObject
     private readonly WorkspaceV2ApiService _workspaceApiService;
     private readonly PaneV2ApiService _paneApiService;
     private readonly NotificationV2ApiService _notificationApiService;
+    private readonly ConfigV2ApiService _configApiService;
 
     public NotificationService NotificationService => _notificationService;
 
@@ -121,6 +123,7 @@ public partial class MainViewModel : ObservableObject
         _notificationApiService = new NotificationV2ApiService(
             _notificationService,
             JumpToNotification);
+        _configApiService = new ConfigV2ApiService(HandleConfigReload);
 
         // 连接命名管道的命令处理程序
         if (App.PipeServer != null)
@@ -573,6 +576,7 @@ public partial class MainViewModel : ObservableObject
                     var method when SurfaceV2ApiService.CanHandle(method) => _surfaceApiService.HandleRequest(request),
                     var method when PaneV2ApiService.CanHandle(method) => _paneApiService.HandleRequest(request),
                     var method when NotificationV2ApiService.CanHandle(method) => _notificationApiService.HandleRequest(request),
+                    var method when ConfigV2ApiService.CanHandle(method) => _configApiService.HandleRequest(request),
                     "status" => V2Response.FromResult(request.Id, ParseJsonElement(HandleStatus())),
                     _ => V2Response.FromStableError(
                         request.Id,

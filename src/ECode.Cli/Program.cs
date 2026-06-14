@@ -64,6 +64,7 @@ public static class Program
                 "browser" => await HandleBrowser(args[1..]),
                 "split" => await HandleSplit(args[1..]),
                 "restore-session" => await HandleRestoreSession(args[1..]),
+                "config" => await HandleConfig(args[1..]),
                 "reload-config" => await HandleReloadConfig(),
                 "status" => await HandleStatus(),
                 "help" or "--help" or "-h" => PrintHelp(),
@@ -315,6 +316,27 @@ public static class Program
         var parsed = ParseArgs(args);
         NormalizeResumeSelectorAliases(parsed);
         return await SendAndPrint("SESSION.RESTORE", parsed);
+    }
+
+    private static async Task<int> HandleConfig(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            Console.Error.WriteLine("Usage: ecode config <reload|diagnostics>");
+            return 1;
+        }
+
+        var subcommand = args[0].ToLowerInvariant();
+        var method = subcommand switch
+        {
+            "reload" => "config.reload",
+            "diagnostics" or "diag" => "config.diagnostics",
+            _ => "",
+        };
+
+        return string.IsNullOrEmpty(method)
+            ? Error($"Unknown config command: {subcommand}")
+            : await SendV2AndPrint(method, ParseArgs(args[1..]));
     }
 
     private static async Task<int> HandleReloadConfig()
@@ -660,6 +682,10 @@ public static class Program
                   --surfaceRef <ref> Browser surface ref returned by open/new
 
               reload-config         Reload ecode.json commands/actions
+
+              config                Manage ecode.json through ecode.v2
+                reload              Reload ecode.json commands/actions/layout
+                diagnostics         Show diagnostics from last or fresh reload
 
               restore-session       Refresh resume bindings and focus first recoverable pane
                 --all               Scan all workspaces/surfaces

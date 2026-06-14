@@ -305,6 +305,78 @@ public class NotificationApiServiceTests
     };
 }
 
+public class ConfigApiServiceTests
+{
+    [Fact]
+    public void ConfigReload_ReturnsReloadPayloadAndCachesDiagnostics()
+    {
+        var reloads = 0;
+        var api = new ECode.Services.ConfigApiService(() =>
+        {
+            reloads++;
+            return """
+                {
+                  "ok": false,
+                  "loadedPaths": ["/repo/.ecode/ecode.json"],
+                  "commandCount": 2,
+                  "diagnostics": [
+                    { "severity": "error", "path": "/repo/.ecode/ecode.json", "message": "bad config" }
+                  ]
+                }
+                """;
+        });
+
+        var reload = api.HandleRequest(CreateV2Request("config.reload", "{}"));
+
+        reload.Error.Should().BeNull();
+        reloads.Should().Be(1);
+        using var reloadResult = ParseResult(reload);
+        reloadResult.RootElement.GetProperty("ok").GetBoolean().Should().BeFalse();
+        reloadResult.RootElement.GetProperty("commandCount").GetInt32().Should().Be(2);
+
+        var diagnostics = api.HandleRequest(CreateV2Request("config.diagnostics", "{}"));
+
+        diagnostics.Error.Should().BeNull();
+        reloads.Should().Be(1);
+        using var diagnosticsResult = ParseResult(diagnostics);
+        diagnosticsResult.RootElement.GetProperty("ok").GetBoolean().Should().BeFalse();
+        diagnosticsResult.RootElement.GetProperty("loadedPaths")[0].GetString().Should().Be("/repo/.ecode/ecode.json");
+        diagnosticsResult.RootElement.GetProperty("diagnostics")[0].GetProperty("message").GetString().Should().Be("bad config");
+    }
+
+    [Fact]
+    public void ConfigDiagnostics_TriggersReloadWhenNoCachedResultExists()
+    {
+        var reloads = 0;
+        var api = new ECode.Services.ConfigApiService(() =>
+        {
+            reloads++;
+            return """{"ok":true,"loadedPaths":[],"diagnostics":[]}""";
+        });
+
+        var diagnostics = api.HandleRequest(CreateV2Request("config.diagnostics", "{}"));
+
+        diagnostics.Error.Should().BeNull();
+        reloads.Should().Be(1);
+    }
+
+    private static V2Request CreateV2Request(string method, string parameters)
+    {
+        return new V2Request
+        {
+            Id = JsonSerializer.SerializeToElement("test-request"),
+            Method = method,
+            Params = JsonDocument.Parse(parameters).RootElement.Clone(),
+        };
+    }
+
+    private static JsonDocument ParseResult(V2Response response)
+    {
+        response.Result.Should().NotBeNull();
+        return JsonDocument.Parse(JsonSerializer.Serialize(response.Result));
+    }
+}
+
 /// <summary>
 /// Daemon 消息序列化测试 - 验证 IPC 消息（请求/响应/事件）的 JSON 序列化和反序列化
 /// </summary>
