@@ -248,7 +248,7 @@
 |---|---|---|---|
 | `M7-A-01` | `[x]` `docs/` 目录（mkdocs material 或 vitepress） | `docs/*` | 站点可构建 |
 | `M7-A-02` | `[x]` `installation.md` | `docs/installation.md` | 含 zip / Velopack / MSIX 三种安装方式 |
-| `M7-A-03` | `getting-started.md` | `docs/getting-started.md` | 中文 / 英文 |
+| `M7-A-03` | `[x]` `getting-started.md` | `docs/getting-started.md` | 中文 / 英文 |
 | `M7-A-04` | `custom-commands.md` | `docs/custom-commands.md` | 与 M5 后状态同步 |
 | `M7-A-05` | `browser-api.md` | `docs/browser-api.md` | 与 M4 协议同步 |
 | `M7-A-06` | `session-restore.md` | `docs/session-restore.md` | 与 M2 数据模型同步 |

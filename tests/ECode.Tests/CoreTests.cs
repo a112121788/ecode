@@ -650,6 +650,20 @@ public class DocsSiteTests
         installation.Should().Contain("%USERPROFILE%\\.ecode");
         installation.Should().Contain("ecode doctor");
     }
+
+    [Fact]
+    public void GettingStartedDocs_AreBilingualAndCoverFirstRunFlow()
+    {
+        var gettingStarted = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "getting-started.md"));
+
+        gettingStarted.Should().Contain("## English");
+        gettingStarted.Should().Contain("## 中文");
+        gettingStarted.Should().Contain("ecode doctor");
+        gettingStarted.Should().Contain("ecode workspace create");
+        gettingStarted.Should().Contain("ecode pane split right");
+        gettingStarted.Should().Contain("ecode browser new");
+        gettingStarted.Should().Contain("ecode restore-session");
+    }
 }
 
 public class MsixManifestTests
