@@ -487,6 +487,39 @@ public class ShellSetupTests
         CountOccurrences(installedAgain.CmdAutoRun, ShellSetup.CmdBeginMarker).Should().Be(1);
     }
 
+    [Fact]
+    public void IsInstalledAndDiff_ReportSetupDrift()
+    {
+        var installDirectory = @"C:\Tools\ECode";
+        var current = new ShellSetupState(
+            UserPath: @"C:\Windows",
+            PowerShellProfile: "",
+            CmdAutoRun: "");
+
+        var planned = ShellSetup.CreateInstallPlan(current, installDirectory);
+        var diff = ShellSetup.CreateDiff(current, planned);
+
+        ShellSetup.IsInstalled(current, installDirectory).Should().BeFalse();
+        diff.AnyChanged.Should().BeTrue();
+        diff.UserPathChanged.Should().BeTrue();
+        diff.PowerShellProfileChanged.Should().BeTrue();
+        diff.CmdAutoRunChanged.Should().BeTrue();
+        ShellSetup.FormatDiff(current, planned).Should().Contain("PATH: change");
+        ShellSetup.IsInstalled(planned, installDirectory).Should().BeTrue();
+    }
+
+    [Fact]
+    public void FormatDiff_MarksNoChangeWhenStatesMatch()
+    {
+        var state = new ShellSetupState(
+            UserPath: @"C:\Windows;C:\Tools\ECode",
+            PowerShellProfile: "profile",
+            CmdAutoRun: "autorun");
+
+        ShellSetup.CreateDiff(state, state).AnyChanged.Should().BeFalse();
+        ShellSetup.FormatDiff(state, state).Should().Contain("PowerShell profile: no change");
+    }
+
     private static int CountOccurrences(string text, string value)
     {
         var count = 0;
@@ -516,6 +549,7 @@ public class PowerShellCompletionScriptTests
         script.Should().Contain("'completion'");
         script.Should().Contain("'profile'");
         script.Should().Contain("'doctor'");
+        script.Should().Contain("'setup'");
         script.Should().Contain("'powershell'");
         script.Should().Contain("'window:'");
         script.Should().Contain("'workspace:'");

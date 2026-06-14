@@ -16,6 +16,7 @@ $script:ECodeCommands = @(
     'reload-config',
     'config',
     'profile',
+    'setup',
     'restore-session',
     'status',
     'health',
@@ -35,6 +36,7 @@ $script:ECodeSubcommands = @{
     split = @('right', 'down')
     config = @('reload', 'diagnostics', 'diag')
     profile = @('import', 'import-terminal', 'terminal')
+    setup = @('install', 'status', 'uninstall')
     completion = @('powershell')
 }
 
@@ -46,7 +48,7 @@ $script:ECodeCommonOptions = @(
     '--url', '--surfaceRef', '--direction', '--submit',
     '--settings', '--write', '--commandline', '--shell', '--font-face',
     '--font-size', '--color-scheme', '--starting-directory', '--guid',
-    '--timeout-ms'
+    '--timeout-ms', '--install-dir', '--profile', '--powershell-profile'
 )
 $script:ECodeRefPrefixes = @('window:', 'workspace:', 'surface:', 'pane:')
 

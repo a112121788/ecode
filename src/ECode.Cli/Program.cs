@@ -5,6 +5,7 @@ using ECode.Core.Config;
 using ECode.Core.IPC;
 using ECode.Core.IPC.V2;
 using ECode.Core.Services;
+using Microsoft.Win32;
 
 namespace ECode.Cli;
 
@@ -69,6 +70,7 @@ public static class Program
                 "restore-session" => await HandleRestoreSession(args[1..]),
                 "config" => await HandleConfig(args[1..]),
                 "profile" => HandleProfile(args[1..]),
+                "setup" => HandleSetup(args[1..]),
                 "reload-config" => await HandleReloadConfig(),
                 "status" => await HandleStatus(),
                 "health" => await HandleHealth(),
@@ -443,6 +445,62 @@ public static class Program
         return 0;
     }
 
+    private static int HandleSetup(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            Console.Error.WriteLine("Usage: ecode setup <install|status|uninstall>");
+            return 1;
+        }
+
+        var subcommand = args[0].ToLowerInvariant();
+        var parsed = ParseArgs(args[1..]);
+        var installDirectory = ResolveSetupInstallDirectory(parsed);
+        var profilePath = GetFirstOption(parsed, "powershell-profile", "profile")
+            ?? GetDefaultPowerShellProfilePath();
+        var current = ReadShellSetupState(profilePath);
+
+        return subcommand switch
+        {
+            "status" => PrintSetupStatus(current, installDirectory, profilePath),
+            "install" => HandleSetupPlan("install", current, ShellSetup.CreateInstallPlan(current, installDirectory), profilePath, parsed),
+            "uninstall" => HandleSetupPlan("uninstall", current, ShellSetup.CreateUninstallPlan(current, installDirectory), profilePath, parsed),
+            _ => Error($"Unknown setup command: {subcommand}"),
+        };
+    }
+
+    private static int PrintSetupStatus(ShellSetupState current, string installDirectory, string profilePath)
+    {
+        Console.WriteLine("ECode setup status");
+        Console.WriteLine($"Install directory: {installDirectory}");
+        Console.WriteLine($"PowerShell profile: {profilePath}");
+        Console.WriteLine($"Status: {(ShellSetup.IsInstalled(current, installDirectory) ? "installed" : "missing or drifted")}");
+        Console.WriteLine(ShellSetup.FormatDiff(current, ShellSetup.CreateInstallPlan(current, installDirectory)));
+        return 0;
+    }
+
+    private static int HandleSetupPlan(
+        string action,
+        ShellSetupState current,
+        ShellSetupState planned,
+        string profilePath,
+        Dictionary<string, string> args)
+    {
+        var write = IsTruthy(GetFirstOption(args, "write", "apply"));
+        Console.WriteLine($"ECode setup {action} {(write ? "apply" : "dry-run")}");
+        Console.WriteLine(ShellSetup.FormatDiff(current, planned));
+
+        if (!write)
+        {
+            Console.WriteLine("Pass --write true to apply these changes.");
+            return 0;
+        }
+
+        ApplyShellSetupState(planned, profilePath);
+        Console.WriteLine("Applied setup changes.");
+        return 0;
+    }
+
     private static async Task<int> HandleReloadConfig()
     {
         return await SendAndPrint("CONFIG.RELOAD");
@@ -717,6 +775,68 @@ public static class Program
             || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static string ResolveSetupInstallDirectory(Dictionary<string, string> args)
+    {
+        return (GetFirstOption(args, "install-dir", "dir") ?? AppContext.BaseDirectory)
+            .Trim()
+            .Trim('"')
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
+
+    private static ShellSetupState ReadShellSetupState(string profilePath)
+    {
+        var userPath = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User) ?? "";
+        var powerShellProfile = File.Exists(profilePath) ? File.ReadAllText(profilePath) : "";
+        var cmdAutoRun = ReadCmdAutoRun();
+        return new ShellSetupState(userPath, powerShellProfile, cmdAutoRun);
+    }
+
+    private static void ApplyShellSetupState(ShellSetupState state, string profilePath)
+    {
+        Environment.SetEnvironmentVariable("Path", state.UserPath, EnvironmentVariableTarget.User);
+
+        var profileDirectory = Path.GetDirectoryName(profilePath);
+        if (!string.IsNullOrWhiteSpace(profileDirectory))
+            Directory.CreateDirectory(profileDirectory);
+        File.WriteAllText(profilePath, state.PowerShellProfile);
+
+        WriteCmdAutoRun(state.CmdAutoRun);
+    }
+
+    private static string GetDefaultPowerShellProfilePath()
+    {
+        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (string.IsNullOrWhiteSpace(documents))
+        {
+            var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            documents = Path.Combine(profile, "Documents");
+        }
+
+        return Path.Combine(documents, "PowerShell", "Microsoft.PowerShell_profile.ps1");
+    }
+
+    private static string ReadCmdAutoRun()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Command Processor");
+            return key?.GetValue("AutoRun") as string ?? "";
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
+    private static void WriteCmdAutoRun(string value)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Command Processor");
+        if (string.IsNullOrWhiteSpace(value))
+            key?.DeleteValue("AutoRun", throwOnMissingValue: false);
+        else
+            key?.SetValue("AutoRun", value);
+    }
+
     private static int PrintHelp()
     {
         Console.WriteLine("""
@@ -824,6 +944,13 @@ public static class Program
                   --font-face <f>   Windows Terminal font face
                   --font-size <n>   Windows Terminal font size
                   --color-scheme <s> Color scheme name to add/reuse
+
+              setup                 Install or inspect shell integration
+                status              Show PATH/profile/cmd AutoRun integration state
+                install             Dry-run shell setup; pass --write true to apply
+                uninstall           Dry-run cleanup; pass --write true to apply
+                  --install-dir <p> CLI directory to add/remove from user PATH
+                  --profile <path>  PowerShell profile path override
 
               restore-session       Refresh resume bindings and focus first recoverable pane
                 --all               Scan all workspaces/surfaces

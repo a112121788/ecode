@@ -7,6 +7,14 @@ public sealed record ShellSetupState(
     string PowerShellProfile,
     string CmdAutoRun);
 
+public sealed record ShellSetupDiff(
+    bool UserPathChanged,
+    bool PowerShellProfileChanged,
+    bool CmdAutoRunChanged)
+{
+    public bool AnyChanged => UserPathChanged || PowerShellProfileChanged || CmdAutoRunChanged;
+}
+
 public static class ShellSetup
 {
     public const string PowerShellBeginMarker = "# >>> ecode setup >>>";
@@ -40,6 +48,30 @@ public static class ShellSetup
             RemovePathEntry(current.UserPath, normalized),
             RemoveMarkedBlock(current.PowerShellProfile, PowerShellBeginMarker, PowerShellEndMarker),
             RemoveMarkedBlock(current.CmdAutoRun, CmdBeginMarker, CmdEndMarker));
+    }
+
+    public static bool IsInstalled(ShellSetupState current, string installDirectory)
+    {
+        return !CreateDiff(current, CreateInstallPlan(current, installDirectory)).AnyChanged;
+    }
+
+    public static ShellSetupDiff CreateDiff(ShellSetupState before, ShellSetupState after)
+    {
+        return new ShellSetupDiff(
+            !string.Equals(before.UserPath, after.UserPath, StringComparison.Ordinal),
+            !string.Equals(before.PowerShellProfile, after.PowerShellProfile, StringComparison.Ordinal),
+            !string.Equals(before.CmdAutoRun, after.CmdAutoRun, StringComparison.Ordinal));
+    }
+
+    public static string FormatDiff(ShellSetupState before, ShellSetupState after)
+    {
+        var diff = CreateDiff(before, after);
+        return string.Join(Environment.NewLine, new[]
+        {
+            $"PATH: {(diff.UserPathChanged ? "change" : "no change")}",
+            $"PowerShell profile: {(diff.PowerShellProfileChanged ? "change" : "no change")}",
+            $"cmd AutoRun: {(diff.CmdAutoRunChanged ? "change" : "no change")}",
+        });
     }
 
     public static string AddPathEntry(string currentPath, string installDirectory)
