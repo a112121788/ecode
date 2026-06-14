@@ -673,6 +673,44 @@ public class ResumeBindingServiceTests
     }
 }
 
+public class ResumeProcessDetectorTests
+{
+    [Fact]
+    public void DetectFromTaskListCsv_FindsTmuxAndKnownShell()
+    {
+        const string csv = """
+            "Image Name","PID","Session Name","Session#","Mem Usage","Status","User Name","CPU Time","Window Title"
+            "tmux.exe","4242","Console","1","10,000 K","Running","user","0:00:01","tmux attach -t work"
+            "pwsh.exe","4243","Console","1","20,000 K","Running","user","0:00:02","C:\Program Files\PowerShell\7\pwsh.exe"
+            """;
+
+        var detection = ResumeProcessDetector.DetectFromTaskListCsv(
+            csv,
+            [@"C:\Program Files\PowerShell\7\pwsh.exe"]);
+
+        detection.Processes.Should().HaveCount(2);
+        detection.HasTmux.Should().BeTrue();
+        detection.HasKnownShell.Should().BeTrue();
+        detection.MatchingShellPath.Should().Be(@"C:\Program Files\PowerShell\7\pwsh.exe");
+    }
+
+    [Fact]
+    public void DetectFromTaskListCsv_ReturnsFalseWhenNoTmuxOrShellExists()
+    {
+        const string csv = """
+            "Image Name","PID","Session Name","Session#","Mem Usage","Status","User Name","CPU Time","Window Title"
+            "node.exe","5000","Console","1","30,000 K","Running","user","0:00:03","vite dev server"
+            """;
+
+        var detection = ResumeProcessDetector.DetectFromTaskListCsv(csv, [@"C:\Windows\System32\cmd.exe"]);
+
+        detection.Processes.Should().HaveCount(1);
+        detection.HasTmux.Should().BeFalse();
+        detection.HasKnownShell.Should().BeFalse();
+        detection.MatchingShellPath.Should().BeNull();
+    }
+}
+
 /// <summary>
 /// 会话持久化测试 - 验证 SurfaceKind 与 Browser metadata 的兼容存储。
 /// </summary>
