@@ -8,6 +8,7 @@ using ECode.Core.Models;
 using ECode.Core.Services;
 using ECode.Core.Terminal;
 using ECode.Cli.Commands;
+using ECode.Updater;
 using FluentAssertions;
 using Xunit;
 
@@ -715,6 +716,50 @@ public class ProfileImportTests
         profiles.GetArrayLength().Should().Be(2);
         profiles[0].GetProperty("name").GetString().Should().Be("PowerShell");
         profiles[1].GetProperty("name").GetString().Should().Be("ECode Legacy");
+    }
+}
+
+public class VelopackFeedCheckerTests
+{
+    [Fact]
+    public void ParseReleases_ReturnsPackageEntries()
+    {
+        var releases = """
+            0123456789abcdef ECode-0.2.0-full.nupkg 1024
+            abcdef0123456789 ECode-0.3.0-full.nupkg 2048
+            ignored.txt 1
+            """;
+
+        var entries = VelopackFeedChecker.ParseReleases(releases);
+
+        entries.Should().HaveCount(2);
+        entries[0].FileName.Should().Be("ECode-0.2.0-full.nupkg");
+        entries[0].Version.Should().Be("0.2.0");
+        entries[0].SizeBytes.Should().Be(1024);
+    }
+
+    [Fact]
+    public void TryGetLatestRelease_ChoosesHighestVersion()
+    {
+        var releases = """
+            hash ECode-0.2.1-full.nupkg 1024
+            hash ECode-0.10.0-full.nupkg 1024
+            hash ECode-0.3.0-full.nupkg 1024
+            """;
+
+        var latest = VelopackFeedChecker.TryGetLatestRelease(releases);
+
+        latest.Should().NotBeNull();
+        latest!.Version.Should().Be("0.10.0");
+    }
+
+    [Theory]
+    [InlineData("0.3.0", "0.2.0", true)]
+    [InlineData("0.2.0", "0.2.0", false)]
+    [InlineData("0.1.9", "0.2.0", false)]
+    public void IsNewer_ComparesSemanticVersionCore(string candidate, string current, bool expected)
+    {
+        VelopackFeedChecker.IsNewer(candidate, current).Should().Be(expected);
     }
 }
 

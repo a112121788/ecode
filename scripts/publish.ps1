@@ -7,6 +7,7 @@
     1) 框架依赖版          -> publish/ecode-win-x64       （体积最小，需要 .NET 10 Desktop Runtime）
     2) 自包含目录版        -> publish/ecode-win-x64-sc    （文件夹形式，可在任意 win-x64 上运行）
     3) CLI                 -> publish/ecode-cli           （自包含，可直接放入 PATH）
+    4) Velopack            -> publish/velopack            （installer + RELEASES feed）
 
   WPF + ConPTY 与 PublishSingleFile 配合不佳，因此有意省略了单文件
   发布形态。请改用自包含文件夹版本。
@@ -22,6 +23,7 @@
     Framework    -> 形态 1
     SelfContained-> 形态 2
     Cli          -> 形态 3
+    Velopack    -> self-contained app + vpk pack
     All          -> 1 + 2 + 3
 
 .PARAMETER OutputRoot
@@ -34,6 +36,7 @@
   pwsh ./scripts/publish.ps1
   pwsh ./scripts/publish.ps1 -Flavor SelfContained
   pwsh ./scripts/publish.ps1 -Flavor Cli -Rid win-arm64
+  pwsh ./scripts/publish.ps1 -Flavor Velopack -VpkCommand vpk
   pwsh ./scripts/publish.ps1 -Config Debug -Flavor Framework
 #>
 
@@ -45,10 +48,16 @@ param(
     [ValidateSet('win-x64', 'win-x86', 'win-arm64')]
     [string]$Rid = 'win-x64',
 
-    [ValidateSet('All', 'Framework', 'SelfContained', 'Cli')]
+    [ValidateSet('All', 'Framework', 'SelfContained', 'Cli', 'Velopack')]
     [string]$Flavor = 'All',
 
     [string]$OutputRoot,
+
+    [string]$VelopackPackId = 'ECode',
+
+    [string]$VelopackAuthors = 'ECode',
+
+    [string]$VpkCommand = 'vpk',
 
     [ValidateRange(1, [int]::MaxValue)]
     [int]$MinimumExeBytes = 65536
@@ -68,6 +77,11 @@ if ($OutputRoot) {
 $MainProj = Join-Path $RepoRoot 'src/ECode/ECode.csproj'
 $CliProj  = Join-Path $RepoRoot 'src/ECode.Cli/ECode.Cli.csproj'
 $Validations = @()
+
+function Get-ProjectVersion {
+    $props = [xml](Get-Content -LiteralPath (Join-Path $RepoRoot 'Directory.Build.props') -Raw)
+    return $props.Project.PropertyGroup.Version
+}
 
 function Invoke-DotnetPublish {
     param(
@@ -152,6 +166,62 @@ function Add-PublishValidation {
     }
 }
 
+function Add-FileValidation {
+    param(
+        [Parameter(Mandatory)][string]$FlavorName,
+        [Parameter(Mandatory)][string]$FilePath
+    )
+
+    $full = [System.IO.Path]::GetFullPath($FilePath)
+    $exists = Test-Path -LiteralPath $full -PathType Leaf
+    $size = if ($exists) { (Get-Item -LiteralPath $full).Length } else { 0L }
+    $sha256 = if ($exists) { (Get-FileHash -LiteralPath $full -Algorithm SHA256).Hash.ToLowerInvariant() } else { '' }
+
+    $script:Validations += [pscustomobject]@{
+        Flavor  = $FlavorName
+        File    = $full
+        Exists  = $exists
+        SizeMB  = [Math]::Round($size / 1MB, 2)
+        Version = ''
+        Sha256  = $sha256
+        Status  = if ($exists) { 'OK' } else { 'FAIL (missing)' }
+    }
+}
+
+function Invoke-VelopackPack {
+    param(
+        [Parameter(Mandatory)][string]$PackDir,
+        [Parameter(Mandatory)][string]$OutputDir
+    )
+
+    Reset-PublishDir $OutputDir
+    $version = Get-ProjectVersion
+    $args = @(
+        'pack',
+        '--packId', $VelopackPackId,
+        '--packVersion', $version,
+        '--packAuthors', $VelopackAuthors,
+        '--packDir', $PackDir,
+        '--mainExe', 'ecode-app.exe',
+        '--outputDir', $OutputDir
+    )
+
+    Write-Host ""
+    Write-Host ">> $VpkCommand $($args -join ' ')" -ForegroundColor Cyan
+    & $VpkCommand @args
+    if ($LASTEXITCODE -ne 0) {
+        throw "vpk pack failed (exit $LASTEXITCODE). Install Velopack CLI or pass -VpkCommand."
+    }
+
+    Add-FileValidation -FlavorName 'VelopackFeed' -FilePath (Join-Path $OutputDir 'RELEASES')
+    $setup = Get-ChildItem -LiteralPath $OutputDir -Filter '*Setup*.exe' -File -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($setup) {
+        Add-FileValidation -FlavorName 'VelopackSetup' -FilePath $setup.FullName
+    } else {
+        Add-FileValidation -FlavorName 'VelopackSetup' -FilePath (Join-Path $OutputDir 'ECodeSetup.exe')
+    }
+}
+
 function Write-ValidationTable {
     if ($Validations.Count -eq 0) { return }
 
@@ -173,6 +243,8 @@ $stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 Write-Host "=== ECode publish === Config=$Config Rid=$Rid Flavor=$Flavor Time=$stamp ===" -ForegroundColor Yellow
 
 $ran = @()
+$selfContainedOut = Join-Path $OutputRoot "ecode-$Rid-sc"
+$selfContainedPublished = $false
 
 if ($Flavor -in @('All', 'Framework')) {
     $out = Join-Path $OutputRoot "ecode-$Rid"
@@ -190,7 +262,7 @@ if ($Flavor -in @('All', 'Framework')) {
 }
 
 if ($Flavor -in @('All', 'SelfContained')) {
-    $out = Join-Path $OutputRoot "ecode-$Rid-sc"
+    $out = $selfContainedOut
     $artifacts = Join-Path $BuildRoot 'self-contained'
     Reset-PublishDir $out
     Invoke-DotnetPublish -Project $MainProj -ArtifactsPath $artifacts -Args @(
@@ -202,6 +274,7 @@ if ($Flavor -in @('All', 'SelfContained')) {
     $exe = Join-Path $out 'ecode-app.exe'
     Add-PublishValidation -FlavorName 'SelfContained' -ExePath $exe
     $ran += "SelfContained  -> $exe"
+    $selfContainedPublished = $true
 }
 
 if ($Flavor -in @('All', 'Cli')) {
@@ -217,6 +290,24 @@ if ($Flavor -in @('All', 'Cli')) {
     $exe = Join-Path $out 'ecode.exe'
     Add-PublishValidation -FlavorName 'Cli' -ExePath $exe
     $ran += "Cli            -> $exe"
+}
+
+if ($Flavor -eq 'Velopack') {
+    if (-not $selfContainedPublished) {
+        $artifacts = Join-Path $BuildRoot 'velopack-self-contained'
+        Reset-PublishDir $selfContainedOut
+        Invoke-DotnetPublish -Project $MainProj -ArtifactsPath $artifacts -Args @(
+            '-c', $Config,
+            '-r', $Rid,
+            '--self-contained', 'true',
+            '-o', $selfContainedOut
+        )
+        $selfContainedPublished = $true
+    }
+
+    $velopackOut = Join-Path $OutputRoot 'velopack'
+    Invoke-VelopackPack -PackDir $selfContainedOut -OutputDir $velopackOut
+    $ran += "Velopack       -> $velopackOut"
 }
 
 Write-Host ""

@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ECode.Core\ECode.Core.csproj" />
+    <ProjectReference Include="..\ECode.Updater\ECode.Updater.csproj" />
   </ItemGroup>
 
   <ItemGroup>

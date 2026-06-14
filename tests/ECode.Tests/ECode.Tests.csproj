@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ECode.Core\ECode.Core.csproj" />
+    <ProjectReference Include="..\..\src\ECode.Updater\ECode.Updater.csproj" />
   </ItemGroup>
 
   <ItemGroup>

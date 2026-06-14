@@ -3,6 +3,7 @@ using System.Windows;
 using ECode.Core.IPC;
 using ECode.Core.Services;
 using ECode.Services;
+using ECode.Updater;
 using ECode.Views;
 
 namespace ECode;
@@ -18,6 +19,7 @@ public partial class App : Application
     public static CommandLogService CommandLogService { get; } = new();
     public static DaemonClient DaemonClient { get; } = new();
     public static WindowManagerService<MainWindow> WindowManager { get; } = new();
+    public static Task<UpdateCheckResult?> UpdateCheckTask { get; private set; } = Task.FromResult<UpdateCheckResult?>(null);
     public static WindowApiService<MainWindow> WindowApi { get; } = new(
         WindowManager,
         title => string.IsNullOrWhiteSpace(title) ? new MainWindow() : new MainWindow { Title = title.Trim() },
@@ -78,6 +80,8 @@ public partial class App : Application
             return connected;
         });
 
+        StartUpdateCheck();
+
         // 接入 Windows Toast 通知
         NotificationService.NotificationAdded += notification =>
         {
@@ -89,6 +93,28 @@ public partial class App : Application
                 Services.ToastNotificationHelper.ShowToast(notification, workspaceName);
             }
         };
+    }
+
+    private static void StartUpdateCheck()
+    {
+        var feedUrl = Environment.GetEnvironmentVariable("ECODE_UPDATE_FEED_URL");
+        if (string.IsNullOrWhiteSpace(feedUrl) || !Uri.TryCreate(feedUrl, UriKind.Absolute, out var feedUri))
+        {
+            UpdateCheckTask = Task.FromResult<UpdateCheckResult?>(null);
+            return;
+        }
+
+        var currentVersion = VersionService.GetInformationalVersion(typeof(App).Assembly);
+        UpdateCheckTask = Task.Run<UpdateCheckResult?>(async () =>
+        {
+            var result = await new VelopackFeedChecker().CheckAsync(feedUri, currentVersion);
+            if (result.UpdateAvailable)
+                DaemonLog($"[Update] New version {result.LatestVersion} available from {result.FeedUrl}");
+            else if (!string.IsNullOrWhiteSpace(result.Error))
+                DaemonLog($"[Update] Check failed: {result.Error}");
+
+            return result;
+        });
     }
 
     protected override void OnExit(ExitEventArgs e)
