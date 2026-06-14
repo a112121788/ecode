@@ -638,6 +638,18 @@ public class DocsSiteTests
         foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "cli.md", "browser-api.md", "troubleshooting.md" })
             File.Exists(Path.Combine(docsRoot, page)).Should().BeTrue(page);
     }
+
+    [Fact]
+    public void InstallationDocs_CoverZipVelopackAndMsix()
+    {
+        var installation = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "installation.md"));
+
+        installation.Should().Contain("zip / self-contained folder");
+        installation.Should().Contain("Velopack installer and feed");
+        installation.Should().Contain("MSIX enterprise package");
+        installation.Should().Contain("%USERPROFILE%\\.ecode");
+        installation.Should().Contain("ecode doctor");
+    }
 }
 
 public class MsixManifestTests
