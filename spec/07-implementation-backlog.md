@@ -253,7 +253,7 @@
 | `M7-A-05` | `[x]` `browser-api.md` | `docs/browser-api.md` | 与 M4 协议同步 |
 | `M7-A-06` | `[x]` `session-restore.md` | `docs/session-restore.md` | 与 M2 数据模型同步 |
 | `M7-A-07` | `[x]` `cli.md` | `docs/cli.md` | v1+v2 |
-| `M7-A-08` | `troubleshooting.md` | `docs/troubleshooting.md` | 含 daemon-debug.log 解读 |
+| `M7-A-08` | `[x]` `troubleshooting.md` | `docs/troubleshooting.md` | 含 daemon-debug.log 解读 |
 
 ### 包 B：社区与治理
 

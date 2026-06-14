@@ -751,6 +751,26 @@ public class DocsSiteTests
         cli.Should().Contain("ecode doctor");
         cli.Should().Contain("completion powershell");
     }
+
+    [Fact]
+    public void TroubleshootingDocs_CoverDoctorDaemonLogsAndCommonFailures()
+    {
+        var troubleshooting = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "troubleshooting.md"));
+
+        troubleshooting.Should().Contain("ecode doctor");
+        troubleshooting.Should().Contain("ecode --json doctor");
+        troubleshooting.Should().Contain("daemon-debug.log");
+        troubleshooting.Should().Contain("ts=");
+        troubleshooting.Should().Contain("component=");
+        troubleshooting.Should().Contain("event=");
+        troubleshooting.Should().Contain("paneId=");
+        troubleshooting.Should().Contain("WebView2 Runtime");
+        troubleshooting.Should().Contain("ecode setup status");
+        troubleshooting.Should().Contain("ecode config diagnostics");
+        troubleshooting.Should().Contain("AutoResumeTrustedBindings");
+        troubleshooting.Should().Contain("ecode update check");
+        troubleshooting.Should().Contain("NuGetAudit=false");
+    }
 }
 
 public class MsixManifestTests

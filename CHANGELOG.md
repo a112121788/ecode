@@ -80,6 +80,7 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 - 新增 Browser API 文档，覆盖 surface refs、snapshot/locator、CLI 动作、M4 service contract 与 `not_supported` 矩阵。
 - 新增 Session Restore 文档，覆盖 `session.json`、`resume.json`、trusted bindings、CLI 恢复流程与安全策略。
 - 新增 CLI Reference 文档，覆盖全局参数、v1 兼容命令、`ecode.v2` 命令组、setup/update/doctor/completion 等运维入口。
+- 新增 Troubleshooting 文档，覆盖 `ecode doctor`、`daemon-debug.log` 字段、WebView2、PATH、配置、恢复和更新排障。
 - 新增 `ecode browser open|new|open-split <url>` 与 `BROWSER.OPEN*` IPC，可从 CLI 创建或复用 Browser Surface。
 - Browser 工具栏新增停止加载、开发者工具与加载进度状态。
 - `.ecode/ecode.json` 新增 `workspace.surfaces` Browser Surface layout 支持，启动或重载配置时可创建 / 复用浏览器标签页。
