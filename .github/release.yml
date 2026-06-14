@@ -1,0 +1,57 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+tag-prefix: 'v'
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+change-title-escapes: '\\<*_&'
+no-changes-template: '- No user-facing changes.'
+categories:
+  - title: 'Breaking Changes'
+    labels:
+      - 'breaking'
+      - 'major'
+  - title: 'Added'
+    labels:
+      - 'feature'
+      - 'enhancement'
+      - 'minor'
+  - title: 'Fixed'
+    labels:
+      - 'bug'
+      - 'fix'
+      - 'patch'
+  - title: 'Documentation'
+    labels:
+      - 'documentation'
+      - 'docs'
+  - title: 'Maintenance'
+    labels:
+      - 'build'
+      - 'ci'
+      - 'chore'
+      - 'dependencies'
+exclude-labels:
+  - 'skip-changelog'
+template: |
+  ## Changes
+
+  $CHANGES
+
+  ## Contributors
+
+  $CONTRIBUTORS
+version-resolver:
+  major:
+    labels:
+      - 'major'
+      - 'breaking'
+  minor:
+    labels:
+      - 'minor'
+      - 'feature'
+      - 'enhancement'
+  patch:
+    labels:
+      - 'patch'
+      - 'bug'
+      - 'fix'
+  default: patch

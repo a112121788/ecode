@@ -33,6 +33,8 @@
     <None Include="..\..\installer\ecode.iss" Link="installer\ecode.iss" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\installer\AppXManifest.xml" Link="installer\AppXManifest.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\.github\workflows\release.yml" Link=".github\workflows\release.yml" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\.github\release.yml" Link=".github\release.yml" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\.github\workflows\release-drafter.yml" Link=".github\workflows\release-drafter.yml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

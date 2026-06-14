@@ -595,6 +595,24 @@ public class ReleaseWorkflowTests
         workflow.Should().Contain("name: ecode-cli-win-x64");
         workflow.Should().Contain("actions/upload-artifact@v4");
     }
+
+    [Fact]
+    public void ReleaseDrafter_UsesBacklogConfigNameAndCategorizedNotes()
+    {
+        var configPath = Path.Combine(AppContext.BaseDirectory, ".github", "release.yml");
+        var workflowPath = Path.Combine(AppContext.BaseDirectory, ".github", "workflows", "release-drafter.yml");
+        var config = File.ReadAllText(configPath);
+        var workflow = File.ReadAllText(workflowPath);
+
+        config.Should().Contain("name-template: 'v$RESOLVED_VERSION'");
+        config.Should().Contain("version-resolver:");
+        config.Should().Contain("exclude-labels:");
+        config.Should().Contain("'skip-changelog'");
+        config.Should().Contain("## Changes");
+        workflow.Should().Contain("release-drafter/release-drafter@v6");
+        workflow.Should().Contain("config-name: release.yml");
+        workflow.Should().Contain("contents: write");
+    }
 }
 
 public class MsixManifestTests
