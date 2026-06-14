@@ -27,6 +27,7 @@
                             MouseLeftButtonDown="Tab_Click"
                             PreviewMouseLeftButtonDown="Tab_PreviewMouseLeftButtonDown"
                             PreviewMouseMove="Tab_PreviewMouseMove"
+                            DragOver="Tab_DragOver"
                             Drop="Tab_Drop">
                         <Border.Background>
                             <SolidColorBrush x:Name="tabBg" Color="Transparent" />

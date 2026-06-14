@@ -103,6 +103,13 @@ public partial class SurfaceTabBar : UserControl
 
         DragDrop.DoDragDrop((DependencyObject)sender, _dragSurface, DragDropEffects.Move);
         _dragSurface = null;
+        e.Handled = true;
+    }
+
+    private void Tab_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = CanDropSurfaceOnTab(sender, e) ? DragDropEffects.Move : DragDropEffects.None;
+        e.Handled = true;
     }
 
     private void Tab_Drop(object sender, DragEventArgs e)
@@ -122,8 +129,24 @@ public partial class SurfaceTabBar : UserControl
         {
             workspace.SelectedSurface = sourceSurface;
             SurfaceOrderChanged?.Invoke();
+            e.Effects = DragDropEffects.Move;
             e.Handled = true;
         }
+    }
+
+    private bool CanDropSurfaceOnTab(object sender, DragEventArgs e)
+    {
+        if (DataContext is not WorkspaceViewModel workspace)
+            return false;
+
+        if ((sender as FrameworkElement)?.DataContext is not SurfaceViewModel targetSurface)
+            return false;
+
+        var sourceSurface = e.Data.GetData(typeof(SurfaceViewModel)) as SurfaceViewModel;
+        return sourceSurface != null &&
+               sourceSurface != targetSurface &&
+               workspace.Surfaces.Contains(sourceSurface) &&
+               workspace.Surfaces.Contains(targetSurface);
     }
 
     private void CloseTab_Click(object sender, RoutedEventArgs e)
