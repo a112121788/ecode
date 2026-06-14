@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <None Include="Fixtures\browser-p0.html" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\scripts\completions\ecode.ps1" Link="scripts\completions\ecode.ps1" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -22,6 +22,7 @@ namespace ECode.Cli;
 /// </summary>
 public static class Program
 {
+    private const string PowerShellCompletionResourceName = "ECode.Cli.Completions.ecode.ps1";
     private static CliGlobalOptions _globalOptions = CliGlobalOptions.DefaultHuman;
 
     public static async Task<int> Main(string[] args)
@@ -68,6 +69,7 @@ public static class Program
                 "reload-config" => await HandleReloadConfig(),
                 "status" => await HandleStatus(),
                 "health" => await HandleHealth(),
+                "completion" => HandleCompletion(args[1..]),
                 "help" or "--help" or "-h" => PrintHelp(),
                 "version" or "--version" or "-v" => PrintVersion(),
                 _ => Error($"Unknown command: {command}"),
@@ -315,6 +317,27 @@ public static class Program
     private static async Task<int> HandleHealth()
     {
         return await SendV2AndPrint("health");
+    }
+
+    private static int HandleCompletion(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            Console.Error.WriteLine("Usage: ecode completion <powershell>");
+            return 1;
+        }
+
+        var shell = args[0].ToLowerInvariant();
+        if (shell is not ("powershell" or "pwsh" or "ps1"))
+            return Error($"Unknown completion shell: {shell}");
+
+        using var stream = typeof(Program).Assembly.GetManifestResourceStream(PowerShellCompletionResourceName);
+        if (stream == null)
+            return Error("PowerShell completion resource is missing.");
+
+        using var reader = new StreamReader(stream);
+        Console.Write(reader.ReadToEnd());
+        return 0;
     }
 
     private static async Task<int> HandleRestoreSession(string[] args)
@@ -701,6 +724,7 @@ public static class Program
 
               status                Show ecode status
               health                Show ecode.v2 health summary
+              completion powershell Print PowerShell completion script
 
             Keyboard Shortcuts (in the app):
               Ctrl+N                New project

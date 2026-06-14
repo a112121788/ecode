@@ -11,4 +11,8 @@
     <ProjectReference Include="..\ECode.Core\ECode.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\scripts\completions\ecode.ps1" LogicalName="ECode.Cli.Completions.ecode.ps1" />
+  </ItemGroup>
+
 </Project>

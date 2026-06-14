@@ -501,6 +501,27 @@ public class ShellSetupTests
     }
 }
 
+public class PowerShellCompletionScriptTests
+{
+    [Fact]
+    public void EcodeCompletionScript_RegistersCommandsAndShortRefs()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "scripts", "completions", "ecode.ps1");
+        var script = File.ReadAllText(path);
+
+        script.Should().Contain("Register-ArgumentCompleter -Native -CommandName ecode");
+        script.Should().Contain("'workspace'");
+        script.Should().Contain("'pane'");
+        script.Should().Contain("'browser'");
+        script.Should().Contain("'completion'");
+        script.Should().Contain("'powershell'");
+        script.Should().Contain("'window:'");
+        script.Should().Contain("'workspace:'");
+        script.Should().Contain("'surface:'");
+        script.Should().Contain("'pane:'");
+    }
+}
+
 /// <summary>
 /// Daemon 消息序列化测试 - 验证 IPC 消息（请求/响应/事件）的 JSON 序列化和反序列化
 /// </summary>
