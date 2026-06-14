@@ -683,6 +683,30 @@ public class DocsSiteTests
         customCommands.Should().Contain("ecode config diagnostics");
         customCommands.Should().Contain("confirm: true");
     }
+
+    [Fact]
+    public void BrowserApiDocs_CoverSurfaceRefsActionsContractsAndUnsupportedMatrix()
+    {
+        var browserApi = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "browser-api.md"));
+
+        browserApi.Should().Contain("ecode browser open");
+        browserApi.Should().Contain("surfaceRef");
+        browserApi.Should().Contain("browser snapshot");
+        browserApi.Should().Contain("--testid");
+        browserApi.Should().Contain("--role");
+        browserApi.Should().Contain("ecode browser click");
+        browserApi.Should().Contain("ecode browser fill");
+        browserApi.Should().Contain("ecode browser hover");
+        browserApi.Should().Contain("ecode browser press");
+        browserApi.Should().Contain("ecode browser eval");
+        browserApi.Should().Contain("ecode browser screenshot");
+        browserApi.Should().Contain("browser.cookies.get");
+        browserApi.Should().Contain("browser.storage.get");
+        browserApi.Should().Contain("browser.console.list");
+        browserApi.Should().Contain("browser.addinitscript");
+        browserApi.Should().Contain("browser.network.route");
+        browserApi.Should().Contain("not_supported");
+    }
 }
 
 public class MsixManifestTests
