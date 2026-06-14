@@ -560,6 +560,24 @@ public class PowerShellCompletionScriptTests
     }
 }
 
+public class InnoSetupScriptTests
+{
+    [Fact]
+    public void EcodeInnoScript_InstallsAppCliAndCleanUninstallOnlyAppDir()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "installer", "ecode.iss");
+        var script = File.ReadAllText(path);
+
+        script.Should().Contain("AppId={{5F31F460-32C4-4B16-BB0A-3B74E5D7E0A1}");
+        script.Should().Contain("Source: \"..\\publish\\ecode-win-x64-sc\\*\"");
+        script.Should().Contain("Source: \"..\\publish\\ecode-cli\\*\"");
+        script.Should().Contain("Name: \"{group}\\ECode\"");
+        script.Should().Contain("Type: filesandordirs; Name: \"{app}\"");
+        script.Should().NotContain("%USERPROFILE%\\.ecode");
+        script.Should().NotContain("{userappdata}\\.ecode");
+    }
+}
+
 public class DoctorTests
 {
     [Fact]

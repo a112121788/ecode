@@ -30,6 +30,7 @@
   <ItemGroup>
     <None Include="Fixtures\browser-p0.html" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\scripts\completions\ecode.ps1" Link="scripts\completions\ecode.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\installer\ecode.iss" Link="installer\ecode.iss" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
