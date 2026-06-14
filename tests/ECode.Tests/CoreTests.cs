@@ -187,6 +187,124 @@ public class NotificationServiceTests
     };
 }
 
+public class NotificationApiServiceTests
+{
+    [Fact]
+    public void NotificationList_FiltersUnreadByWorkspace()
+    {
+        var service = new NotificationService();
+        service.Notifications.Add(CreateNotification("read-target", isRead: true, workspaceId: "workspace-1"));
+        service.Notifications.Add(CreateNotification("unread-target", isRead: false, workspaceId: "workspace-1"));
+        service.Notifications.Add(CreateNotification("unread-other", isRead: false, workspaceId: "workspace-2"));
+        var api = new ECode.Services.NotificationApiService(service);
+
+        var response = api.HandleRequest(CreateV2Request("notification.list", """{"workspaceId":"workspace-1","unreadOnly":true}"""));
+
+        response.Error.Should().BeNull();
+        using var result = ParseResult(response);
+        var notifications = result.RootElement.GetProperty("notifications");
+        notifications.GetArrayLength().Should().Be(1);
+        notifications[0].GetProperty("id").GetString().Should().Be("unread-target");
+        result.RootElement.GetProperty("unread").GetInt32().Should().Be(2);
+    }
+
+    [Fact]
+    public void NotificationReadAndUnread_UpdateState()
+    {
+        var service = new NotificationService();
+        service.Notifications.Add(CreateNotification("target", isRead: false));
+        var api = new ECode.Services.NotificationApiService(service);
+
+        var read = api.HandleRequest(CreateV2Request("notification.read", """{"target":"target"}"""));
+
+        read.Error.Should().BeNull();
+        service.Notifications.Single().IsRead.Should().BeTrue();
+
+        var unread = api.HandleRequest(CreateV2Request("notification.unread", """{"id":"target"}"""));
+
+        unread.Error.Should().BeNull();
+        service.Notifications.Single().IsRead.Should().BeFalse();
+    }
+
+    [Fact]
+    public void NotificationJumpLatest_UsesLatestUnreadAndCallback()
+    {
+        var service = new NotificationService();
+        service.Notifications.Add(CreateNotification("older", isRead: false, timestamp: new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc)));
+        service.Notifications.Add(CreateNotification("latest", isRead: false, timestamp: new DateTime(2026, 1, 1, 11, 0, 0, DateTimeKind.Utc)));
+        string? jumpedId = null;
+        var api = new ECode.Services.NotificationApiService(
+            service,
+            notification =>
+            {
+                jumpedId = notification?.Id;
+                if (notification != null)
+                    service.MarkAsRead(notification.Id);
+                return notification != null;
+            });
+
+        var response = api.HandleRequest(CreateV2Request("notification.jump-latest", "{}"));
+
+        response.Error.Should().BeNull();
+        jumpedId.Should().Be("latest");
+        service.Notifications.Single(n => n.Id == "latest").IsRead.Should().BeTrue();
+        using var result = ParseResult(response);
+        result.RootElement.GetProperty("jumped").GetBoolean().Should().BeTrue();
+        result.RootElement.GetProperty("notification").GetProperty("id").GetString().Should().Be("latest");
+    }
+
+    [Fact]
+    public void NotificationClear_RemovesAllNotifications()
+    {
+        var service = new NotificationService();
+        service.Notifications.Add(CreateNotification("first", isRead: false));
+        service.Notifications.Add(CreateNotification("second", isRead: true));
+        var api = new ECode.Services.NotificationApiService(service);
+
+        var response = api.HandleRequest(CreateV2Request("notification.clear", "{}"));
+
+        response.Error.Should().BeNull();
+        service.Notifications.Should().BeEmpty();
+        using var result = ParseResult(response);
+        result.RootElement.GetProperty("cleared").GetInt32().Should().Be(2);
+    }
+
+    private static V2Request CreateV2Request(string method, string parameters)
+    {
+        return new V2Request
+        {
+            Id = JsonSerializer.SerializeToElement("test-request"),
+            Method = method,
+            Params = JsonDocument.Parse(parameters).RootElement.Clone(),
+        };
+    }
+
+    private static JsonDocument ParseResult(V2Response response)
+    {
+        response.Result.Should().NotBeNull();
+        return JsonDocument.Parse(JsonSerializer.Serialize(response.Result));
+    }
+
+    private static TerminalNotification CreateNotification(
+        string id,
+        bool isRead,
+        DateTime? timestamp = null,
+        string workspaceId = "workspace-1",
+        string surfaceId = "surface-1",
+        string paneId = "pane-1") => new()
+    {
+        Id = id,
+        WorkspaceId = workspaceId,
+        SurfaceId = surfaceId,
+        PaneId = paneId,
+        IsRead = isRead,
+        Title = id,
+        Body = id,
+        Timestamp = timestamp ?? DateTime.UtcNow,
+        Source = NotificationSource.Cli,
+    };
+}
+
 /// <summary>
 /// Daemon 消息序列化测试 - 验证 IPC 消息（请求/响应/事件）的 JSON 序列化和反序列化
 /// </summary>

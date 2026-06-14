@@ -56,6 +56,7 @@ public static class Program
             return command switch
             {
                 "notify" => await HandleNotify(args[1..]),
+                "notification" or "notifications" => await HandleNotification(args[1..]),
                 "window" => await HandleWindow(args[1..]),
                 "workspace" => await HandleWorkspace(args[1..]),
                 "surface" => await HandleSurface(args[1..]),
@@ -99,6 +100,33 @@ public static class Program
         var response = await NamedPipeClient.SendCommand("NOTIFY", cmdArgs);
         Console.WriteLine(response);
         return 0;
+    }
+
+    private static async Task<int> HandleNotification(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            Console.Error.WriteLine("Usage: ecode notification <list|read|unread|jump-latest|clear>");
+            return 1;
+        }
+
+        var subcommand = args[0].ToLowerInvariant();
+        var parsed = ParseArgs(args[1..]);
+        NormalizeNotificationArgs(subcommand, parsed);
+
+        var method = subcommand switch
+        {
+            "list" or "ls" => "notification.list",
+            "read" => "notification.read",
+            "unread" => "notification.unread",
+            "jump-latest" or "jump" => "notification.jump-latest",
+            "clear" => "notification.clear",
+            _ => "",
+        };
+
+        return string.IsNullOrEmpty(method)
+            ? Error($"Unknown notification command: {subcommand}")
+            : await SendV2AndPrint(method, parsed);
     }
 
     private static async Task<int> HandleWindow(string[] args)
@@ -455,6 +483,19 @@ public static class Program
         CopyAlias(args, "workspace-ref", "target");
     }
 
+    private static void NormalizeNotificationArgs(string subcommand, Dictionary<string, string> args)
+    {
+        if (subcommand is "read" or "unread")
+            CopyAlias(args, "_arg0", "target");
+        else if (subcommand is "list" or "ls")
+            CopyAlias(args, "unread", "unreadOnly");
+
+        CopyAlias(args, "notification-id", "target");
+        CopyAlias(args, "workspace", "workspaceId");
+        CopyAlias(args, "surface", "surfaceId");
+        CopyAlias(args, "pane", "paneId");
+    }
+
     private static void NormalizeWindowArgs(string subcommand, Dictionary<string, string> args)
     {
         if (subcommand is "focus" or "close")
@@ -542,6 +583,15 @@ public static class Program
                 --title <text>      Notification title (default: "Terminal")
                 --body <text>       Notification body
                 --subtitle <text>   Notification subtitle
+
+              notification          Manage notifications through ecode.v2
+                list                List notifications
+                  --unread true     Only show unread notifications
+                read <id>           Mark a notification as read
+                  --all true        Mark all notifications as read
+                unread <id>         Mark a notification as unread
+                jump-latest         Jump to latest unread notification
+                clear               Clear all notifications
 
               window                Manage app windows through ecode.v2
                 list                List all open windows

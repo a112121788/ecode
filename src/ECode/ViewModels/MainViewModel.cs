@@ -18,6 +18,7 @@ using PaneV2ApiReadResult = ECode.Services.PaneApiReadResult;
 using PaneV2ApiService = ECode.Services.PaneApiService<ECode.ViewModels.WorkspaceViewModel, ECode.ViewModels.SurfaceViewModel, string>;
 using PaneV2ApiSurface = ECode.Services.PaneApiSurface<ECode.ViewModels.SurfaceViewModel, string>;
 using PaneV2ApiWorkspace = ECode.Services.PaneApiWorkspace<ECode.ViewModels.WorkspaceViewModel, ECode.ViewModels.SurfaceViewModel, string>;
+using NotificationV2ApiService = ECode.Services.NotificationApiService;
 
 namespace ECode.ViewModels;
 
@@ -68,6 +69,7 @@ public partial class MainViewModel : ObservableObject
     private readonly SurfaceV2ApiService _surfaceApiService;
     private readonly WorkspaceV2ApiService _workspaceApiService;
     private readonly PaneV2ApiService _paneApiService;
+    private readonly NotificationV2ApiService _notificationApiService;
 
     public NotificationService NotificationService => _notificationService;
 
@@ -116,6 +118,9 @@ public partial class MainViewModel : ObservableObject
             ResizePaneForV2Api,
             SwapPanesForV2Api,
             ZoomSurfaceForV2Api);
+        _notificationApiService = new NotificationV2ApiService(
+            _notificationService,
+            JumpToNotification);
 
         // 连接命名管道的命令处理程序
         if (App.PipeServer != null)
@@ -567,6 +572,7 @@ public partial class MainViewModel : ObservableObject
                     var method when WorkspaceV2ApiService.CanHandle(method) => _workspaceApiService.HandleRequest(request),
                     var method when SurfaceV2ApiService.CanHandle(method) => _surfaceApiService.HandleRequest(request),
                     var method when PaneV2ApiService.CanHandle(method) => _paneApiService.HandleRequest(request),
+                    var method when NotificationV2ApiService.CanHandle(method) => _notificationApiService.HandleRequest(request),
                     "status" => V2Response.FromResult(request.Id, ParseJsonElement(HandleStatus())),
                     _ => V2Response.FromStableError(
                         request.Id,
