@@ -175,7 +175,7 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M4-C-01` | `ecode browser snapshot/click/fill/eval/screenshot/...` | `ECode.Cli/Program.cs` | E2E smoke：打开 localhost → snapshot → click → fill → eval |
+| `M4-C-01` | `[x]` `ecode browser snapshot/click/fill/eval/screenshot/...` | `ECode.Cli/Program.cs` | E2E smoke：打开 localhost → snapshot → click → fill → eval |
 
 ### 包 D：测试
 

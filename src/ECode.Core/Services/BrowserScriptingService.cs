@@ -321,6 +321,13 @@ public sealed class BrowserScriptingService
         return SurfaceRefPrefix + surfaceId;
     }
 
+    public static IReadOnlyList<BrowserScriptingNode> MatchLocator(
+        BrowserScriptingSnapshot snapshot,
+        BrowserScriptingLocator locator)
+    {
+        return EvaluateLocator(snapshot, locator);
+    }
+
     private static bool TryParseSurfaceRef(string? surfaceRef, out string surfaceId)
     {
         surfaceId = "";

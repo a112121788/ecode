@@ -799,6 +799,37 @@ public class BrowserScriptingServiceTests
     }
 }
 
+public class BrowserScriptingCliCommandTests
+{
+    [Theory]
+    [InlineData("open", BrowserScriptingCliCommands.Open)]
+    [InlineData("new", BrowserScriptingCliCommands.New)]
+    [InlineData("open-split", BrowserScriptingCliCommands.OpenSplit)]
+    [InlineData("snapshot", BrowserScriptingCliCommands.Snapshot)]
+    [InlineData("click", BrowserScriptingCliCommands.Click)]
+    [InlineData("fill", BrowserScriptingCliCommands.Fill)]
+    [InlineData("hover", BrowserScriptingCliCommands.Hover)]
+    [InlineData("press", BrowserScriptingCliCommands.Press)]
+    [InlineData("eval", BrowserScriptingCliCommands.Eval)]
+    [InlineData("screenshot", BrowserScriptingCliCommands.Screenshot)]
+    public void TryResolve_MapsBrowserSubcommandsToPipeCommands(string subcommand, string expected)
+    {
+        var ok = BrowserScriptingCliCommands.TryResolve(subcommand, out var pipeCommand);
+
+        ok.Should().BeTrue();
+        pipeCommand.Should().Be(expected);
+    }
+
+    [Fact]
+    public void TryResolve_RejectsUnknownBrowserSubcommand()
+    {
+        var ok = BrowserScriptingCliCommands.TryResolve("trace", out var pipeCommand);
+
+        ok.Should().BeFalse();
+        pipeCommand.Should().BeEmpty();
+    }
+}
+
 /// <summary>
 /// 终端环境变量测试 - 验证启动 shell 前注入 ecode 上下文变量。
 /// </summary>

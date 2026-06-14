@@ -5,6 +5,7 @@ using System.Windows.Media;
 using ECode.Core.Models;
 using ECode.Core.Config;
 using ECode.Core.Terminal;
+using ECode.Services;
 using ECode.ViewModels;
 using ECode.Views;
 
@@ -41,6 +42,7 @@ public class SplitPaneContainer : ContentControl
         if (e.OldValue is SurfaceViewModel oldSurface)
         {
             oldSurface.PropertyChanged -= OnSurfacePropertyChanged;
+            BrowserScriptingRuntime.UnregisterSurface(oldSurface.Surface.Id);
         }
 
         // 切换 Surface/项目时清除终端缓存
@@ -131,6 +133,9 @@ public class SplitPaneContainer : ContentControl
     private void Rebuild()
     {
         if (_surface == null) return;
+
+        if (_surface.Surface.Kind == SurfaceKind.Browser)
+            BrowserScriptingRuntime.UnregisterSurface(_surface.Surface.Id);
 
         // 缩放模式：仅全尺寸显示聚焦的面板
         if (_surface.IsZoomed && _surface.FocusedPaneId != null)
@@ -548,6 +553,8 @@ public class SplitPaneContainer : ContentControl
             browser.Navigate(string.IsNullOrWhiteSpace(_surface.Surface.BrowserUrl)
                 ? "about:blank"
                 : _surface.Surface.BrowserUrl);
+
+        BrowserScriptingRuntime.Register(_surface.Surface.Id, paneId, browser);
 
         var container = new Border
         {

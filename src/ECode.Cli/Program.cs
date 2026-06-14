@@ -178,15 +178,11 @@ public static class Program
 
         var subcommand = args[0].ToLowerInvariant();
         var parsed = ParseArgs(args[1..]);
-        NormalizeBrowserArgs(parsed);
+        NormalizeBrowserArgs(subcommand, parsed);
 
-        return subcommand switch
-        {
-            "open" => await SendAndPrint("BROWSER.OPEN", parsed),
-            "new" => await SendAndPrint("BROWSER.NEW", parsed),
-            "open-split" or "split" => await SendAndPrint("BROWSER.OPEN_SPLIT", parsed),
-            _ => Error($"Unknown browser command: {subcommand}"),
-        };
+        return BrowserScriptingCliCommands.TryResolve(subcommand, out var pipeCommand)
+            ? await SendAndPrint(pipeCommand, parsed)
+            : Error($"Unknown browser command: {subcommand}");
     }
 
     private static async Task<int> HandleStatus()
@@ -278,9 +274,24 @@ public static class Program
         CopyAlias(args, "cwd", "workingDirectory");
     }
 
-    private static void NormalizeBrowserArgs(Dictionary<string, string> args)
+    private static void NormalizeBrowserArgs(string subcommand, Dictionary<string, string> args)
     {
-        CopyAlias(args, "_arg0", "url");
+        if (subcommand is "open" or "new" or "open-split" or "split")
+            CopyAlias(args, "_arg0", "url");
+        else if (subcommand is "eval")
+            CopyAlias(args, "_arg0", "script");
+        else if (subcommand is "fill")
+        {
+            CopyAlias(args, "_arg0", "testid");
+            CopyAlias(args, "_arg1", "value");
+        }
+        else if (subcommand is "click" or "hover" or "press")
+            CopyAlias(args, "_arg0", "testid");
+
+        CopyAlias(args, "surface-ref", "surfaceRef");
+        CopyAlias(args, "surface-id", "surfaceId");
+        CopyAlias(args, "test-id", "testid");
+        CopyAlias(args, "testId", "testid");
         CopyAlias(args, "workspace", "workspaceName");
         CopyAlias(args, "surface", "surfaceName");
     }
@@ -341,6 +352,12 @@ public static class Program
                 new <url>           Create a new browser surface
                 open-split <url>    v1 compatibility entry; opens a browser surface
                   --direction <dir> right | down (reserved for mixed-pane support)
+                snapshot            Print accessibility snapshot for a browser surface
+                click               Click by --testid, --text, or --role [--name]
+                fill                Fill by --testid, --text, or --role [--value <text>]
+                eval <script>       Execute JavaScript in the browser surface
+                screenshot          Capture PNG screenshot as base64 JSON
+                  --surfaceRef <ref> Browser surface ref returned by open/new
 
               reload-config         Reload ecode.json commands/actions
 

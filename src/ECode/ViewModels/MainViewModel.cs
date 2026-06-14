@@ -4,8 +4,10 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ECode.Core.IPC;
+using ECode.Core.IPC.V2;
 using ECode.Core.Models;
 using ECode.Core.Services;
+using BrowserScriptingRuntime = ECode.Services.BrowserScriptingRuntime;
 
 namespace ECode.ViewModels;
 
@@ -38,6 +40,10 @@ public partial class MainViewModel : ObservableObject
     private bool _compactSidebar;
 
     private double _sidebarWidthBeforeCompact = 280;
+    private static readonly JsonSerializerOptions BrowserScriptingJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
 
     public bool IsSidebarExpanded => !CompactSidebar;
 
@@ -48,6 +54,7 @@ public partial class MainViewModel : ObservableObject
     private int _totalUnreadCount;
 
     private readonly NotificationService _notificationService;
+    private readonly BrowserScriptingService _browserScriptingService;
 
     public NotificationService NotificationService => _notificationService;
 
@@ -62,6 +69,17 @@ public partial class MainViewModel : ObservableObject
             TotalUnreadCount = _notificationService.UnreadCount;
             UpdateWorkspaceNotificationCounts();
         };
+
+        _browserScriptingService = new BrowserScriptingService(
+            () => Workspaces.SelectMany(workspace => workspace.Surfaces.Select(surface =>
+                new BrowserScriptingSurfaceDescriptor(
+                    WorkspaceId: workspace.Workspace.Id,
+                    WorkspaceName: workspace.Name,
+                    SurfaceId: surface.Surface.Id,
+                    SurfaceName: surface.Name,
+                    Kind: surface.Surface.Kind,
+                    Url: surface.Surface.BrowserUrl,
+                    Title: surface.Surface.BrowserTitle))));
 
         // 连接命名管道的命令处理程序
         if (App.PipeServer != null)
@@ -461,6 +479,9 @@ public partial class MainViewModel : ObservableObject
 
     private async Task<string> HandlePipeCommand(string command, Dictionary<string, string> args)
     {
+        if (IsBrowserScriptingCommand(command))
+            return await await Application.Current.Dispatcher.InvokeAsync(() => HandleBrowserScriptingCommandAsync(command, args));
+
         return await Application.Current.Dispatcher.InvokeAsync(() =>
         {
             return command switch
@@ -491,6 +512,18 @@ public partial class MainViewModel : ObservableObject
         });
     }
 
+    private static bool IsBrowserScriptingCommand(string command)
+    {
+        return command is
+            BrowserScriptingCliCommands.Snapshot or
+            BrowserScriptingCliCommands.Click or
+            BrowserScriptingCliCommands.Fill or
+            BrowserScriptingCliCommands.Hover or
+            BrowserScriptingCliCommands.Press or
+            BrowserScriptingCliCommands.Eval or
+            BrowserScriptingCliCommands.Screenshot;
+    }
+
     private string HandleConfigReload()
     {
         return ConfigReloadRequested?.Invoke()
@@ -501,6 +534,227 @@ public partial class MainViewModel : ObservableObject
                 diagnostics = Array.Empty<object>(),
                 note = "No config reload handler registered.",
             });
+    }
+
+    private async Task<string> HandleBrowserScriptingCommandAsync(string command, Dictionary<string, string> args)
+    {
+        if (!TryGetBrowserSurfaceRef(args, out var surfaceRef, out var refError))
+            return SerializeBrowserScriptingError(refError!, null);
+
+        var resolved = _browserScriptingService.ResolveSurfaceRef(surfaceRef);
+        if (!resolved.Success)
+            return SerializeBrowserScriptingError(resolved.Error!, resolved.Diagnostics);
+
+        if (command == BrowserScriptingCliCommands.Snapshot)
+        {
+            var snapshot = await BrowserScriptingRuntime.GetSnapshotAsync(resolved.Surface!.SurfaceId);
+            if (snapshot == null)
+            {
+                return SerializeBrowserScriptingError(
+                    new V2Error(V2ErrorCodes.NotFound, $"Browser snapshot not available: {resolved.Surface.SurfaceId}"),
+                    resolved.Diagnostics);
+            }
+
+            return SerializeBrowserScriptingSuccess(new
+            {
+                resolved.Diagnostics.SurfaceRef,
+                resolved.Surface.SurfaceId,
+                snapshot,
+            });
+        }
+
+        if (command is BrowserScriptingCliCommands.Eval or BrowserScriptingCliCommands.Screenshot)
+        {
+            var script = GetArg(args, "script", "_arg0") ?? "";
+            if (command == BrowserScriptingCliCommands.Eval && string.IsNullOrWhiteSpace(script))
+            {
+                return SerializeBrowserScriptingError(
+                    new V2Error(V2ErrorCodes.InvalidRef, "Missing required argument: script"),
+                    resolved.Diagnostics);
+            }
+
+            var action = command == BrowserScriptingCliCommands.Eval
+                ? BrowserScriptingActionKind.Eval
+                : BrowserScriptingActionKind.Screenshot;
+            var outcome = await BrowserScriptingRuntime.ExecuteActionAsync(new BrowserScriptingActionRequest(
+                SurfaceId: resolved.Surface!.SurfaceId,
+                Action: action,
+                Node: null,
+                Value: null,
+                Key: null,
+                Script: script));
+
+            return SerializeBrowserActionOutcome(outcome, resolved.Diagnostics);
+        }
+
+        if (!TryCreateBrowserLocator(args, out var locator, out var locatorError))
+            return SerializeBrowserScriptingError(locatorError!, resolved.Diagnostics);
+
+        var liveSnapshot = await BrowserScriptingRuntime.GetSnapshotAsync(resolved.Surface!.SurfaceId);
+        if (liveSnapshot == null)
+        {
+            return SerializeBrowserScriptingError(
+                new V2Error(V2ErrorCodes.NotFound, $"Browser snapshot not available: {resolved.Surface.SurfaceId}"),
+                resolved.Diagnostics);
+        }
+
+        var node = BrowserScriptingService
+            .MatchLocator(liveSnapshot, BrowserScriptingLocator.First(locator!))
+            .FirstOrDefault();
+        if (node == null)
+        {
+            return SerializeBrowserScriptingError(
+                new V2Error(V2ErrorCodes.NotFound, "Locator did not match any node."),
+                resolved.Diagnostics);
+        }
+
+        var kind = command switch
+        {
+            BrowserScriptingCliCommands.Click => BrowserScriptingActionKind.Click,
+            BrowserScriptingCliCommands.Fill => BrowserScriptingActionKind.Fill,
+            BrowserScriptingCliCommands.Hover => BrowserScriptingActionKind.Hover,
+            BrowserScriptingCliCommands.Press => BrowserScriptingActionKind.Press,
+            _ => BrowserScriptingActionKind.Click,
+        };
+
+        var value = args.ContainsKey("value")
+            ? args["value"]
+            : GetArg(args, "_arg1");
+        if (command == BrowserScriptingCliCommands.Fill && value == null)
+        {
+            return SerializeBrowserScriptingError(
+                new V2Error(V2ErrorCodes.InvalidRef, "Missing required argument: value"),
+                resolved.Diagnostics);
+        }
+
+        var key = GetArg(args, "key", "_arg1") ?? "Enter";
+        var nodeOutcome = await BrowserScriptingRuntime.ExecuteActionAsync(new BrowserScriptingActionRequest(
+            SurfaceId: resolved.Surface!.SurfaceId,
+            Action: kind,
+            Node: node,
+            Value: value,
+            Key: key,
+            Script: null));
+
+        return SerializeBrowserActionOutcome(nodeOutcome, resolved.Diagnostics);
+    }
+
+    private bool TryGetBrowserSurfaceRef(
+        Dictionary<string, string> args,
+        out string surfaceRef,
+        out V2Error? error)
+    {
+        surfaceRef = GetArg(args, "surfaceRef") ?? "";
+        error = null;
+        if (!string.IsNullOrWhiteSpace(surfaceRef))
+            return true;
+
+        if (!TryResolveWorkspace(args, out var workspace, out var workspaceError))
+        {
+            error = new V2Error(V2ErrorCodes.NotFound, workspaceError);
+            return false;
+        }
+
+        SurfaceViewModel? surface = null;
+        if (HasSurfaceSelector(args))
+        {
+            if (!TryResolveSurface(workspace, args, out var resolvedSurface, out var surfaceError))
+            {
+                error = new V2Error(V2ErrorCodes.NotFound, surfaceError);
+                return false;
+            }
+
+            surface = resolvedSurface;
+        }
+        else
+        {
+            surface = workspace.SelectedSurface?.Surface.Kind == SurfaceKind.Browser
+                ? workspace.SelectedSurface
+                : workspace.Surfaces.FirstOrDefault(item => item.Surface.Kind == SurfaceKind.Browser);
+        }
+
+        if (surface == null)
+        {
+            error = new V2Error(V2ErrorCodes.NotFound, "No browser surface available.");
+            return false;
+        }
+
+        if (surface.Surface.Kind != SurfaceKind.Browser)
+        {
+            error = new V2Error(V2ErrorCodes.NotSupported, $"Surface is not a browser surface: {surface.Surface.Id}");
+            return false;
+        }
+
+        surfaceRef = TrackBrowserSurface(workspace, surface);
+        return true;
+    }
+
+    private static bool TryCreateBrowserLocator(
+        Dictionary<string, string> args,
+        out BrowserScriptingLocator? locator,
+        out V2Error? error)
+    {
+        locator = null;
+        error = null;
+
+        if (TryGetNonEmpty(args, "testid", out var testId) || TryGetNonEmpty(args, "testId", out testId))
+        {
+            locator = BrowserScriptingLocator.TestId(testId);
+            return true;
+        }
+
+        if (TryGetNonEmpty(args, "text", out var text))
+        {
+            locator = BrowserScriptingLocator.Text(text);
+            return true;
+        }
+
+        if (TryGetNonEmpty(args, "role", out var role))
+        {
+            locator = BrowserScriptingLocator.Role(role, GetArg(args, "name"));
+            return true;
+        }
+
+        error = new V2Error(V2ErrorCodes.InvalidRef, "Missing locator. Use --testid, --text, or --role.");
+        return false;
+    }
+
+    private static bool TryGetNonEmpty(Dictionary<string, string> args, string key, out string value)
+    {
+        value = "";
+        if (!args.TryGetValue(key, out var raw) || string.IsNullOrWhiteSpace(raw))
+            return false;
+
+        value = raw;
+        return true;
+    }
+
+    private static string SerializeBrowserActionOutcome(
+        BrowserScriptingActionOutcome outcome,
+        BrowserScriptingDiagnostics diagnostics)
+    {
+        return outcome.Success
+            ? SerializeBrowserScriptingSuccess(new { value = outcome.Value, diagnostics })
+            : SerializeBrowserScriptingError(outcome.Error!, diagnostics);
+    }
+
+    private static string SerializeBrowserScriptingSuccess(object payload)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            ok = true,
+            result = payload,
+        }, BrowserScriptingJsonOptions);
+    }
+
+    private static string SerializeBrowserScriptingError(V2Error error, BrowserScriptingDiagnostics? diagnostics)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            ok = false,
+            error,
+            diagnostics,
+        }, BrowserScriptingJsonOptions);
     }
 
     private string HandleNotifyCommand(Dictionary<string, string> args)
@@ -910,13 +1164,14 @@ public partial class MainViewModel : ObservableObject
             direction: GetArg(args, "direction") ?? "right");
     }
 
-    private static string CreateBrowserResponse(
+    private string CreateBrowserResponse(
         WorkspaceViewModel workspace,
         SurfaceViewModel surface,
         bool created,
         string? fallbackMode,
         string? direction = null)
     {
+        var surfaceRef = TrackBrowserSurface(workspace, surface);
         return JsonSerializer.Serialize(new
         {
             ok = true,
@@ -926,11 +1181,24 @@ public partial class MainViewModel : ObservableObject
             workspaceId = workspace.Workspace.Id,
             workspaceName = workspace.Name,
             surfaceId = surface.Surface.Id,
+            surfaceRef,
             surfaceName = surface.Name,
             kind = surface.Surface.Kind.ToString(),
             url = surface.Surface.BrowserUrl,
             title = surface.Surface.BrowserTitle,
         });
+    }
+
+    private string TrackBrowserSurface(WorkspaceViewModel workspace, SurfaceViewModel surface)
+    {
+        return _browserScriptingService.TrackSurface(new BrowserScriptingSurfaceDescriptor(
+            WorkspaceId: workspace.Workspace.Id,
+            WorkspaceName: workspace.Name,
+            SurfaceId: surface.Surface.Id,
+            SurfaceName: surface.Name,
+            Kind: surface.Surface.Kind,
+            Url: surface.Surface.BrowserUrl,
+            Title: surface.Surface.BrowserTitle));
     }
 
     private string HandleSplit(SplitDirection direction)
