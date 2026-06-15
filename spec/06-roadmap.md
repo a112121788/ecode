@@ -39,7 +39,7 @@ ECode 的北极星是：**让 Windows 上的多项目终端、浏览器预览、
 | Terminal / Layout | ConPTY、scrollback、分屏树、Workspace / Surface / Pane 已成型 | `01-architecture.md`、`02-modules.md` |
 | Notification | OSC 通知、未读态、跳转、面板、Toast 基础可用 | `01-architecture.md`、`05-cli-commands.md` |
 | Config | `.ecode/ecode.json` commands/actions、reload、diagnostics 已可用 | `03-data-and-ipc.md`、`05-cli-commands.md` |
-| Restore | `session.json`、`resume.json`、trusted binding、安全过滤已可用 | `03-data-and-ipc.md` |
+| Restore | `session.json`、`resume.json`、trusted binding、安全过滤已可用；关闭窗口后自动接回仍在 `SES-01` 补齐 | `03-data-and-ipc.md`、`07-implementation-backlog.md` |
 | Browser | Browser Surface、WebView2 友好提示、CLI open、脚本化 API 已成型 | `03-data-and-ipc.md`、`05-cli-commands.md` |
 | v2 Automation | `ecode.v2`、短引用、多窗口、pane/workspace/surface/notification/config/status API 已成型 | `03-data-and-ipc.md`、`05-cli-commands.md` |
 | Delivery | CI、release workflow、docs、CONTRIBUTING、SECURITY、安装更新路径已具备 | `04-build-deploy.md`、`docs/` |
@@ -159,6 +159,7 @@ North Star: Windows SuperTerminal for auditable AI-assisted development
 | R-03 | 文档与源码漂移 | Medium | `07` ready 项指向不存在文件或旧命令 | 每轮 Intake 先 `rg` 真实文件 |
 | R-04 | 不可信命令被自动执行 | High | `ecode.json` / resume / setup 触发未确认命令 | 默认 confirm；敏感操作停 loop |
 | R-05 | Backlog 只剩大块史诗 | Medium | ready 队列为空或每项超过 2 天 | planning 时先拆到 0.5-1 天 |
+| R-06 | 后台终端保活造成资源残留 | High | 用户关闭 ECode 后仍有 Codex / shell / dev server 在跑 | `SES-01` 必须提供状态可见性、全部终止入口和可回滚设置 |
 
 ---
 

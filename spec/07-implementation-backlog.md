@@ -46,6 +46,19 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
+### `SES-01` - ECode 重开自动接回后台终端进程
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P0 |
+| Outcome | 用户关闭 ECode 窗口后，在同一 Windows 登录会话内重新打开，原 Codex / PowerShell 等终端进程仍由 daemon 托管，终端自动 attach 到原会话并可继续输入输出 |
+| Scope | 首个切片覆盖“正常关闭主窗口 -> daemon 继续托管终端 -> 重开自动 attach”；涉及 `src/ECode` 关闭/启动流程、`src/ECode.Core` daemon session mapping、`session.json` pane/session id 持久化、状态可见性与“终止全部保留会话”入口；不覆盖 Windows 重启/关机后的进程存活，不做命令回放 |
+| 关联 | `01-architecture.md` §6.1/§6.4、`03-data-and-ipc.md` §3.8/§4、`docs/session-restore.md` |
+| 验收 | Windows 手测：在 pane 启动 `pwsh` / Codex，关闭 ECode，确认后台会话未退出；重开 ECode 后恢复 workspace/surface/pane 布局并 attach 到同一进程，`pane.write/read` 可继续交互；无重复 shell；提供可见状态和“终止全部保留会话”入口；daemon 不可达时展示过期/已断开并回退到快照，不静默执行命令 |
+| 风险 | 后台进程残留、资源泄漏、用户误以为关闭等于退出、Agent 长任务继续产生副作用、pane id / session id 映射过期 |
+| 回滚 | 设置项或命令禁用默认保活，关闭窗口恢复为终止本地会话 + 仅保存快照；必要时清理 daemon 会话并保留 `session.json` 快照恢复 |
+
 ### `AGL-01` - 增加 spec/docs 链接检查脚本
 
 | 字段 | 内容 |
