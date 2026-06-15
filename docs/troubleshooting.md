@@ -31,6 +31,16 @@ ecode --json doctor
 Get-Content "$env:USERPROFILE\.ecode\daemon-debug.log" -Tail 120
 ```
 
+## 安装后启动出现 `VerifyAccess` 严重错误
+
+症状：Inno Setup 安装后启动主程序弹出 `调用线程无法访问此对象，因为另一个线程拥有该对象`，堆栈包含 `TerminalControl.OnRedraw`、`UpdateImeProxyPosition`、`TerminalSession.ReadLoop`。
+
+处理：
+
+1. 升级到包含 WPF Dispatcher 调度修复的版本。
+2. 如果仍复现，确认是否使用旧安装目录中的 `ecode-app.exe`，并重新安装最新包。
+3. 附上弹窗堆栈、`ecode version`、`ecode doctor` 和 `daemon-debug.log` 尾部日志提交 issue。
+
 ## `daemon-debug.log` 字段
 
 重点关注：

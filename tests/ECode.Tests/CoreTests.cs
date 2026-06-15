@@ -661,6 +661,22 @@ public class SmokeWorkflowTests
     }
 }
 
+public class TerminalControlSourceTests
+{
+    [Fact]
+    public void TerminalControl_MarshalsSessionEventsToDispatcher()
+    {
+        var source = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECode", "Controls", "TerminalControl.cs"));
+
+        source.Should().Contain("private int _redrawQueued;");
+        source.Should().Contain("if (!Dispatcher.CheckAccess())");
+        source.Should().Contain("Dispatcher.BeginInvoke(() =>");
+        source.Should().Contain("OnRedraw();");
+        source.Should().Contain("DispatchIfRequired(OnBell");
+        source.Should().Contain("DispatchIfRequired(UpdateImeProxyPosition");
+    }
+}
+
 public class PerfBudgetScriptTests
 {
     [Fact]

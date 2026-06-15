@@ -40,6 +40,7 @@ public class TerminalControl : FrameworkElement
     private bool _followOutput = true;
     private int _lastScrollbackCount;
     private int _renderQueued;
+    private int _redrawQueued;
     private string _cursorStyle = "bar";
     private bool _cursorBlink = true;
 
@@ -242,6 +243,22 @@ public class TerminalControl : FrameworkElement
 
     private void OnRedraw()
     {
+        if (!Dispatcher.CheckAccess())
+        {
+            if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+                return;
+
+            if (Interlocked.Exchange(ref _redrawQueued, 1) == 1)
+                return;
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                Interlocked.Exchange(ref _redrawQueued, 0);
+                OnRedraw();
+            }, System.Windows.Threading.DispatcherPriority.Background);
+            return;
+        }
+
         if (_session == null)
             return;
 
@@ -272,6 +289,9 @@ public class TerminalControl : FrameworkElement
 
     private void OnBell()
     {
+        if (DispatchIfRequired(OnBell, System.Windows.Threading.DispatcherPriority.Render))
+            return;
+
         _bellFlashUntil = DateTime.UtcNow.AddMilliseconds(150);
         RequestRender(System.Windows.Threading.DispatcherPriority.Render);
 
@@ -369,6 +389,18 @@ public class TerminalControl : FrameworkElement
             Interlocked.Exchange(ref _renderQueued, 0);
             Render();
         }, priority);
+    }
+
+    private bool DispatchIfRequired(Action action, System.Windows.Threading.DispatcherPriority priority)
+    {
+        if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+            return true;
+
+        if (Dispatcher.CheckAccess())
+            return false;
+
+        Dispatcher.BeginInvoke(action, priority);
+        return true;
     }
 
     // --- 布局 ---
@@ -2166,6 +2198,9 @@ public class TerminalControl : FrameworkElement
     private void UpdateImeProxyPosition()
     {
         if (_imeProxy == null || _session == null) return;
+        if (DispatchIfRequired(UpdateImeProxyPosition, System.Windows.Threading.DispatcherPriority.Background))
+            return;
+
         InvalidateArrange(); // 触发重新布局
     }
 
