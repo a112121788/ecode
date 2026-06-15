@@ -270,7 +270,7 @@
 |---|---|---|---|
 | `M7-C-01` | [x] P0/P1 bug 收敛（详见 `06-roadmap.md` §8） | `docs/release-readiness.md` | P0=0、P1<=3 且有 workaround |
 | `M7-C-02` | [x] 1.0 发布说明（GitHub Release） | `docs/release-notes/1.0.0.md` | 用户可读 |
-| `M7-C-03` | [~] 公开 Roadmap 页面 | `docs/roadmap.md` | 与 `06-roadmap.md` 一致 |
+| `M7-C-03` | [x] 公开 Roadmap 页面 | `docs/roadmap.md` | 与 `06-roadmap.md` 一致 |
 
 ---
 

@@ -709,7 +709,7 @@ public class DocsSiteTests
         config.Should().Contain("provider: 'local'");
         config.Should().Contain("link: '/getting-started'");
 
-        foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "custom-commands.md", "session-restore.md", "cli.md", "browser-api.md", "troubleshooting.md", "release-readiness.md" })
+        foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "custom-commands.md", "session-restore.md", "cli.md", "browser-api.md", "troubleshooting.md", "release-readiness.md", "roadmap.md" })
             File.Exists(Path.Combine(docsRoot, page)).Should().BeTrue(page);
         File.Exists(Path.Combine(docsRoot, "release-notes", "1.0.0.md")).Should().BeTrue();
     }
@@ -885,6 +885,28 @@ public class DocsSiteTests
         notes.Should().Contain("Known Limits");
         notes.Should().Contain("P0 = 0 and P1 <= 3");
         notes.Should().Contain("Troubleshooting");
+    }
+
+    [Fact]
+    public void RoadmapDocs_CoverPublicVersionLineMilestonesAndReleaseGate()
+    {
+        var config = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", ".vitepress", "config.mts"));
+        var index = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "index.md"));
+        var roadmap = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "roadmap.md"));
+
+        config.Should().Contain("link: '/roadmap'");
+        index.Should().Contain("Release Readiness");
+        roadmap.Should().Contain("This public roadmap mirrors the stable portions of `spec/06-roadmap.md`");
+        roadmap.Should().Contain("## Version Line");
+        roadmap.Should().Contain("| `0.1.x` | Engineering baseline");
+        roadmap.Should().Contain("| `1.0.0` | Stable Windows release");
+        roadmap.Should().Contain("### M0 - Engineering Baseline");
+        roadmap.Should().Contain("### M7 - Documentation, Community, And 1.0");
+        roadmap.Should().Contain("## 1.0 Gate");
+        roadmap.Should().Contain("P0 bug count = 0");
+        roadmap.Should().Contain("P1 bug count <= 3");
+        roadmap.Should().Contain("%USERPROFILE%\\.ecode");
+        roadmap.Should().Contain("[Release Readiness](./release-readiness.md)");
     }
 
     [Fact]
