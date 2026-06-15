@@ -55,6 +55,19 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
+### `NAM-01` - 将产品与代码命名统一为 ECodex
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | 用户、维护者和发布产物看到的品牌统一为 `ECodex`，代码项目 / namespace / XAML 类型命名也同步使用 `ECodex`，避免 `ECodeX` 与 `ecodex` 混用造成认知和维护成本 |
+| Scope | 将用户可见文案、README/docs/spec/历史文档、安装器显示名、solution/project/folder 名、C# namespace、XAML `x:Class`、资源 key 与测试命名中的 `ECodeX` 调整为 `ECodex`；保留协议、命令、文件名、包名、数据目录和配置里的全小写 `ecodex`，例如 `ecodex.exe`、`ecodex.json`、`ecodex-daemon`、管道名与 `%USERPROFILE%\.ecodex`；不改变功能行为、兼容策略或发布产物语义 |
+| 关联 | `README.md`、`ECodeX.sln`、`src/ECodeX*`、`tests/ECodeX*`、`installer/`、`docs/`、`spec/` |
+| 验收 | case-sensitive 搜索旧品牌拼写只剩必要兼容说明或无命中；`.\.dotnet\dotnet.exe build ECodex.sln -c Debug` 通过；关键测试项目可运行；`pwsh ./scripts/check-doc-links.ps1` 通过；安装器 / UI 文案中的产品名显示为 `ECodex`；全小写 `ecodex` 命令、配置和数据路径保持不变 |
+| 风险 | Windows 文件系统上的仅大小写 / 近似大小写重命名可能需要两阶段 `git mv`；solution、csproj、XAML `x:Class` 与 namespace 不一致会导致构建失败；历史文档大范围替换可能误改兼容协议说明；安装包升级识别不应因显示名变化破坏现有用户数据 |
+| 回滚 | 以单独命名变更提交回滚；若实现阶段分多步，先回滚 solution/project/namespace，再回滚文档和安装器文案；保留全小写 `ecodex` 兼容项不参与回滚 |
+
 ### `PKG-02` - Inno 安装与卸载向导中文化
 
 | 字段 | 内容 |
