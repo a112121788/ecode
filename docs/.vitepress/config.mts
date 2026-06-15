@@ -2,50 +2,50 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'ECode',
-  description: 'Windows-native SuperTerminal documentation',
+  description: 'Windows 原生 SuperTerminal 文档',
   cleanUrls: true,
   lastUpdated: true,
   themeConfig: {
     logo: '/app-icon.png',
     nav: [
-      { text: 'Guide', link: '/getting-started' },
+      { text: '指南', link: '/getting-started' },
       { text: 'CLI', link: '/cli' },
-      { text: 'API', link: '/browser-api' },
-      { text: 'Roadmap', link: '/roadmap' }
+      { text: 'Browser API', link: '/browser-api' },
+      { text: '路线图', link: '/roadmap' }
     ],
     sidebar: [
       {
-        text: 'Start',
+        text: '开始',
         items: [
-          { text: 'Overview', link: '/' },
-          { text: 'Installation', link: '/installation' },
-          { text: 'Getting Started', link: '/getting-started' },
-          { text: 'Keyboard Shortcuts', link: '/keyboard-shortcuts' }
+          { text: '概览', link: '/' },
+          { text: '安装', link: '/installation' },
+          { text: '快速上手', link: '/getting-started' },
+          { text: '快捷键', link: '/keyboard-shortcuts' }
         ]
       },
       {
-        text: 'Configure',
+        text: '配置',
         items: [
-          { text: 'Configuration', link: '/configuration' },
-          { text: 'Custom Commands', link: '/custom-commands' },
-          { text: 'Session Restore', link: '/session-restore' }
+          { text: '配置说明', link: '/configuration' },
+          { text: '自定义命令', link: '/custom-commands' },
+          { text: '会话恢复', link: '/session-restore' }
         ]
       },
       {
-        text: 'Automate',
+        text: '自动化',
         items: [
           { text: 'Browser API', link: '/browser-api' },
-          { text: 'CLI Reference', link: '/cli' }
+          { text: 'CLI 参考', link: '/cli' }
         ]
       },
       {
-        text: 'Operate',
+        text: '运维',
         items: [
-          { text: 'Troubleshooting', link: '/troubleshooting' },
-          { text: 'Release Readiness', link: '/release-readiness' },
-          { text: 'Release Notes', link: '/release-notes/1.0.0' },
-          { text: 'Architecture', link: '/architecture' },
-          { text: 'Roadmap', link: '/roadmap' }
+          { text: '故障排查', link: '/troubleshooting' },
+          { text: '发布就绪', link: '/release-readiness' },
+          { text: '发布说明', link: '/release-notes/1.0.0' },
+          { text: '架构概览', link: '/architecture' },
+          { text: '路线图', link: '/roadmap' }
         ]
       }
     ],
@@ -53,7 +53,7 @@ export default defineConfig({
       provider: 'local'
     },
     footer: {
-      message: 'Released under the MIT License.',
+      message: '基于 MIT License 发布。',
       copyright: 'Copyright (c) ECode contributors'
     }
   }

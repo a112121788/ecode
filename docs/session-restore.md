@@ -1,61 +1,77 @@
-# Session Restore
+# 会话恢复
 
-ECode restores app-owned state automatically and uses explicit resume bindings for commands that need to be run after a restart. It does not checkpoint arbitrary live processes. A resume command only runs when the user chooses it or when a trusted binding is allowed to auto-run.
+ECode 会保存窗口、Workspace、Surface、Pane 布局，以及终端与 Browser Surface 的关键状态。目标是在重启后尽量恢复工作上下文，同时避免自动执行不可信命令。
 
-## Runtime Files
+## 运行时文件
 
-| File | Purpose |
+| 文件 | 说明 |
 |---|---|
-| `%USERPROFILE%\.ecode\session.json` | Window/workspace/surface layout, terminal pane snapshots, and Browser surface metadata. |
-| `%USERPROFILE%\.ecode\resume.json` | Per-pane resume commands and trust metadata. |
-| `%USERPROFILE%\.ecode\logs\` | Command and transcript logs captured around close/clear events. |
+| `%USERPROFILE%\.ecode\session.json` | Window / Workspace / Surface 布局、terminal pane snapshots、Browser surface metadata。 |
+| `%USERPROFILE%\.ecode\resume.json` | tmux、agent、shell 等恢复绑定。 |
+| `%USERPROFILE%\.ecode\daemon-debug.log` | 恢复、attach、daemon 与 IPC 诊断日志。 |
 
-These files are human-readable JSON and are not removed automatically by installers or uninstallers.
+## `session.json`
 
-## What Session State Restores
+`session.json` 保存：
 
-`session.json` is app-owned state. It is saved best-effort and loaded on startup.
+- Workspace 名称、顺序、选中项。
+- Surface 标题、类型、顺序、选中项。
+- Pane 分屏树、大小比例、focused pane。
+- `paneSnapshots`：cwd、shell、命令历史、终端 buffer snapshot。
+- Browser Surface：`kind`、`browserUrl`、`browserTitle`、`browserHistory`。
 
-Important fields:
+示意：
 
-| Field | Description |
-|---|---|
-| `version` | Session file version. Current value is `1`. |
-| `selectedWorkspaceIndex` | Last selected workspace. |
-| `window` | Window bounds, maximized state, sidebar width/visibility, compact sidebar flag. |
-| `workspaces[]` | Workspace id, name, icon, accent color, working directory, selected surface. |
-| `workspaces[].surfaces[]` | Surface id, name, kind, split tree, focused pane, and pane metadata. |
-| `kind` | `Terminal` or `Browser`. Older files default to `Terminal`. |
-| `browserUrl` / `browserTitle` / `browserHistory` | Browser surface restore metadata. |
-| `rootNode` | Split tree, direction, split ratio, and pane ids. |
-| `paneCustomNames` | User names for panes. |
-| `paneSnapshots` | Last captured pane cwd, shell, command history, and buffer snapshot. |
+```json
+{
+  "version": 2,
+  "workspaces": [
+    {
+      "id": "workspace:1",
+      "selectedSurfaceIndex": 0,
+      "surfaces": [
+        {
+          "kind": "terminal",
+          "paneSnapshots": {
+            "pane:1": {
+              "workingDirectory": "C:\\repo",
+              "shell": "pwsh",
+              "bufferSnapshot": {
+                "cols": 120,
+                "rows": 30,
+                "scrollbackLines": [],
+                "screenLines": []
+              }
+            }
+          }
+        },
+        {
+          "kind": "browser",
+          "browserUrl": "http://localhost:5173",
+          "browserHistory": ["http://localhost:5173"]
+        }
+      ]
+    }
+  ]
+}
+```
 
-Terminal snapshots are for continuity and diagnostics. They do not keep the original process alive after app exit or machine restart.
+终端 snapshot 用于上下文连续性与诊断，不代表原始进程在重启后仍然存活。
 
-## Resume Binding Model
+## `resume.json`
 
-`resume.json` stores commands that can recreate useful terminal state, such as attaching tmux or starting a dev server.
+resume binding 记录如何恢复某个 Pane 的外部会话，例如 tmux：
 
-```jsonc
+```json
 {
   "version": 1,
   "bindings": [
     {
-      "id": "binding-1",
-      "workspaceId": "workspace-uuid",
-      "surfaceId": "surface-uuid",
-      "paneId": "pane-uuid",
+      "paneId": "pane:1",
       "kind": "tmux",
-      "checkpoint": "sprint-1",
-      "shell": "tmux attach -t work",
+      "command": "tmux attach -t demo",
       "workingDirectory": "C:\\repo",
-      "environment": {
-        "SAFE_KEY": "safe"
-      },
-      "trusted": true,
-      "trustReason": "user-approved-prefix",
-      "approvedPrefix": "tmux attach",
+      "trusted": false,
       "createdAtUtc": "2026-01-01T00:00:00Z",
       "updatedAtUtc": "2026-01-01T00:00:00Z"
     }
@@ -63,124 +79,35 @@ Terminal snapshots are for continuity and diagnostics. They do not keep the orig
 }
 ```
 
-| Field | Description |
-|---|---|
-| `id` | Stable binding id. Generated when omitted. |
-| `workspaceId` / `surfaceId` / `paneId` | Exact target where the resume command belongs. |
-| `kind` | `tmux` or `custom`. Current CLI rejects other kinds. |
-| `checkpoint` | Optional label for the saved state. |
-| `shell` | Command written to the pane when the binding is restored. |
-| `workingDirectory` | Cwd to associate with the binding. Defaults to the target pane session cwd when available. |
-| `environment` | Optional safe environment metadata. Sensitive names are removed before save. |
-| `trusted` | Whether the binding may run without a manual banner click. |
-| `trustReason` | Why the binding was trusted, for example `cli`, `user-approved-binding`, or `user-approved-prefix`. |
-| `approvedPrefix` | Optional command prefix that was approved by the user. |
-| `createdAtUtc` / `updatedAtUtc` | Audit timestamps. |
+敏感环境变量会在保存前剔除，例如 `TOKEN`、`PASSWORD`、`SECRET`、`API_KEY`。
 
-Sensitive environment keys are scrubbed before persistence when they include names such as `PASSWORD`, `PASSWD`, `SECRET`, `API_KEY`, `ACCESS_KEY`, `TOKEN`, `_TOKEN_`, or `_TOKEN`.
+## 信任模型
 
-## Save A Resume Binding
+- `trusted: false`：只显示“可恢复”提示，不自动执行命令。
+- `trusted: true`：用户明确批准后可在开关允许时自动恢复。
+- `AutoResumeTrustedBindings`：控制可信 binding 是否自动执行。
+- “信任并恢复”会记录用户批准的 prefix。
 
-Save a command for the focused pane:
+未信任 binding 必须由用户确认；ECode 不会静默执行未知命令。
+
+## CLI 操作
 
 ```powershell
-ecode surface resume set --kind tmux --shell "tmux attach -t work" --checkpoint sprint-1 --trusted true --approvedPrefix "tmux attach"
-```
-
-Save a custom dev command with the positional shorthand:
-
-```powershell
-ecode surface resume set "npm run dev" --kind custom --cwd C:\repo
-```
-
-Common selectors:
-
-| Option | Description |
-|---|---|
-| `--workspace <name>` | Select workspace by name. |
-| `--surface <name>` | Select surface by name. |
-| `--paneId <id>` | Select exact pane id. |
-| `--paneName <name>` | Select custom pane name. |
-| `--paneIndex <n>` | Select pane by 1-based or 0-based index. |
-| `--cwd <path>` | Alias for `workingDirectory`. |
-| `--trusted true` | Mark the binding trusted at save time. |
-| `--approvedPrefix <prefix>` | Store a reviewed safe command prefix. |
-
-`set` replaces older bindings for the same workspace/surface/pane and keeps the previous `id` when possible.
-
-## Show Or Clear Bindings
-
-```powershell
+ecode surface resume set --pane pane:1 --kind tmux --command "tmux attach -t demo" --trusted false
 ecode surface resume show
-ecode surface resume show --all
-ecode surface resume clear
-ecode surface resume clear --id binding-1
-```
-
-`show` returns the selected workspace, surface, optional pane info, and matching `bindings`. Without `--all`, it shows only the focused or selected pane. `clear` removes by binding id or by the selected pane.
-
-## Restore Workflow
-
-Use the global restore entry to refresh pending bindings and jump to the first recoverable pane:
-
-```powershell
+ecode surface resume clear --pane pane:1
 ecode restore-session
-ecode restore-session --all
-ecode restore-session --trusted
 ```
 
-| Option | Behavior |
-|---|---|
-| `--all` | Scan every workspace and surface. Without it, only the selected surface is scanned. |
-| `--trusted` | Run trusted bindings immediately for the scanned surfaces. |
-| `--workspace <name>` | Scan a specific workspace. |
-| `--surface <name>` | Scan a specific surface. |
-| `--noFocus true` | Refresh bindings without focusing the first pending pane. |
+`ecode restore-session` 会刷新恢复绑定并定位第一个可恢复 Pane。快捷键：`Ctrl+Shift+O`。
 
-The response includes:
+## `ECODE_WORKSPACE_ID`
 
-| Field | Description |
-|---|---|
-| `scannedSurfaces` | Number of surfaces refreshed. |
-| `pendingBindings` | Number of untrusted bindings now shown as pending banners. |
-| `trustedStarted` | Number of trusted bindings that were started. |
-| `firstPending` | Workspace/surface/pane for the first pending binding, or `null`. |
+启动 shell 时，ECode 会注入 `ECODE_WORKSPACE_ID`。本地 ConPTY 与 daemon 托管会话都可读取该变量，用于脚本判断当前 Workspace。
 
-Inside the app, use `Ctrl+Shift+O` or the `Restore Session Bindings` command-palette entry. The app focuses and flashes the first recoverable pane.
+## 排查
 
-## Trust And Auto-Run Rules
-
-Untrusted bindings do not run automatically. They appear above the target terminal pane with two choices:
-
-| Button | Effect |
-|---|---|
-| `Recoverable` | Confirms once, runs the command, and keeps the binding untrusted. |
-| `Trust and recover` | Marks the binding trusted, stores the shell as the approved prefix when needed, and runs it. |
-
-Trusted bindings can auto-run only when the global setting `AutoResumeTrustedBindings` is enabled. The default is `false`. `ecode restore-session --trusted` can run trusted bindings immediately for a manual restore pass even when the global auto-run setting is off.
-
-Additional safety rules:
-
-- Browser surfaces never run resume bindings.
-- Only active pane ids in the restored split tree are considered.
-- The latest binding per pane wins.
-- A binding id is auto-run at most once during the current surface lifetime.
-- Running a binding writes `shell` plus Enter to the target terminal and records it as a command submission.
-
-## Environment Context
-
-New terminal sessions receive:
-
-```text
-ECODE_WORKSPACE_ID=<workspace-id>
-```
-
-Use this in scripts that need to discover which workspace launched them. The variable is injected for local ConPTY sessions and daemon-managed sessions.
-
-## Safe Practices
-
-- Prefer `kind: "tmux"` with commands like `tmux attach -t work` for long-running work.
-- Keep `trusted` off for commands that modify files, deploy, migrate databases, or start external services.
-- Use `approvedPrefix` for broad but reviewable command families such as `tmux attach`.
-- Do not store secrets in `resume.json`; sensitive environment keys are scrubbed, but command text remains visible.
-- Review `%USERPROFILE%\.ecode\resume.json` before sharing logs or support bundles.
+- 恢复提示未出现：检查 `%USERPROFILE%\.ecode\resume.json` 与 `daemon-debug.log`。
+- 自动恢复未执行：确认 binding 是 `trusted: true`，且 `AutoResumeTrustedBindings` 已启用。
+- 恢复命令不正确：先用 `trusted: false` 手动确认，再切换可信。
+- 数据异常：备份后删除 `resume.json` 可重建绑定。

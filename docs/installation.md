@@ -1,153 +1,101 @@
-# Installation
+# 安装
 
-ECode supports four Windows distribution paths. Use the zip/self-contained folder for nightly builds, Velopack for preview or stable builds, Inno Setup as a traditional fallback installer, and MSIX for managed enterprise deployment.
+ECode 支持多种 Windows 分发方式：self-contained 目录、Velopack 更新源、Inno Setup 安装器、MSIX 企业包，以及 CLI-only 包。
 
-## Requirements
+## 系统要求
 
-- Windows 10 1809 or newer for ConPTY.
-- Microsoft Edge WebView2 Runtime for browser surfaces.
-- .NET 10 Desktop Runtime for framework-dependent builds.
-- No runtime is required for self-contained, Velopack, Inno Setup, or MSIX packages built from `--self-contained true` output.
+- Windows 10 1809 / build 17763 或更新版本，用于 ConPTY。
+- Browser Surface 需要 WebView2 Runtime。
+- 源码构建需要 .NET 10 SDK；文档站需要 Node.js 与 `npm install`。
+- 运行时数据保存在 `%USERPROFILE%\.ecode`，卸载与更新默认保留该目录。
 
-Run this after installing or unpacking ECode:
+## 推荐安装路径
+
+| 形态 | 适用场景 | 说明 |
+|---|---|---|
+| zip / self-contained 目录 | 大多数普通用户 | 下载 `ecode-win-x64-sc` 后解压运行 `ecode-app.exe`。 |
+| Velopack 安装器与 feed | 需要自动更新的用户 | 安装后可用 `ecode update check` / `ecode update install`。 |
+| Inno Setup 备用安装器 | 传统桌面安装 | 创建开始菜单 / 桌面快捷方式，卸载只清理安装目录。 |
+| MSIX 企业包 | 企业分发 | 适合受管环境；需要企业签名或测试签名链。 |
+| CLI 专用包 | 自动化脚本 / CI | 将 `ecode.exe` 所在目录加入 PATH。 |
+
+## zip / self-contained 目录
+
+1. 下载 `ecode-win-x64-sc` 产物并解压到固定目录，例如 `C:\Tools\ECode`。
+2. 双击 `ecode-app.exe` 启动主程序。
+3. 如需 CLI，全局 PATH 指向同一目录，或执行：
 
 ```powershell
+ecode setup install --install-dir C:\Tools\ECode --write true
+```
+
+验证：
+
+```powershell
+ecode version
 ecode doctor
 ```
 
-`doctor` reports ConPTY, WebView2, PATH, daemon, and config directory status.
+## Velopack 安装与更新
 
-## Option 1: zip / self-contained folder
-
-The self-contained folder is the simplest install path and is best for nightly builds or local testing.
-
-Build or download the artifact named like `ecode-win-x64-sc`, then unpack it to a stable folder such as:
-
-```text
-%LOCALAPPDATA%\Programs\ECode
-```
-
-Start the app:
+发布产物包含 Velopack setup 与 `RELEASES` feed 时，可通过安装器完成首次安装。后续检查更新：
 
 ```powershell
-%LOCALAPPDATA%\Programs\ECode\ecode-app.exe
+ecode update check --feed https://example.com/ecode/
+ecode update install --feed https://example.com/ecode/
 ```
 
-Install CLI shell integration with a dry run first:
-
-```powershell
-ecode setup status --install-dir "%LOCALAPPDATA%\Programs\ECode"
-ecode setup install --install-dir "%LOCALAPPDATA%\Programs\ECode"
-ecode setup install --install-dir "%LOCALAPPDATA%\Programs\ECode" --write true
-```
-
-Uninstall is manual: close ECode, remove the folder, then remove shell integration:
-
-```powershell
-ecode setup uninstall --install-dir "%LOCALAPPDATA%\Programs\ECode"
-ecode setup uninstall --install-dir "%LOCALAPPDATA%\Programs\ECode" --write true
-```
-
-## Option 2: Velopack installer and feed
-
-Velopack is the preferred preview/stable path because it provides an installer and update feed.
-
-Generate Velopack artifacts:
+构建 Velopack 产物：
 
 ```powershell
 pwsh ./scripts/publish.ps1 -Config Release -Rid win-x64 -Flavor Velopack -VpkCommand vpk
 ```
 
-The output appears under:
+## Inno Setup 备用安装器
 
-```text
-publish/velopack/
-```
+Inno Setup 脚本位于 `installer/ecode.iss`。它会安装 app 与 CLI，创建快捷方式，并在卸载时只清理安装目录，不删除 `%USERPROFILE%\.ecode`。
 
-Publish all files in that directory together, including:
-
-- `RELEASES`
-- `.nupkg` packages
-- setup executable
-
-Configure update checks by setting a feed root or a direct `RELEASES` URL:
-
-```powershell
-$env:ECODE_UPDATE_FEED_URL = "https://example.com/ecode/releases"
-ecode update check --feed-url $env:ECODE_UPDATE_FEED_URL
-ecode update install --feed-url $env:ECODE_UPDATE_FEED_URL
-```
-
-Use `--download-only true` if you want to fetch the setup executable without launching it.
-
-## Option 3: Inno Setup fallback
-
-Inno Setup is the traditional installer fallback for environments where Velopack is not desired.
-
-First publish the app and CLI folders:
+发布前先生成 app 与 CLI：
 
 ```powershell
 pwsh ./scripts/publish.ps1 -Config Release -Rid win-x64 -Flavor SelfContained
 pwsh ./scripts/publish.ps1 -Config Release -Rid win-x64 -Flavor Cli
 ```
 
-Then compile:
+随后使用 Inno Setup Compiler 打包 `installer/ecode.iss`。
 
-```powershell
-iscc installer/ecode.iss
-```
+## MSIX 企业包
 
-The script installs to:
-
-```text
-%LOCALAPPDATA%\Programs\ECode
-```
-
-It installs both `ecode-app.exe` and `ecode.exe`, creates Start Menu shortcuts, and removes only the install directory during uninstall.
-
-## Option 4: MSIX enterprise package
-
-MSIX is optional and intended for managed desktop deployment. It uses full-trust desktop packaging for the WPF app.
-
-Generate an unsigned package:
+MSIX 清单文件位于 `installer/AppXManifest.xml`。构建示例：
 
 ```powershell
 pwsh ./scripts/publish.ps1 -Config Release -Rid win-x64 -Flavor MSIX -MakeAppxCommand makeappx.exe
-```
-
-To sign during packaging:
-
-```powershell
-pwsh ./scripts/publish.ps1 \
-  -Config Release \
-  -Rid win-x64 \
-  -Flavor MSIX \
-  -MakeAppxCommand makeappx.exe \
-  -MsixCertPath .\certs\ecode.pfx \
-  -MsixCertPassword "<password>"
-```
-
-Install a signed package:
-
-```powershell
 Add-AppxPackage .\publish\msix\ECode-win-x64-1.0.0.0.msix
 ```
 
-Unsigned packages require a trusted test certificate and developer/test deployment policy before installation.
+MSIX 适合企业环境；普通用户优先选择 self-contained 或 Velopack。
 
-## User data and uninstall behavior
+## CLI 专用包
 
-Runtime data is stored outside install directories:
+CLI 包位于 `publish/ecode-cli`。将该目录加入 PATH 后可运行：
 
-```text
-%USERPROFILE%\.ecode
+```powershell
+ecode version
+ecode status
+ecode setup status
+ecode completion powershell
 ```
 
-This includes settings, session state, snippets, resume bindings, and logs. Uninstallers should not delete this directory automatically. Remove it manually only when you intentionally want to reset ECode.
+## 卸载与数据保留
 
-## Troubleshooting
+- 删除 self-contained 目录不会删除 `%USERPROFILE%\.ecode`。
+- Inno Setup 卸载只清理安装目录。
+- 更新流程不会删除 `session.json`、`resume.json`、`settings.json`。
+- 如需彻底清理数据，请手动备份后删除 `%USERPROFILE%\.ecode`。
 
-- Run `ecode doctor` after install.
-- If the CLI is not found, run `ecode setup status` and check PATH warnings.
-- If browser surfaces fail, install or repair Microsoft Edge WebView2 Runtime.
-- If update checks fail, verify the feed URL and that `RELEASES` is reachable.
+## 故障排查
+
+- CLI 不在 PATH：运行 `ecode setup status`，再执行 `ecode setup install --write true`。
+- Browser Surface 不可用：安装或修复 WebView2 Runtime。
+- App / daemon 连接失败：查看 `%USERPROFILE%\.ecode\daemon-debug.log`。
+- 发布或 restore 遇到 NuGet 审计网络问题：本地验证可使用 `-p:NuGetAudit=false`。

@@ -8,6 +8,10 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 
 ## [Unreleased]
 
+### Changed
+
+- `docs/` 用户文档统一调整为简体中文单语，并在 `spec/` 中明确文档站语言策略。
+
 ## [1.0.0] - 2026-06-15
 
 ### Added
@@ -77,19 +81,19 @@ ECode 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.
 - 新增 Release Drafter 配置与 workflow，可按 PR labels 自动生成 draft release notes。
 - 新增 VitePress 文档站骨架与 `npm run docs:build`，覆盖 M7 用户文档导航入口。
 - 新增安装文档，覆盖 zip/self-contained、Velopack、Inno Setup fallback、MSIX 与卸载数据保留策略。
-- 新增中英双语 Getting Started 文档，覆盖首次启动、Workspace/Surface/Pane、Browser Surface、通知与恢复绑定。
-- 新增 Custom Commands 文档，覆盖 `ecode.json` 加载顺序、commands/actions、targets、workspace surfaces 与热重载诊断。
+- 新增快速上手文档，覆盖首次启动、Workspace/Surface/Pane、Browser Surface、通知与恢复绑定。
+- 新增自定义命令文档，覆盖 `ecode.json` 加载顺序、commands/actions、targets、workspace surfaces 与热重载诊断。
 - 新增 Browser API 文档，覆盖 surface refs、snapshot/locator、CLI 动作、M4 service contract 与 `not_supported` 矩阵。
 - 新增 Session Restore 文档，覆盖 `session.json`、`resume.json`、trusted bindings、CLI 恢复流程与安全策略。
-- 新增 CLI Reference 文档，覆盖全局参数、v1 兼容命令、`ecode.v2` 命令组、setup/update/doctor/completion 等运维入口。
+- 新增 CLI 参考文档，覆盖全局参数、v1 兼容命令、`ecode.v2` 命令组、setup/update/doctor/completion 等运维入口。
 - 新增 Troubleshooting 文档，覆盖 `ecode doctor`、`daemon-debug.log` 字段、WebView2、PATH、配置、恢复和更新排障。
 - 新增 `CONTRIBUTING.md`，覆盖本地构建、测试、文档、PR 流程、标签与安全注意事项。
 - 新增 `SECURITY.md`，说明漏洞私下报告方式、支持范围、披露流程与敏感日志脱敏要求。
 - 更新 Issue / PR 模板，校正 ECode 命名、运行时路径、测试命令与 bug / feature 提交流程。
 - 新增 Discord release 通知脚本与 `release.published` workflow，可通过 `DISCORD_WEBHOOK_URL` webhook 同步发布公告。
-- 新增 1.0 Release Readiness 文档，记录 P0/P1 bug gate、当前 blocker ledger 与发布前验证命令。
-- 新增 1.0.0 Release Notes 页面，覆盖下载选择、新特性、升级步骤、已知限制与文档入口。
-- 新增公开 Roadmap 页面，按 `spec/06-roadmap.md` 稳定内容展示版本线、M0-M7 里程碑与 1.0 gate。
+- 新增 1.0 发布就绪文档，记录 P0/P1 缺陷门槛、当前阻塞项台账与发布前验证命令。
+- 新增 1.0.0 发布说明页面，覆盖下载选择、新特性、升级步骤、已知限制与文档入口。
+- 新增公开路线图页面，按 `spec/06-roadmap.md` 稳定内容展示版本线、M0-M7 里程碑与 1.0 门槛。
 - CI smoke 现在运行 Windows 中文路径 `中文 目录/项目/` 场景，验证 ConPTY child process 能在该 working directory 中读写文件。
 - 新增 `scripts/perf/measure.ps1` 性能预算报告，release workflow 会上传 `ecode-perf-report` 产物。
 - 刷新 1.0.0 发布前风险登记，确认 P0=0、P1=0，并记录 release webhook 与性能预算漂移风险。

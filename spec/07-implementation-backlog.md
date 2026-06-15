@@ -231,10 +231,10 @@
 
 | ID | 标题 | 关联文件 | 验收 |
 |---|---|---|---|
-| `M6-B-01` | `[x]` Velopack 集成（installer + feed） | `src/ECode.Updater`（新增）、`scripts/publish.ps1` | 新版本自动检测 |
+| `M6-B-01` | `[x]` Velopack 集成（安装器 + feed） | `src/ECode.Updater`（新增）、`scripts/publish.ps1` | 新版本自动检测 |
 | `M6-B-02` | `[x]` `ecode update check/install` CLI | `ECode.Cli/Program.cs` | 可后台静默更新 |
-| `M6-B-03` | `[x]` Inno Setup 安装器（fallback 路径） | `installer/ecode.iss` | 卸载干净 |
-| `M6-B-04` | `[x]` MSIX 打包（可选 enterprise） | `installer/AppXManifest.xml` | `Add-AppxPackage` 成功 |
+| `M6-B-03` | `[x]` Inno Setup 安装器（备用路径） | `installer/ecode.iss` | 卸载干净 |
+| `M6-B-04` | `[x]` MSIX 打包（可选企业分发） | `installer/AppXManifest.xml` | `Add-AppxPackage` 成功 |
 | `M6-B-05` | `[x]` 多 RID CI（`win-x64 / win-x86 / win-arm64`） | `.github/workflows/release.yml` | nightly 出 4 个产物 |
 | `M6-B-06` | `[x]` `CHANGELOG.md` 自动生成（git-cliff 或 release-drafter） | `.github/release.yml` | release 触发自动更新 |
 
@@ -248,7 +248,7 @@
 |---|---|---|---|
 | `M7-A-01` | `[x]` `docs/` 目录（mkdocs material 或 vitepress） | `docs/*` | 站点可构建 |
 | `M7-A-02` | `[x]` `installation.md` | `docs/installation.md` | 含 zip / Velopack / MSIX 三种安装方式 |
-| `M7-A-03` | `[x]` `getting-started.md` | `docs/getting-started.md` | 中文 / 英文 |
+| `M7-A-03` | `[x]` `getting-started.md` | `docs/getting-started.md` | 简体中文单语 |
 | `M7-A-04` | `[x]` `custom-commands.md` | `docs/custom-commands.md` | 与 M5 后状态同步 |
 | `M7-A-05` | `[x]` `browser-api.md` | `docs/browser-api.md` | 与 M4 协议同步 |
 | `M7-A-06` | `[x]` `session-restore.md` | `docs/session-restore.md` | 与 M2 数据模型同步 |
@@ -270,7 +270,7 @@
 |---|---|---|---|
 | `M7-C-01` | [x] P0/P1 bug 收敛（详见 `06-roadmap.md` §8） | `docs/release-readiness.md` | P0=0、P1<=3 且有 workaround |
 | `M7-C-02` | [x] 1.0 发布说明（GitHub Release） | `docs/release-notes/1.0.0.md` | 用户可读 |
-| `M7-C-03` | [x] 公开 Roadmap 页面 | `docs/roadmap.md` | 与 `06-roadmap.md` 一致 |
+| `M7-C-03` | [x] 公开路线图页面 | `docs/roadmap.md` | 与 `06-roadmap.md` 一致 |
 
 ---
 

@@ -1,100 +1,123 @@
-# Custom Commands
+# 自定义命令
 
-Use `ecode.json` to teach ECode about project-specific commands, command actions, and the terminal/browser surfaces that should be ready when a workspace opens.
+ECode 使用 `ecode.json` 定义项目命令、动作和启动布局。它适合把常用构建、测试、服务启动、Browser Surface 与命令面板入口固化到仓库中。
 
-The current M5 runtime supports command-palette entries, command actions, confirmation prompts, two command targets, and startup/reload workspace surfaces.
+## 加载位置
 
-## File Locations
+按优先级读取：
 
-ECode loads JSONC, so comments and trailing commas are allowed. Missing files are skipped.
+1. 当前项目：`.ecode/ecode.json`
+2. 用户配置：`%USERPROFILE%\.config\ecode\ecode.json`
+3. 兼容读取：`.cmux/cmux.json`（仅兼容迁移）
 
-| Order | Scope | Path |
-|---:|---|---|
-| 1 | Global | `%USERPROFILE%\.config\ecode\ecode.json` |
-| 2 | Workspace | `<workspace>\.ecode\ecode.json` |
-| 3 | Workspace | `<workspace>\ecode.json` |
+排查命令：
 
-Later files override earlier files:
-
-- `commands` merge by `name`, case-insensitively.
-- `actions` merge by object key.
-- `workspace` and `ui` replace the earlier object when present.
-- The active workspace path comes from the focused pane working directory first, then the selected workspace root.
-
-## Minimal Command Palette Entry
-
-Create `.ecode/ecode.json` in your repository:
-
-```jsonc
-{
-  "commands": [
-    {
-      "name": "Dev: run server",
-      "description": "Start the local development server",
-      "keywords": ["dev", "server", "vite"],
-      "command": "npm run dev",
-      "target": "currentTerminal",
-      "confirm": true
-    }
-  ]
-}
+```powershell
+ecode config diagnostics
+ecode config reload
 ```
 
-Open the command palette and search for `Dev: run server`. ECode writes the command to the focused terminal and submits it with Enter.
+## 最小示例
 
-## Full Example
-
-```jsonc
+```json
 {
   "commands": [
     {
-      "name": "Dev: run server",
-      "description": "Start the local development server",
-      "keywords": ["dev", "server"],
-      "command": "npm run dev",
-      "target": "currentTerminal",
-      "confirm": true
-    },
-    {
-      "name": "Test: watch",
-      "description": "Run tests in watch mode",
-      "keywords": ["test", "watch"],
-      "command": "npm test -- --watch",
-      "target": "newTabInCurrentPane"
+      "name": "Run Tests",
+      "command": "dotnet test",
+      "target": "currentTerminal"
     }
   ],
   "actions": {
-    "devServer": {
+    "codex": {
       "type": "command",
-      "title": "Dev Server",
-      "subtitle": "npm run dev",
-      "command": "npm run dev",
-      "target": "newTabInCurrentPane",
-      "palette": true,
+      "title": "Codex",
+      "command": "codex",
       "confirm": true
     }
-  },
+  }
+}
+```
+
+## `commands`
+
+`commands` 是命令面板中的普通命令列表。
+
+| 字段 | 说明 |
+|---|---|
+| `name` | 命令面板展示名称。 |
+| `command` | 要发送或执行的命令。 |
+| `target` | 执行目标，例如 `currentTerminal`、`newTabInCurrentPane`。 |
+| `cwd` | 可选工作目录。 |
+| `env` | 可选环境变量。 |
+| `confirm` | 为 `true` 时执行前要求用户确认。 |
+
+常用 target：
+
+- `currentTerminal`：写入当前 Pane。
+- `newTabInCurrentPane`：在当前 Pane 所在 Surface 新建标签后执行。
+- `newWorkspace`：创建 Workspace 后执行。
+
+## `actions`
+
+`actions` 适合定义按钮、快捷动作或 Browser Surface 入口。
+
+```json
+{
+  "actions": {
+    "open-preview": {
+      "type": "browser",
+      "title": "Preview",
+      "url": "http://localhost:5173",
+      "target": "splitRight"
+    }
+  }
+}
+```
+
+| 字段 | 说明 |
+|---|---|
+| `type` | `command` 或 `browser`。 |
+| `title` | UI 展示标题。 |
+| `command` | `type=command` 时执行的命令。 |
+| `url` | `type=browser` 时打开的 URL。 |
+| `target` | 打开位置，例如 `currentTerminal`、`splitRight`。 |
+| `confirm` | 高风险命令建议设为 `true`。 |
+
+## Surface Tab 按钮
+
+可通过 `ui.surfaceTabBar.buttons` 把 action 放到 Surface tab bar：
+
+```json
+{
   "ui": {
     "surfaceTabBar": {
       "buttons": [
-        {
-          "title": "Dev",
-          "icon": "play",
-          "action": "devServer"
-        }
+        { "action": "open-preview", "label": "Preview" },
+        { "action": "codex", "label": "Codex" }
       ]
     }
-  },
+  }
+}
+```
+
+## Workspace 启动布局
+
+`workspace.surfaces` 可在启动或 reload 时创建 / 复用 terminal 与 browser Surface：
+
+```json
+{
   "workspace": {
-    "selectedSurfaceIndex": 1,
+    "selectedSurfaceIndex": 0,
     "surfaces": [
       {
+        "title": "Dev",
         "type": "terminal",
-        "name": "Shell"
+        "command": "pwsh"
       },
       {
+        "title": "Preview",
         "type": "browser",
-        "name": "Preview",
         "url": "http://localhost:5173"
       }
     ]
@@ -102,105 +125,9 @@ Open the command palette and search for `Dev: run server`. ECode writes the comm
 }
 ```
 
-## Schema
+`selectedSurfaceIndex` 指定 reload 后选中的 Surface。
 
-### `commands[]`
-
-`commands` create searchable command-palette entries.
-
-| Field | Required | Description |
-|---|---:|---|
-| `name` | Yes | Palette label. Also used as the merge key. |
-| `description` | No | Palette description. Falls back to `command`. |
-| `keywords` | No | Extra search terms. Empty values are removed; duplicates are collapsed case-insensitively. |
-| `command` | Yes | Text written into the target terminal. |
-| `target` | No | `currentTerminal` by default. |
-| `confirm` | No | Shows a Yes/No prompt before writing the command. |
-
-ECode trims trailing newlines from `command`, records a command submission, then writes the command plus one newline to the focused terminal.
-
-### `actions`
-
-`actions` are keyed objects for reusable UI actions. The current runtime supports `type: "command"`.
-
-| Field | Required | Description |
-|---|---:|---|
-| object key | Yes | Stable action id, for example `devServer`. |
-| `type` | No | Only `command` is executable today. Other values produce a warning and are ignored by the UI. |
-| `title` | No | Palette label. Falls back to the object key when empty. |
-| `subtitle` | No | Palette description. Falls back to `command`. |
-| `command` | Yes for command actions | Text written into the target terminal. |
-| `target` | No | `currentTerminal` by default. |
-| `palette` | No | `true` by default. Set `false` to hide the action from the command palette. |
-| `confirm` | No | Shows a Yes/No prompt before execution. |
-
-`ui.surfaceTabBar.buttons` is part of the accepted schema and can point at an action id:
-
-```jsonc
-{
-  "actions": {
-    "testWatch": {
-      "type": "command",
-      "title": "Test Watch",
-      "command": "npm test -- --watch",
-      "target": "newTabInCurrentPane"
-    }
-  },
-  "ui": {
-    "surfaceTabBar": {
-      "buttons": [
-        { "title": "Tests", "icon": "beaker", "action": "testWatch" }
-      ]
-    }
-  }
-}
-```
-
-In the M5 UI, command actions are guaranteed through the command palette when `palette` is `true`. Treat custom tab-bar buttons as reserved schema until your build renders them.
-
-### Targets
-
-| Target | Behavior |
-|---|---|
-| `currentTerminal` | Writes to the focused terminal pane in the selected surface. This is the default. |
-| `newTabInCurrentPane` | Creates a new terminal surface in the current workspace, selects it, then writes the command there. |
-
-Unsupported targets produce a diagnostic warning. They currently fall back to the focused terminal behavior, so do not depend on custom target names.
-
-### `workspace`
-
-`workspace` seeds or updates surfaces during app startup and config reload.
-
-```jsonc
-{
-  "workspace": {
-    "selectedSurfaceIndex": 0,
-    "surfaces": [
-      { "type": "terminal", "name": "Shell" },
-      { "type": "browser", "name": "Docs", "url": "https://example.com/docs" }
-    ]
-  }
-}
-```
-
-| Field | Description |
-|---|---|
-| `surfaces[].type` | `terminal` or `browser`. Missing type defaults to `terminal`. |
-| `surfaces[].name` | Optional display name. Terminal and browser surfaces can be reused by matching name. |
-| `surfaces[].url` | Required for browser surfaces. The browser opens or refreshes this URL. |
-| `selectedSurfaceIndex` | Optional zero-based index into `surfaces`. Out-of-range values produce a warning. |
-
-Layout application is additive and safe:
-
-- Existing surfaces are reused by terminal name, browser name, or browser URL.
-- Missing named terminal surfaces are created.
-- Missing browser surfaces are created and opened to `url`.
-- Surfaces not listed in `ecode.json` are not closed.
-- Pane splits are not changed by `workspace.surfaces`.
-
-## Reloading
-
-Use any of these after editing `ecode.json`:
+## 热重载
 
 ```powershell
 ecode reload-config
@@ -208,33 +135,11 @@ ecode config reload
 ecode config diagnostics
 ```
 
-Inside the app, use `Ctrl+Shift+,` or the `Reload ecode.json` command-palette item. Reloading refreshes palette entries and applies `workspace.surfaces` without restarting the app.
+`Ctrl+Shift+,` 会触发配置重载。重载会刷新命令面板并尽量复用已存在的 Browser Surface。
 
-`ecode config diagnostics` returns the last diagnostics through the v2 config API, or triggers a fresh reload if no reload result is available.
+## 安全建议
 
-## Diagnostics
-
-Diagnostics appear in the command palette and in reload results.
-
-Errors:
-
-- `commands[].name` is empty.
-- `commands[].command` is empty.
-- A command action omits `command`.
-- A surface type is not `terminal` or `browser`.
-- A browser surface omits `url`.
-- JSON syntax or schema parsing fails.
-
-Warnings:
-
-- An action `type` is not `command`.
-- A target is not `currentTerminal` or `newTabInCurrentPane`.
-- `workspace.selectedSurfaceIndex` is outside `workspace.surfaces`.
-
-## Safe Practices
-
-- Set `confirm: true` for destructive commands such as clean, reset, deploy, or database migrations.
-- Prefer committed scripts (`scripts/dev.ps1`, `npm run test`, `dotnet test`) over long inline shell one-liners.
-- Keep secrets out of `ecode.json`; commands run in your normal shell and are visible in project files.
-- Quote paths inside commands for the target shell, because ECode writes the command exactly as shell input.
-- Use workspace-local `.ecode/ecode.json` for project automation and the global file for personal defaults.
+- 不要把真实 API key / token 写入 `ecode.json`。
+- 对会执行外部命令、安装依赖、删除文件的 action 使用 `confirm: true`。
+- Browser action 只保存 URL，不保存 cookie 或 localStorage。
+- 如果配置来自旧 `.cmux/cmux.json`，建议迁移到 `.ecode/ecode.json`。

@@ -770,20 +770,22 @@ public class DocsSiteTests
     {
         var installation = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "installation.md"));
 
-        installation.Should().Contain("zip / self-contained folder");
-        installation.Should().Contain("Velopack installer and feed");
-        installation.Should().Contain("MSIX enterprise package");
+        installation.Should().Contain("zip / self-contained 目录");
+        installation.Should().Contain("Velopack 安装器与 feed");
+        installation.Should().Contain("MSIX 企业包");
         installation.Should().Contain("%USERPROFILE%\\.ecode");
         installation.Should().Contain("ecode doctor");
     }
 
     [Fact]
-    public void GettingStartedDocs_AreBilingualAndCoverFirstRunFlow()
+    public void GettingStartedDocs_AreSimplifiedChineseAndCoverFirstRunFlow()
     {
         var gettingStarted = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "getting-started.md"));
 
-        gettingStarted.Should().Contain("## English");
-        gettingStarted.Should().Contain("## 中文");
+        gettingStarted.Should().Contain("# 快速上手");
+        gettingStarted.Should().Contain("本页用 15 分钟带你完成 ECode 的第一次使用");
+        gettingStarted.Should().NotContain("## English");
+        gettingStarted.Should().NotContain("## 中文");
         gettingStarted.Should().Contain("ecode doctor");
         gettingStarted.Should().Contain("ecode workspace create");
         gettingStarted.Should().Contain("ecode pane split right");
@@ -861,7 +863,7 @@ public class DocsSiteTests
 
         cli.Should().Contain("--id-format");
         cli.Should().Contain("--json");
-        cli.Should().Contain("v1 compatibility");
+        cli.Should().Contain("v1 兼容");
         cli.Should().Contain("ecode.v2");
         cli.Should().Contain("ecode notification list");
         cli.Should().Contain("window.list");
@@ -904,13 +906,14 @@ public class DocsSiteTests
         var config = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", ".vitepress", "config.mts"));
         var readiness = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "release-readiness.md"));
 
-        config.Should().Contain("Release Readiness");
+        config.Should().Contain("发布就绪");
         config.Should().Contain("link: '/release-readiness'");
-        readiness.Should().Contain("P0 bug count must be 0");
-        readiness.Should().Contain("P1 bug count must be 3 or fewer");
-        readiness.Should().Contain("| P0 | 0 | 0 | Pass | N/A |");
-        readiness.Should().Contain("| P1 | 0 | 3 | Pass | N/A; no repo-tracked P1 blockers are open |");
-        readiness.Should().Contain("documented workaround");
+        readiness.Should().Contain("P0 缺陷数量必须为 0");
+        readiness.Should().Contain("P1 缺陷数量必须不超过 3");
+        readiness.Should().Contain("| P0 | 0 | 0 | 通过 | N/A |");
+        readiness.Should().Contain("| P1 | 0 | 3 | 通过 | N/A；当前无仓库跟踪的 P1 阻塞项 |");
+        readiness.Should().Contain("可执行的规避方案");
+        readiness.Should().Contain("阻塞项台账");
         readiness.Should().Contain("npm run docs:build");
         readiness.Should().Contain("NuGetAudit=false");
         readiness.Should().Contain("scripts\\ci.ps1");
@@ -922,20 +925,20 @@ public class DocsSiteTests
         var config = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", ".vitepress", "config.mts"));
         var notes = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "release-notes", "1.0.0.md"));
 
-        config.Should().Contain("Release Notes");
+        config.Should().Contain("发布说明");
         config.Should().Contain("link: '/release-notes/1.0.0'");
-        notes.Should().Contain("ECode 1.0.0 Release Notes");
-        notes.Should().Contain("Recommended Download");
+        notes.Should().Contain("ECode 1.0.0 发布说明");
+        notes.Should().Contain("推荐下载");
         notes.Should().Contain("ecode-win-x64-sc");
-        notes.Should().Contain("Velopack setup/feed");
-        notes.Should().Contain("What Is New");
+        notes.Should().Contain("Velopack 安装器/feed");
+        notes.Should().Contain("新特性");
         notes.Should().Contain("ecode browser");
         notes.Should().Contain("ecode.v2");
         notes.Should().Contain("%USERPROFILE%\\.ecode");
-        notes.Should().Contain("Upgrade Notes");
-        notes.Should().Contain("Known Limits");
-        notes.Should().Contain("P0 = 0 and P1 <= 3");
-        notes.Should().Contain("Troubleshooting");
+        notes.Should().Contain("升级注意事项");
+        notes.Should().Contain("已知限制");
+        notes.Should().Contain("P0 = 0、P1 <= 3");
+        notes.Should().Contain("故障排查");
     }
 
     [Fact]
@@ -946,18 +949,31 @@ public class DocsSiteTests
         var roadmap = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "roadmap.md"));
 
         config.Should().Contain("link: '/roadmap'");
-        index.Should().Contain("Release Readiness");
-        roadmap.Should().Contain("This public roadmap mirrors the stable portions of `spec/06-roadmap.md`");
-        roadmap.Should().Contain("## Version Line");
-        roadmap.Should().Contain("| `0.1.x` | Engineering baseline");
-        roadmap.Should().Contain("| `1.0.0` | Stable Windows release");
-        roadmap.Should().Contain("### M0 - Engineering Baseline");
-        roadmap.Should().Contain("### M7 - Documentation, Community, And 1.0");
-        roadmap.Should().Contain("## 1.0 Gate");
-        roadmap.Should().Contain("P0 bug count = 0");
-        roadmap.Should().Contain("P1 bug count <= 3");
+        index.Should().Contain("发布就绪");
+        roadmap.Should().Contain("本公开路线图同步 `spec/06-roadmap.md`");
+        roadmap.Should().Contain("## 版本线");
+        roadmap.Should().Contain("| `0.1.x` | 工程基线");
+        roadmap.Should().Contain("| `1.0.0` | Windows 稳定版发布");
+        roadmap.Should().Contain("### M0 - 工程基线");
+        roadmap.Should().Contain("### M7 - 文档、社区与 1.0");
+        roadmap.Should().Contain("## 1.0 门槛");
+        roadmap.Should().Contain("P0 缺陷数量 = 0");
+        roadmap.Should().Contain("P1 缺陷数量 <= 3");
         roadmap.Should().Contain("%USERPROFILE%\\.ecode");
-        roadmap.Should().Contain("[Release Readiness](./release-readiness.md)");
+        roadmap.Should().Contain("[发布就绪](./release-readiness.md)");
+    }
+
+    [Fact]
+    public void SpecDocs_DefineSimplifiedChineseDocsPolicy()
+    {
+        var roadmapSpec = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "06-roadmap.md"));
+        var backlogSpec = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "07-implementation-backlog.md"));
+
+        roadmapSpec.Should().Contain("文档站语言要求");
+        roadmapSpec.Should().Contain("简体中文单语");
+        roadmapSpec.Should().Contain("不再维护同页中英双语内容");
+        backlogSpec.Should().Contain("| `M7-A-03`");
+        backlogSpec.Should().Contain("简体中文单语");
     }
 
     [Fact]

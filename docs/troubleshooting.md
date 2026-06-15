@@ -1,243 +1,138 @@
-# Troubleshooting
+# 故障排查
 
-Start with `ecode doctor`, then inspect the daemon and command logs when a check points to the app, terminal, or Browser runtime.
+本页按常见症状列出检查路径。优先运行：
 
 ```powershell
 ecode doctor
 ecode --json doctor
-ecode health
-ecode status
 ```
 
-## Doctor Checks
+## `ecode doctor` 字段
 
-`ecode doctor` prints a short health report:
-
-```text
-ECode doctor
-[ok] conpty: Windows 10.0.22631 supports ConPTY.
-[ok] webview2: WebView2 Runtime found: C:\Program Files (x86)\Microsoft\EdgeWebView\Application\...\msedgewebview2.exe
-[warn] path: CLI directory is not on PATH: C:\Tools\ECode
-[warn] daemon: Main app pipe did not respond; start ecode-app.exe if CLI control is needed.
-[ok] config: Runtime/config directory exists: C:\Users\you\.ecode
-Overall: attention needed
-```
-
-| Check | Status | What To Do |
+| 检查项 | 状态 | 说明 |
 |---|---|---|
-| `conpty` | `ok` or `fail` | ECode needs Windows 10 1809 / build 17763 or newer for ConPTY. Upgrade Windows if this fails. |
-| `webview2` | `ok` or `warn` | Browser surfaces need Microsoft Edge WebView2 Runtime. Install or repair it if missing. |
-| `path` | `ok` or `warn` | Run `ecode setup status`, then `ecode setup install --write true`, or add the CLI directory to PATH manually. |
-| `daemon` | `ok` or `warn` | Start `ecode-app.exe` if CLI control is needed. Local-only commands can still run. |
-| `config` | `ok` or `warn` | `%USERPROFILE%\.ecode` is created when ECode first writes runtime data. A warning is normal before first launch. |
+| `conpty` | `ok` / `fail` | Windows 10 1809 / build 17763 或更新版本才支持 ConPTY。 |
+| `webview2` | `ok` / `warn` | Browser Surface 需要 WebView2 Runtime。 |
+| `path` | `ok` / `warn` | CLI 目录是否在 PATH 中。 |
+| `daemon` | `ok` / `warn` | 主应用 pipe 是否可连接。 |
+| `config` | `ok` / `warn` | `%USERPROFILE%\.ecode` 是否存在。 |
 
-Use `--timeout-ms <n>` if the app pipe is slow:
+## 日志位置
 
-```powershell
-ecode doctor --timeout-ms 1500
-```
-
-## Log Locations
-
-| File Or Folder | Contents |
+| 文件 | 用途 |
 |---|---|
-| `%USERPROFILE%\.ecode\daemon-debug.log` | App/daemon connection, session create/attach, pipe, fallback, and shutdown events. |
-| `%USERPROFILE%\.ecode\logs\` | Daily JSONL command logs. |
-| `%USERPROFILE%\.ecode\logs\terminal\` | Captured terminal transcripts grouped by date. |
-| `%USERPROFILE%\.ecode\session.json` | Last app-owned layout/session state. |
-| `%USERPROFILE%\.ecode\resume.json` | Resume bindings and trust metadata. |
-| `%USERPROFILE%\.ecode\settings.json` | User settings, including retention and compatibility flags. |
+| `%USERPROFILE%\.ecode\daemon-debug.log` | App/daemon 连接、session create/attach、pipe、fallback、shutdown。 |
+| `%TEMP%\ecode-smoke.log` | ConPTY smoke 测试日志。 |
+| `artifacts/perf*/perf-report.md` | 性能预算报告。 |
 
-Open the in-app logs window with `Ctrl+Shift+L`.
-
-## `daemon-debug.log` Field Guide
-
-The daemon log is a line-oriented key/value file. Both the WPF app and `ecode-daemon` can append to it concurrently.
-
-Example:
-
-```text
-ts=2026-06-14T05:30:00.0000000+08:00 component=daemon-client event=request.send paneId=pane-1 message="Sending daemon request" path="C:\\Users\\mac\\my repo" requestType=SESSION_CREATE
-```
-
-Stable fields:
-
-| Field | Meaning |
-|---|---|
-| `ts` | Local timestamp in round-trip format. |
-| `component` | Source such as `ecode-daemon`, `daemon-pipe-server`, `daemon-session-manager`, `daemon-client`, or `daemon`. |
-| `event` | Machine-readable event name. |
-| `paneId` | Target pane id, or `-` when the event is not pane-specific. |
-| `message` | Human-readable message when available. |
-| extra fields | Sorted extra details such as `requestType`, `pipe`, `processId`, `cwd`, `connectedClients`, or `path`. |
-
-Values containing spaces, quotes, or newlines are quoted and escaped. Empty values are written as `-`.
-
-Useful commands:
+查看日志：
 
 ```powershell
-$log = "$env:USERPROFILE\.ecode\daemon-debug.log"
-Get-Content $log -Tail 120
-Select-String -Path $log -Pattern "paneId=pane-1"
-Select-String -Path $log -Pattern "SESSION_CREATE|session.created|session.exited"
-Select-String -Path $log -Pattern "fallback|not available|Exception|error"
+Get-Content "$env:USERPROFILE\.ecode\daemon-debug.log" -Tail 120
 ```
 
-Common event names:
+## `daemon-debug.log` 字段
 
-| Event | Meaning |
-|---|---|
-| `startup.begin` | `ecode-daemon` started. |
-| `startup.mutex-exists` | Another daemon instance already owns the mutex. |
-| `pipe-server.start` / `pipe-server.started` | Daemon pipe server startup. |
-| `accept.wait` / `accept.connected` | Waiting for or accepting daemon pipe clients. |
-| `client.connected` / `client.disconnected` | App/daemon client lifecycle. |
-| `request.received` | Daemon received a session request. |
-| `session.create` / `session.created` | Terminal session creation path. |
-| `session.attach` | Reconnecting to an existing daemon session. |
-| `session.exited` | Terminal process exited. |
-| `shutdown.idle-timeout` | Daemon exited after 24h with no clients and no sessions. |
+重点关注：
 
-The WPF app also writes messages such as `[StartSession:<paneId>]`, `[DaemonSession:<paneId>]`, and `[DaemonDisconnected]` through `component=daemon event=log`.
+- `ts=`：时间。
+- `component=`：组件，例如 app、daemon、pipe。
+- `event=`：事件，例如 `session.create`、`pane.write`。
+- `paneId=`：Pane UUID 或短引用上下文。
 
-## CLI Cannot Connect
+## CLI 连不上主应用
 
-Symptom:
+症状：`Error: Could not connect to ecode. Is it running?`
 
-```text
-Error: Could not connect to ecode. Is it running?
-```
+处理：
 
-Checklist:
+1. 启动 `ecode-app.exe`。
+2. 运行 `ecode status`。
+3. 查看 `daemon-debug.log` 是否有 pipe 错误。
+4. 如果只需要本地命令，可使用 `ecode setup status`、`ecode doctor`、`ecode completion powershell`、`ecode version`。
 
-1. Start or focus `ecode-app.exe`.
-2. Run `ecode health` to verify the main app pipe.
-3. Check named pipes:
+## WebView2 不可用
 
-```powershell
-Get-ChildItem \\.\pipe\ | Where-Object Name -Match "ecode"
-```
+症状：Browser Surface 显示 Runtime 缺失。
 
-4. If only local commands are needed, use `ecode setup status`, `ecode doctor`, `ecode completion powershell`, or `ecode version`; these do not need the app pipe.
-5. Inspect `%USERPROFILE%\.ecode\daemon-debug.log` for app startup or daemon connection errors.
+处理：
 
-## Terminal Or ConPTY Issues
+1. 安装 Microsoft Edge WebView2 Runtime。
+2. 重启 ECode。
+3. 运行 `ecode doctor` 确认 `webview2` 状态。
 
-If terminal panes do not start:
+## PATH / shell profile 问题
 
-- Confirm `ecode doctor` reports `conpty: ok`.
-- Check `daemon-debug.log` for `SESSION_CREATE`, `session.create`, `session.created`, and fallback messages.
-- If the daemon disconnects, ECode falls back to local ConPTY for affected sessions.
-- Verify the configured shell exists. `pwsh.exe` must be on PATH if you selected PowerShell 7.
-- Run `ecode pane read --lines 80` on an active pane to capture recent output.
-
-For developer smoke checks:
-
-```powershell
-.\scripts\ci.ps1 -IncludeSmoke
-```
-
-## Browser Or WebView2 Issues
-
-If Browser surfaces are blank or browser scripting returns `not_found` / `not_supported`:
-
-- Run `ecode doctor` and check `webview2`.
-- Install or repair Microsoft Edge WebView2 Runtime.
-- Try `ecode browser new https://example.com` to isolate project app issues.
-- Use the Browser toolbar reload/stop buttons and DevTools button when the page loads but automation fails.
-- Run `ecode browser snapshot --surfaceRef <ref>` before `click` or `fill` to confirm locators.
-- See [Browser API](./browser-api.md) for the supported locator set and `not_supported` matrix.
-
-## PATH Or Shell Setup Drift
-
-Use setup status first:
+先看 dry-run：
 
 ```powershell
 ecode setup status
-ecode setup status --install-dir C:\Tools\ECode
+ecode setup install --write false
 ```
 
-If the diff shows drift:
+确认 diff 后再写入：
 
 ```powershell
 ecode setup install --write true
 ```
 
-If you use a custom PowerShell profile:
+撤销：
 
 ```powershell
-ecode setup install --profile $PROFILE --write true
-```
-
-Restart the shell after changing PATH or profile integration.
-
-## `ecode.json` Problems
-
-Reload and inspect diagnostics:
-
-```powershell
-ecode reload-config
-ecode config reload
-ecode config diagnostics
-```
-
-Common causes:
-
-- The active workspace is not the directory containing `.ecode\ecode.json`.
-- `commands[].name` or `commands[].command` is empty.
-- A Browser `workspace.surfaces[]` entry is missing `url`.
-- A target is not `currentTerminal` or `newTabInCurrentPane`.
-- JSON comments/trailing commas are allowed, but invalid JSON syntax still fails.
-
-See [Custom Commands](./custom-commands.md) for schema details.
-
-## Resume Binding Does Not Run
-
-Check the binding first:
-
-```powershell
-ecode surface resume show --all
-ecode restore-session
-```
-
-If it still does not run:
-
-- Untrusted bindings show a banner and require `Recoverable` or `Trust and recover`.
-- Trusted auto-run is off by default; enable `AutoResumeTrustedBindings` or run `ecode restore-session --trusted`.
-- Browser surfaces never run resume bindings.
-- The binding `paneId` must exist in the restored split tree.
-- The latest binding for a pane wins.
-- A trusted binding id auto-runs at most once per surface lifetime.
-
-See [Session Restore](./session-restore.md) for the trust model.
-
-## Installer Or Update Problems
-
-For PATH/profile integration:
-
-```powershell
-ecode setup status
-ecode setup install --write true
 ecode setup uninstall --write true
 ```
 
-For Velopack updates:
+## `ecode.json` 不生效
 
 ```powershell
-ecode update check --feed-url https://example.com/releases
-ecode update install --feed-url https://example.com/releases --download-only true
+ecode config diagnostics
+ecode config reload
 ```
 
-If update commands fail, verify:
+检查：
 
-- `--feed-url` is set or `ECODE_UPDATE_FEED_URL` exists.
-- The feed contains a valid Velopack `RELEASES` file.
-- Network/proxy rules allow downloading the setup package.
-- `--setup-url` points directly to an installer when overriding the feed package URL.
+- 路径是否为 `.ecode/ecode.json` 或 `%USERPROFILE%\.config\ecode\ecode.json`。
+- JSON 是否有尾逗号或注释。
+- `commands` / `actions` 字段是否符合 [自定义命令](./custom-commands.md)。
+- 旧 `.cmux/cmux.json` 是否依赖兼容开关。
 
-## Local Build Or Test Diagnostics
+## 会话恢复异常
 
-For maintainers:
+```powershell
+ecode surface resume show
+ecode restore-session
+```
+
+检查：
+
+- `resume.json` 是否存在。
+- binding 是否 `trusted: true`。
+- `AutoResumeTrustedBindings` 是否启用。
+- `daemon-debug.log` 是否出现 `SESSION_CREATE`、`session.create`、`session.created`。
+
+## Browser API 找不到元素
+
+1. 先运行 `ecode browser snapshot --surfaceRef <ref>`。
+2. 确认目标 role / text / testid 在 snapshot 中。
+3. 再执行 `ecode browser click`、`ecode browser fill`、`ecode browser eval`。
+4. 严格 CSP 页面可能限制脚本注入。
+
+## 更新失败
+
+```powershell
+ecode update check --feed <feed-url>
+ecode update install --feed <feed-url>
+```
+
+检查：
+
+- feed 根目录是否包含 `RELEASES`。
+- nupkg / setup URL 是否可下载。
+- 当前版本是否低于 feed 中最新版本。
+
+## 本地构建失败
+
+推荐命令：
 
 ```powershell
 npm run docs:build
@@ -245,29 +140,16 @@ npm run docs:build
 .\.dotnet\dotnet.exe build ECode.sln -c Debug -p:NuGetAudit=false
 ```
 
-Use `-p:NuGetAudit=false` if NuGet advisory lookups fail because of local certificate or network policy. If a Roslyn `VBCSCompiler` file lock appears, rerun the build/test command sequentially.
+如果 NuGet audit 因证书或网络失败，本地验证可临时加 `NuGetAudit=false`。CI / release 环境应保持网络与证书链正常。
 
-Browser integration and smoke tests are opt-in:
+## 提交 issue 前
 
-```powershell
-.\scripts\ci.ps1 -IncludeBrowserIntegration
-.\scripts\ci.ps1 -IncludeSmoke
-```
-
-## Support Bundle Checklist
-
-Before filing an issue, collect:
+请附：
 
 ```powershell
-ecode --json doctor > doctor.json
-ecode --json health > health.json
-ecode --json config diagnostics > config-diagnostics.json
+ecode version
+ecode doctor
 Get-Content "$env:USERPROFILE\.ecode\daemon-debug.log" -Tail 200 > daemon-debug-tail.log
 ```
 
-Also include:
-
-- ECode version from `ecode version`.
-- Windows version and whether WebView2 Runtime is installed.
-- Relevant `ecode.json` or `resume.json` snippets with secrets removed.
-- Recent command log entries or terminal transcript excerpts from `%USERPROFILE%\.ecode\logs\`.
+上传前请脱敏 token、API key、私有路径和项目名称。
