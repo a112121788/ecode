@@ -789,6 +789,23 @@ public class DocsSiteTests
         contributing.Should().Contain("spec/07-implementation-backlog.md");
         contributing.Should().Contain("skip-changelog");
     }
+
+    [Fact]
+    public void SecurityDocs_CoverPrivateReportingScopeAndDisclosure()
+    {
+        var security = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "SECURITY.md"));
+
+        security.Should().Contain("Security Policy");
+        security.Should().Contain("Supported Versions");
+        security.Should().Contain("Report A Vulnerability");
+        security.Should().Contain("Do not open a public issue");
+        security.Should().Contain("GitHub's private vulnerability reporting");
+        security.Should().Contain("What To Avoid Sharing Publicly");
+        security.Should().Contain("%USERPROFILE%\\.ecode\\daemon-debug.log");
+        security.Should().Contain("Scope");
+        security.Should().Contain("Handling Process");
+        security.Should().Contain("Coordinated Disclosure");
+    }
 }
 
 public class MsixManifestTests
