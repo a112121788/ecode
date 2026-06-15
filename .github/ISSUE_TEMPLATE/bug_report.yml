@@ -53,7 +53,7 @@ body:
       description: |
         编号列出操作步骤；可附带 ecode CLI 命令。
         例如：
-        1. 启动 ecodew.exe
+        1. 启动 ecode-app.exe
         2. `ecode workspace create --name demo`
         3. 在终端中执行 `pwsh -c "1..200 | ForEach-Object { Write-Output $_ }"`
         4. 观察 scrollback 渲染
@@ -85,8 +85,8 @@ body:
     attributes:
       label: 关键日志
       description: |
-        优先附 `%LOCALAPPDATA%/ecode/daemon-debug.log` 关键行；
-        旧版 `cmux` 数据目录下日志可作为对照附在下方，注意脱敏 API key / token。
+        优先附 `%USERPROFILE%/.ecode/daemon-debug.log` 关键行；
+        注意脱敏 API key / token / 私有路径。
       placeholder: |
         [HH:mm:ss.fff] [component] event=pane.write paneId=...
 

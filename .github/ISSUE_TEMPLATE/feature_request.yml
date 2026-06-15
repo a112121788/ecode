@@ -11,7 +11,7 @@ body:
         提交前请确认：
         - 已阅读 `spec/06-roadmap.md` 当前里程碑范围与 `spec/07-implementation-backlog.md`。
         - 该能力不属于“非目标”：替代 IDE、跨平台、完整 remote daemon、商业版特性等。
-        - 不与 macOS 原版能力重复但已规划在更高里程碑的实现冲突。
+        - 不与已规划在更高里程碑的能力冲突。
 
   - type: dropdown
     id: area
@@ -62,7 +62,7 @@ body:
       description: 参见 `spec/06-roadmap.md`。
       options:
         - M0 - 工程基线
-        - M1 - UI/UX 与 cmux.json 基础
+        - M1 - UI/UX 与 ecode.json 基础
         - M2 - 会话恢复增强
         - M3 - 浏览器面板基础
         - M4 - 浏览器脚本化 API

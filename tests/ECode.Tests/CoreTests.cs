@@ -615,6 +615,58 @@ public class ReleaseWorkflowTests
     }
 }
 
+public class CommunityTemplateTests
+{
+    [Fact]
+    public void IssueTemplates_ProvideBugFeatureAndSpecializedFlows()
+    {
+        var root = Path.Combine(AppContext.BaseDirectory, ".github", "ISSUE_TEMPLATE");
+        var bug = File.ReadAllText(Path.Combine(root, "bug_report.yml"));
+        var feature = File.ReadAllText(Path.Combine(root, "feature_request.yml"));
+        var ecodeJson = File.ReadAllText(Path.Combine(root, "ecode_json_schema.yml"));
+        var browser = File.ReadAllText(Path.Combine(root, "browser_pane.yml"));
+        var sessionRestore = File.ReadAllText(Path.Combine(root, "session_restore.yml"));
+        var config = File.ReadAllText(Path.Combine(root, "config.yml"));
+        var combined = string.Join("\n", bug, feature, ecodeJson, browser, sessionRestore, config);
+
+        bug.Should().Contain("name: Bug Report");
+        bug.Should().Contain("labels: [\"bug\", \"triage\"]");
+        bug.Should().Contain("ecode-app.exe");
+        bug.Should().Contain("%USERPROFILE%/.ecode/daemon-debug.log");
+        feature.Should().Contain("name: Feature / 能力请求");
+        feature.Should().Contain("labels: [\"enhancement\", \"triage\"]");
+        feature.Should().Contain("M1 - UI/UX 与 ecode.json 基础");
+        ecodeJson.Should().Contain("name: ecode.json Schema / 命令面板");
+        ecodeJson.Should().Contain("%USERPROFILE%\\.config\\ecode\\ecode.json");
+        browser.Should().Contain("Browser Pane / WebView2 / Browser API");
+        sessionRestore.Should().Contain("%USERPROFILE%/.ecode/resume.json");
+        sessionRestore.Should().Contain("AutoResumeTrustedBindings");
+        config.Should().Contain("blank_issues_enabled: false");
+        config.Should().Contain("github.com/a112121788/ecode");
+        combined.Should().NotContain("ecodew.exe");
+        combined.Should().NotContain("%LOCALAPPDATA%/ecode");
+        combined.Should().NotContain("AutoResumeAgentSessions");
+        combined.Should().NotContain("manaflow-ai/cmux");
+    }
+
+    [Fact]
+    public void PullRequestTemplate_CoversTestingDocsRiskAndCurrentPaths()
+    {
+        var template = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, ".github", "PULL_REQUEST_TEMPLATE.md"));
+
+        template.Should().Contain("Backlog ID");
+        template.Should().Contain("改动类型");
+        template.Should().Contain(".\\.dotnet\\dotnet.exe build ECode.sln -c Debug -p:NuGetAudit=false");
+        template.Should().Contain(".\\.dotnet\\dotnet.exe test tests\\ECode.Tests\\ECode.Tests.csproj -p:NuGetAudit=false");
+        template.Should().Contain("npm run docs:build");
+        template.Should().Contain("CHANGELOG.md");
+        template.Should().Contain("风险与回滚");
+        template.Should().Contain("%USERPROFILE%\\.ecode\\*.json");
+        template.Should().NotContain("%LOCALAPPDATA%/ecode");
+        template.Should().NotContain("%LOCALAPPDATA%\\cmux");
+    }
+}
+
 public class DocsSiteTests
 {
     [Fact]
