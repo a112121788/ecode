@@ -12,6 +12,7 @@ AppId={{5F31F460-32C4-4B16-BB0A-3B74E5D7E0A1}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+SetupIconFile=..\assets\app-icon.ico
 DefaultDirName={localappdata}\Programs\ECode
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
