@@ -1,4 +1,4 @@
-name: Publish Docs Branch
+name: Build Docs and Publish Branch
 
 on:
   push:
@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   publish:
-    name: Build and publish docs branch
+    name: Build docs/ and publish dist to docs branch
     runs-on: ubuntu-latest
     env:
       # Project Pages are served from /<repository>/ by default.
@@ -42,12 +42,13 @@ jobs:
       - name: Build docs
         run: npm run docs:build
 
-      - name: Publish dist to docs branch
+      - name: Publish compiled docs to docs branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           publish_dir="$(mktemp -d)"
+          test -f docs/.vitepress/dist/index.html
           cp -R docs/.vitepress/dist/. "$publish_dir"
 
           cd "$publish_dir"

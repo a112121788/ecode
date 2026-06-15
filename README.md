@@ -198,7 +198,7 @@ spec/             架构、模块、协议和发布设计文档
 - 本地文档预览：`npm run docs:dev`
 - 文档构建校验：`npm run docs:build`
 
-GitHub Pages 使用 `Deploy from a branch`，发布分支为 `docs`，目录为 `/ (root)`。推送到 `main` 后，`.github/workflows/docs.yml` 会自动构建并更新 `docs` 分支。
+GitHub Pages 使用 `Deploy from a branch`，发布分支为 `docs`，目录为 `/ (root)`。`docs` 分支不手动维护；推送到 `main` 后，`.github/workflows/docs.yml` 会从 `docs/` 构建 VitePress，并把 `docs/.vitepress/dist` 的编译产物覆盖发布到 `docs` 分支。
 
 ## 许可协议
 
