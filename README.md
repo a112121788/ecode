@@ -4,6 +4,8 @@
 
 CLI 主二进制为 `ecode-app.exe`，CLI 工具为 `ecode.exe`，守护进程为 `ecode-daemon.exe`。
 
+文档站点（GitHub Pages）：https://a112121788.github.io/ecode/
+
 ---
 
 ## 缘起 / 谁用 / 是什么 / 怎么用

@@ -1,6 +1,11 @@
+import process from 'node:process'
 import { defineConfig } from 'vitepress'
 
+const rawBase = process.env.VITEPRESS_BASE || '/'
+const base = rawBase === '/' ? '/' : `/${rawBase.replace(/^\/|\/$/g, '')}/`
+
 export default defineConfig({
+  base,
   title: 'ECode',
   description: 'Windows 原生 SuperTerminal 文档',
   cleanUrls: true,
