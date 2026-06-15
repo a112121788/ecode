@@ -37,6 +37,8 @@ project.lock.json
 node_modules/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
+!docs/release-notes/
+!docs/release-notes/**
 
 # =========================
 # IDE / editor

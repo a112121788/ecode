@@ -43,6 +43,7 @@ export default defineConfig({
         items: [
           { text: 'Troubleshooting', link: '/troubleshooting' },
           { text: 'Release Readiness', link: '/release-readiness' },
+          { text: 'Release Notes', link: '/release-notes/1.0.0' },
           { text: 'Architecture', link: '/architecture' },
           { text: 'Roadmap', link: '/roadmap' }
         ]

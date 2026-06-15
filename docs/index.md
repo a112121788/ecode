@@ -35,3 +35,4 @@ features:
 - [CLI Reference](./cli.md) tracks the v1/v2 command surface.
 - [Troubleshooting](./troubleshooting.md) explains doctor output and daemon logs.
 - [Release Readiness](./release-readiness.md) records the P0/P1 gate for 1.0.
+- [1.0.0 Release Notes](./release-notes/1.0.0.md) is the user-facing GitHub Release copy.

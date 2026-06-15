@@ -711,6 +711,7 @@ public class DocsSiteTests
 
         foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "custom-commands.md", "session-restore.md", "cli.md", "browser-api.md", "troubleshooting.md", "release-readiness.md" })
             File.Exists(Path.Combine(docsRoot, page)).Should().BeTrue(page);
+        File.Exists(Path.Combine(docsRoot, "release-notes", "1.0.0.md")).Should().BeTrue();
     }
 
     [Fact]
@@ -862,6 +863,28 @@ public class DocsSiteTests
         readiness.Should().Contain("npm run docs:build");
         readiness.Should().Contain("NuGetAudit=false");
         readiness.Should().Contain("scripts\\ci.ps1");
+    }
+
+    [Fact]
+    public void ReleaseNotesDocs_CoverInstallUpgradeHighlightsAndLimits()
+    {
+        var config = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", ".vitepress", "config.mts"));
+        var notes = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "release-notes", "1.0.0.md"));
+
+        config.Should().Contain("Release Notes");
+        config.Should().Contain("link: '/release-notes/1.0.0'");
+        notes.Should().Contain("ECode 1.0.0 Release Notes");
+        notes.Should().Contain("Recommended Download");
+        notes.Should().Contain("ecode-win-x64-sc");
+        notes.Should().Contain("Velopack setup/feed");
+        notes.Should().Contain("What Is New");
+        notes.Should().Contain("ecode browser");
+        notes.Should().Contain("ecode.v2");
+        notes.Should().Contain("%USERPROFILE%\\.ecode");
+        notes.Should().Contain("Upgrade Notes");
+        notes.Should().Contain("Known Limits");
+        notes.Should().Contain("P0 = 0 and P1 <= 3");
+        notes.Should().Contain("Troubleshooting");
     }
 
     [Fact]
