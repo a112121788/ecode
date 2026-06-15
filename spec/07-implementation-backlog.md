@@ -1,305 +1,203 @@
-# ECode 实施 Backlog
+# ECode 敏捷实施 Backlog
 
-> 本文档是 `06-roadmap.md` 的“可执行切片”。每条 backlog 都可以作为一张 GitHub Issue 或一个 PR 单独跟踪。
+> 本文是 AI Agent 的可执行队列。路线图只讲方向；本文件必须能直接指导下一轮开发。
 >
-> Backlog ID 格式：`M{里程碑}-{包}-{序号}`，例如 `M0-A-01`、`M1-B-02`、`M5-ALL-01`。
->
-> 状态： `[ ]` 待办、`[~]` 进行中、`[x]` 已合并、`[!]` 被拆分或重新规划。
+> 执行 loop 见 `00-agile-ai-delivery.md`，优先级与 Outcome 见 `06-roadmap.md`。
 
 ---
 
-## 0. 通用约束
+## 0. 状态与选择规则
 
-- 产品方向调整为 **SuperTerminal**：优先服务高强度终端、多项目分屏、浏览器预览、脚本化控制、会话恢复与 Windows 原生集成；不再规划专用 AI 运行时 / 外部工具适配器。
-- 任何 backlog 落地前必须先在 `spec/` 中补齐协议 / 数据结构 / UI 行为描述。
-- 复杂功能必须拆成 Core 层 PR、UI 层 PR、CLI/API 层 PR、测试/文档 PR。
-- 同一个 backlog 不应同时跨 2 个里程碑；如发现跨里程碑，先拆。
-- 合并前必须通过：
-  - `dotnet build ECode.sln -c Debug` 零警告（`TreatWarningsAsErrors=true`）。
-  - `dotnet test tests/ECode.Tests/ECode.Tests.csproj` 全绿。
-  - 对 UI 类 backlog：截图或录屏。
-  - 对协议类 backlog：至少 1 个 contract 测试。
+### 0.1 状态
 
----
+| 状态 | 含义 |
+|---|---|
+| `draft` | 想法存在，但 Outcome / Scope / Acceptance 不完整 |
+| `ready` | 可以被 AI Agent 自动领取 |
+| `doing` | 正在处理；默认全仓同一时间最多 1 个 |
+| `blocked` | 缺信息、缺环境、缺权限或连续失败，需要人工处理 |
+| `done` | 已完成并通过对应验证 |
+| `icebox` | 暂不做；保留上下文 |
 
-## M0 - 工程基线
+### 0.2 自动选择规则
 
-### 包 A：CI 与构建脚本
+AI Agent 启动后按以下顺序选择任务：
 
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M0-A-01` | 新增 `scripts/ci.ps1`（restore + build + test + smoke dry-run + publish dry-run） | `scripts/ci.ps1` | `pwsh scripts/ci.ps1` 本地通过 |
-| `M0-A-02` | 新增 GitHub Actions CI（windows-latest） | `.github/workflows/ci.yml` | PR 自动校验；徽章可加 |
-| `M0-A-03` | 统一版本源：`ECode.csproj` Version → `ecode version` → `STATUS` | `src/ECode.Cli/Program.cs`、`MainViewModel.cs` | `ecode version` 与 `STATUS.version` 一致 |
-| `M0-A-04` | 发布产物校验：SHA256 + 文件存在 + 大小阈值 + exe 版本 | `scripts/publish.ps1` | 产物末尾输出校验表 |
-| `M0-A-05` | `docs/` 与 `spec/` 互相引用检查脚本 | `scripts/ci.ps1` | 缺链时 CI 失败 |
-
-### 包 B：测试补齐
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M0-B-01` | 增补 VtParser tests（UTF-8 跨包、OSC ST、CSI private modes、invalid sequence） | `tests/ECode.Tests/CoreTests.cs` | 新增 ≥20 个 parser 测试 |
-| `M0-B-02` | 增补 TerminalBuffer tests（宽字符、alternate screen、scroll region、snapshot roundtrip） | 同上 | 新增 ≥20 个 buffer 测试 |
-| `M0-B-03` | 增补 SplitNode tests（remove/swap/resize/equalize/factory layout） | 同上 | 覆盖所有 public method |
-| `M0-B-04` | 增补 IPC DTO tests（`DaemonRequest/Response/Event` roundtrip） | 同上 | DTO 序列化兼容 |
-| `M0-B-05` | 增补命令脱敏 tests（TOKEN / PASSWORD / API_KEY 规则） | 同上 | 含正反例 |
-
-### 包 C：可观测性
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M0-C-01` | `[x]` 守护进程日志字段标准化：`component/event/paneId/ts` | `DaemonClient.cs`、`DaemonPipeServer.cs` | 单次 attach 可被 grep 串起来 |
-
-### 包 D：文档
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M0-D-01` | 新增 `spec/README.md`（文档索引） | `spec/README.md` | 列出 01-07 文档职责 |
-| `M0-D-02` | 修正 `04-build-deploy.md` “5 个项目” → “6 个项目” | `spec/04-build-deploy.md` | 已在当前 PR 处理 |
-| `M0-D-03` | 统一守护进程重连描述（300ms / 1000ms / 500ms） | `01-architecture.md` §9、`03-data-and-ipc.md` §3.7 | 已在当前 PR 处理 |
+1. `P0` / 安全 / 数据丢失 / 静默执行风险。
+2. `Now` 区域中最靠上的 `ready` 项。
+3. 能在当前环境验证的项优先于 Windows-only 项。
+4. 文档 / 测试 / Core 小切片优先于大 UI / 发布任务。
+5. 没有 `ready` 项时，只做 backlog refinement，不写代码。
 
 ---
 
-## M1 - UI/UX 与 ecode.json 基础
+## 1. 当前冲刺：S0 - spec 敏捷化与 AI loop
 
-### 包 A：通知视觉闭环
+目标：把 `spec/` 从静态规划文档重构为可指导 AI 自动化开发的敏捷交付系统。
 
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M1-A-01` | `[x]` Pane 蓝环绘制（2px 蓝色光环） | `Controls/TerminalControl.cs` | `HasNotification=true` 时 Adorner 出现 |
-| `M1-A-02` | `[x]` Surface tab 未读点 / glow | `Controls/SurfaceTabBar.xaml(.cs)` | 未读时显示蓝点 |
-| `M1-A-03` | `[x]` Workspace sidebar 未读态 | `Controls/WorkspaceSidebarItem.xaml(.cs)` | 显示 badge + latest text |
-| `M1-A-04` | `[x]` `Ctrl+Shift+U` 跳到最新未读 | `MainWindow.xaml.cs` | 跳转后目标 pane 闪烁 1 次 |
-| `M1-A-05` | `[x]` 通知排序修正（最新未读优先） | `NotificationService.cs` | xUnit 测试通过 |
-| `M1-A-06` | `[x]` `NotificationPanel` 右键菜单（标记已读 / 未读 / 复制内容） | `Controls/NotificationPanel.xaml.cs` | 全部菜单项可用 |
-
-### 包 B：基础交互
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M1-B-01` | `[x]` Surface 拖拽重排 | `Controls/SurfaceTabBar.xaml.cs` | 重排后 session 不丢 |
-| `M1-B-02` | `[x]` Workspace 拖拽重排 | `MainWindow.xaml.cs`、`WorkspaceSidebarItem.xaml.cs` | 拖动后顺序持久化 |
-| `M1-B-03` | `[x]` 拖入文件 / 图片到终端 | `Controls/TerminalControl.cs` | 输出正确 quoted path |
-| `M1-B-04` | `[x]` Workspace 右键菜单（重命名 / 关闭 / 复制 ID） | `MainWindow.xaml.cs` | 三项操作可用 |
-| `M1-B-05` | `[x]` Close active tab 按钮常显 | `Controls/SurfaceTabBar.xaml` | 视觉对比 macOS 截图 |
-| `M1-B-06` | `[x]` 设置面板按"外观 / 终端 / 行为 / 键盘 / 高级"重排 | `Views/SettingsWindow.xaml` | 新增“自定义命令”页 |
-
-### 包 C：`ecode.json` 基础
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M1-C-01` | `[x]` `EcodeJsonConfig / EcodeCommand / EcodeAction` DTO | `ECode.Core/Models/EcodeJsonConfig.cs` | Core 单元测试通过 |
-| `M1-C-02` | `[x]` `EcodeJsonService` 解析（路径搜索 / 全局本地合并 / schema 错误） | `ECode.Core/Services/EcodeJsonService.cs` | 含 `MergesLocalOverGlobal`、`InvalidSchema_ReturnsDiagnostic`、JSONC 测试 |
-| `M1-C-03` | `[x]` CommandPalette 接入 custom commands | `Controls/CommandPalette.xaml.cs`、`Views/MainWindow.xaml.cs` | 命令出现在面板，keywords/action id 可搜索 |
-| `M1-C-04` | `[x]` `currentTerminal` / `newTabInCurrentPane` 目标执行 | `Views/MainWindow.xaml.cs` | 含 `confirm` 弹窗路径；执行时记录命令日志 |
-| `M1-C-05` | `[x]` CLI `ecode reload-config` + `Ctrl+Shift+,` | `ECode.Cli/Program.cs`、`MainWindow.xaml.cs` | 重载后命令面板刷新 |
-
----
-
-## M2 - 会话恢复增强
-
-### 包 A：数据与服务
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M2-A-01` | `[x]` `ResumeBinding` DTO + JSON | `ECode.Core/Models/ResumeBinding.cs` | roundtrip 测试 |
-| `M2-A-02` | `[x]` `ResumeBindingService`（Load/Save/Add/SetForPane/Remove/RemoveForPane/FindForSurface/TrustPrefix） | `ECode.Core/Services/ResumeBindingService.cs` | 覆盖所有 public method |
-| `M2-A-03` | `[x]` 敏感环境剔除（TOKEN / PASSWORD / SECRET / API_KEY 等） | 同上 | `DropsSensitiveEnv` 测试通过 |
-| `M2-A-04` | `[x]` `ECODE_WORKSPACE_ID` 启动注入 | `TerminalProcess.cs` | 本地与 daemon shell 启动环境均注入 workspace id |
-
-### 包 B：UI 与开关
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M2-B-01` | `[x]` 恢复确认 UI（未信任 binding 提示条） | `Controls/SplitPaneContainer.cs` 或 `TerminalControl.cs` | 红框 + “可恢复” 按钮 |
-| `M2-B-02` | `[x]` 自动恢复设置项（全局开关 + 每条 binding 显式信任） | `ECodeSettings.cs`、`SettingsWindow.xaml` | 关闭后所有 resume binding 均不自动执行 |
-| `M2-B-03` | `[x]` 进程检测（tasklist 解析 tmux / shell 子进程） | `ECode.Core/Services/ResumeProcessDetector.cs` | 单元测试：含/不含 tmux 与 shell 路径 |
-
-### 包 C：CLI
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M2-C-01` | `[x]` CLI `surface resume {set,show,clear}` | `ECode.Cli/Program.cs`、`MainViewModel.cs` | build + ResumeBinding service 测试通过 |
-| `M2-C-02` | `[x]` CLI `restore-session` / `Ctrl+Shift+O` 入口 | `MainWindow.xaml.cs` | UI 入口可用 |
-
-## M3 - 浏览器面板基础
-
-### 包 A：模型与持久化
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M3-A-01` | `[x]` `SurfaceKind { Terminal, Browser }` | `Models/Surface.cs` | 旧 `session.json` 默认 Terminal |
-| `M3-A-02` | `[x]` `SessionState` 新增 `kind/browserUrl/browserTitle/browserHistory` | `Models/SessionState.cs`、`SessionPersistenceService.cs` | Browser metadata roundtrip 测试通过 |
-
-### 包 B：UI
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M3-B-01` | `[x]` `BrowserPaneViewModel` | `src/ECode/ViewModels/BrowserPaneViewModel.cs` | URL / Title / Loading / CanGoBack 等属性变更广播 |
-| `M3-B-02` | `[x]` `BrowserControl` 升级（地址栏、back/forward/reload/stop/devtools） | `Controls/BrowserControl.xaml(.cs)` | 工具栏状态与加载进度可用 |
-| `M3-B-03` | `[x]` `SplitPaneContainer` 支持 browser leaf | `Controls/SplitPaneContainer.cs` | `BuildLeaf` 分支渲染 BrowserControl |
-| `M3-B-04` | `[x]` WebView2 缺失时的友好提示 | `BrowserControl.xaml.cs` | 不崩溃，提示下载链接 |
-
-### 包 C：CLI / ecode.json
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M3-C-01` | `[x]` `ecode browser open|open-split|new <url>` | `ECode.Cli/Program.cs`、`MainViewModel.cs` | build 通过；open-split v1 回退为 new-surface |
-| `M3-C-02` | `[x]` `.ecode/ecode.json` workspace 中 `type:"browser"` surface 解析 | `EcodeJsonService.cs`、`MainWindow.xaml.cs` | 在 layout 中可创建 |
-| `M3-C-03` | `[x]` v1 IPC `BROWSER.OPEN_SPLIT` 文本参数 | `MainViewModel.HandlePipeCommand` | v1 响应含 `fallbackMode:"new-surface"` |
-
----
-
-## M4 - 浏览器脚本化 API
-
-### 包 A：协议层
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M4-A-01` | `[x]` v2 协议层基础（先做 v2 框架；具体 method 在 M4 落地） | `ECode.Core/IPC/v2/*` | `protocol:ecode.v2` 请求可被解析 |
-| `M4-A-02` | `[x]` 稳定错误码：`invalid_ref / not_found / stale_ref / not_supported / timeout / internal_error` | 同上 | contract 测试覆盖所有错误码 |
-
-### 包 B：脚本化服务
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M4-B-01` | `[x]` `BrowserScriptingService` 框架（refs / diagnostics / surfaceRef 路由） | `ECode/Services/BrowserScriptingService.cs` | 单测：refs 失效后返回 `stale_ref` |
-| `M4-B-02` | `[x]` `snapshot / find.role / find.text / find.testid / find.first / find.last / find.nth` | 同上 | P0 locator 测试 |
-| `M4-B-03` | `[x]` `click / fill / hover / press / eval / screenshot` | 同上 | 含空字符串 fill 清空 input |
-| `M4-B-04` | `[x]` `cookies.get/set/clear` 与 `storage.get/set/clear` | 同上 | 状态测试 |
-| `M4-B-05` | `[x]` `console.list/clear`、`dialog.accept/dismiss`、`download.wait`、`highlight` | 同上 | 应做范围测试 |
-| `M4-B-06` | `[x]` `addinitscript / addscript / addstyle` | 同上 | 可做范围 |
-| `M4-B-07` | `[x]` NotSupported 矩阵（viewport / geolocation / offline / trace / network.route / screencast / input_mouse / input_keyboard / input_touch） | 同上 | 全部返回 `not_supported` |
-
-### 包 C：CLI
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M4-C-01` | `[x]` `ecode browser snapshot/click/fill/eval/screenshot/...` | `ECode.Cli/Program.cs` | E2E smoke：打开 localhost → snapshot → click → fill → eval |
-
-### 包 D：测试
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M4-D-01` | `[x]` 浏览器脚本化 xUnit（依赖 WebView2 + 本地测试页） | `tests/ECode.Tests/BrowserScriptingTests.cs` | P0 全绿；CI 标记 Windows-only integration |
-
----
-
-## M5 - v2 协议、多窗口与短 ID
-
-### 包 A：协议升级
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M5-A-01` | `[x]` 同一 `\\.\pipe\ecode` 上 v1/v2 协商（首行 JSON 判 v2） | `NamedPipeServer.cs`、`NamedPipeClient.cs` | v1 / v2 并存可运行 |
-| `M5-A-02` | `[x]` 短 ID 引用（`window:N / workspace:N / surface:N / pane:N`） | `ECode.Core/Models/ShortRef.cs` | UUID↔ref 双向解析 |
-| `M5-A-03` | `[x]` `--id-format refs|uuids|both` 全局参数 | `ECode.Cli/Program.cs` | 默认行为与 `06-roadmap.md` §5.3 一致 |
-
-### 包 B：多窗口
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M5-B-01` | `[x]` `WindowManagerService` | `ECode/Services/WindowManagerService.cs` | 多窗口独立生命周期 |
-| `M5-B-02` | `[x]` `window.list/current/focus/create/close` v2 API | `MainViewModel`、v2 协议层 | contract 测试 |
-| `M5-B-03` | `[x]` `surface.{move,reorder}` | 同上 | contract 测试 |
-
-### 包 C：API 覆盖
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M5-C-01` | `[x]` `workspace.list/create/select/close/rename/reorder` | v2 协议层 | contract 测试 |
-| `M5-C-02` | `[x]` `pane.list/focus/write/read/split/close/resize/swap/zoom` | 同上 | contract 测试 |
-| `M5-C-03` | `[x]` `notification.list/read/unread/jump-latest/clear` | 同上 | contract 测试 |
-| `M5-C-04` | `[x]` `config.reload` / `config.diagnostics` | 同上 | contract 测试 |
-| `M5-C-05` | `[x]` `status` / `health` | 同上 | contract 测试 |
-
----
-
-## M6 - 系统集成、安装与更新
-
-### 包 A：Shell / CLI 集成
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M6-A-01` | `[x]` PATH / shell profile setup（PowerShell、cmd） | `ECode.Cli/Commands/ShellSetup.cs` | install / uninstall 可逆 |
-| `M6-A-02` | `[x]` PowerShell completion | `scripts/completions/ecode.ps1` | `ecode <Tab>` 可补全命令与 refs |
-| `M6-A-03` | `[x]` Windows Terminal profile 导入 | `ECode.Cli/Commands/ProfileImport.cs` | 可导入配色 / 字体 / shell profile |
-| `M6-A-04` | `[x]` `ecode doctor` 环境诊断 | `ECode.Cli/Program.cs` | 输出 ConPTY / WebView2 / PATH / daemon 状态 |
-| `M6-A-05` | `[x]` `ecode setup status` / `ecode setup uninstall` | 同上 | diff 输出可读，卸载清理 PATH/profile 变更 |
-
-### 包 B：安装与更新
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M6-B-01` | `[x]` Velopack 集成（安装器 + feed） | `src/ECode.Updater`（新增）、`scripts/publish.ps1` | 新版本自动检测 |
-| `M6-B-02` | `[x]` `ecode update check/install` CLI | `ECode.Cli/Program.cs` | 可后台静默更新 |
-| `M6-B-03` | `[x]` Inno Setup 安装器（备用路径） | `installer/ecode.iss` | 卸载干净 |
-| `M6-B-04` | `[x]` MSIX 打包（可选企业分发） | `installer/AppXManifest.xml` | `Add-AppxPackage` 成功 |
-| `M6-B-05` | `[x]` 多 RID CI（`win-x64 / win-x86 / win-arm64`） | `.github/workflows/release.yml` | nightly 出 4 个产物 |
-| `M6-B-06` | `[x]` `CHANGELOG.md` 自动生成（git-cliff 或 release-drafter） | `.github/release.yml` | release 触发自动更新 |
-
----
-
-## M7 - 生态、文档与 1.0 收敛
-
-### 包 A：文档站
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M7-A-01` | `[x]` `docs/` 目录（mkdocs material 或 vitepress） | `docs/*` | 站点可构建 |
-| `M7-A-02` | `[x]` `installation.md` | `docs/installation.md` | 含 zip / Velopack / MSIX 三种安装方式 |
-| `M7-A-03` | `[x]` `getting-started.md` | `docs/getting-started.md` | 简体中文单语 |
-| `M7-A-04` | `[x]` `custom-commands.md` | `docs/custom-commands.md` | 与 M5 后状态同步 |
-| `M7-A-05` | `[x]` `browser-api.md` | `docs/browser-api.md` | 与 M4 协议同步 |
-| `M7-A-06` | `[x]` `session-restore.md` | `docs/session-restore.md` | 与 M2 数据模型同步 |
-| `M7-A-07` | `[x]` `cli.md` | `docs/cli.md` | v1+v2 |
-| `M7-A-08` | `[x]` `troubleshooting.md` | `docs/troubleshooting.md` | 含 daemon-debug.log 解读 |
-
-### 包 B：社区与治理
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M7-B-01` | `[x]` `CONTRIBUTING.md` | `CONTRIBUTING.md` | 含构建、测试、PR 流程 |
-| `M7-B-02` | `[x]` `SECURITY.md` | `SECURITY.md` | 含漏洞报告方式 |
-| `M7-B-03` | [x] Issue / PR 模板 | `.github/ISSUE_TEMPLATE/*`、`PULL_REQUEST_TEMPLATE.md` | bug / feature 模板可用 |
-| `M7-B-04` | [x] Discord 同步公告 | `scripts/discord-notify.ps1` | release 时 webhook 触发 |
-
-### 包 C：1.0 门槛
-
-| ID | 标题 | 关联文件 | 验收 |
-|---|---|---|---|
-| `M7-C-01` | [x] P0/P1 bug 收敛（详见 `06-roadmap.md` §8） | `docs/release-readiness.md` | P0=0、P1<=3 且有 workaround |
-| `M7-C-02` | [x] 1.0 发布说明（GitHub Release） | `docs/release-notes/1.0.0.md` | 用户可读 |
-| `M7-C-03` | [x] 公开路线图页面 | `docs/roadmap.md` | 与 `06-roadmap.md` 一致 |
-
----
-
-## 跨里程碑（横切）
-
-| ID | 标题 | 关联里程碑 | 关联文件 | 验收 |
+| ID | 状态 | Outcome | Scope | Acceptance |
 |---|---|---|---|---|
-| `X-01` | [x] Windows 路径 / 中文路径 smoke | M0 起 | `tests/ECode.Smoke` | CI 中含 `中文 目录/项目/` |
-| `X-02` | [x] 性能预算监控（冷启动 / status / snapshot / save session） | M1 起 | `scripts/perf/*` | 报告产出并入 release |
-| `X-03` | [x] 风险登记刷新 | 持续 | `06-roadmap.md` §7 | 每迭代更新 |
+| `S0-01` | done | 新增 AI 自动 loop 入口文档 | `spec/00-agile-ai-delivery.md` | 文档包含 loop、DoR、DoD、停止规则、验证矩阵 |
+| `S0-02` | done | 路线图改为 Now / Next / Later | `spec/06-roadmap.md` | 不再把已完成 M0-M7 当当前 backlog；保留 1.0 基线归档 |
+| `S0-03` | done | backlog 改为敏捷队列 | `spec/07-implementation-backlog.md` | 有状态规则、任务模板、ready 队列和 refinement 规则 |
+| `S0-04` | done | spec 索引同步新入口 | `spec/README.md` | 阅读顺序以 `00` 开始，状态表反映敏捷交付用途 |
 
 ---
 
-## 推荐首个冲刺（PR 顺序）
+## 2. Ready 队列（Now）
 
-1. `M0-A-01` + `M0-A-02`（建立 CI 安全网）
-2. `M0-A-03`（版本号统一）
-3. `M0-B-01` ~ `M0-B-05`（核心测试补齐）
-4. `M1-C-01` ~ `M1-C-05`（已完成：`ecode.json` Core + CommandPalette 接入 + reload config）
-5. `M2-A-01`（已完成：`ResumeBinding` DTO + JSON）
-6. `M1-A-01`（Pane 蓝环，macOS 核心体验首块拼图）
-7. `M2-A-03`（已完成：ResumeBinding 敏感环境剔除）
-8. `M2-C-01`（已完成：CLI `surface resume`）
-9. `M2-A-04`（已完成：`ECODE_WORKSPACE_ID` 启动注入）
-10. `M3-A-01` + `M3-A-02`（已完成：SurfaceKind + SessionState 扩展）
-11. `M3-B-01`（已完成：BrowserPaneViewModel 状态层）
-12. `M3-B-03` + `M3-B-04`（已完成：Browser leaf 渲染 + WebView2 缺失提示）
-13. `M3-C-01` + `M3-C-03`（已完成：CLI/IPC browser open）
-14. `M3-B-02`（已完成：BrowserControl 工具栏升级）
-15. `M3-C-02`（ecode.json browser surface 解析）
+### `AGL-01` - 增加 spec/docs 链接检查脚本
 
-> 进入 M4 / M5 前必须先冻结 v1 CLI 行为并完成 v1 contract 测试固化，避免 v2 协议破坏现有自动化脚本。
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | AI loop 修改文档后能快速发现坏链接或旧文件名，降低文档漂移 |
+| Scope | `scripts/` 新增轻量检查脚本；可选接入 `scripts/ci.ps1` 的 docs gate；不改用户文档内容 |
+| 关联 | `00-agile-ai-delivery.md` §6、`04-build-deploy.md` §4.3 |
+| 验收 | 本地运行脚本能扫描 `spec/*.md` 与 `docs/*.md` 中相对链接；故意填一个坏链接时返回非 0 |
+| 风险 | Windows PowerShell 与 macOS shell 路径差异 |
+| 回滚 | 从 CI 中移除 gate，保留脚本手动运行 |
+
+### `AGL-02` - 将 handoff note 接入 PR 流程
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | Agent 中断或交接时，PR 描述能直接承载固定 handoff 信息 |
+| Scope | 可选更新 `.github/PULL_REQUEST_TEMPLATE.md` 或新增 docs 指引；不改运行时代码 |
+| 关联 | `00-agile-ai-delivery.md` §3、§8，本文 §7 |
+| 验收 | PR 模板或说明中出现目标、已改文件、验证、未跑验证、风险、下一步、回滚点 |
+| 风险 | 模板过重导致普通 PR 填写成本上升 |
+| 回滚 | 从 PR 模板移除该块，保留本文 §7 作为内部手册 |
+
+### `DOG-01` - 新增 ECode 自举 dogfood 配置样例
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P2 |
+| Outcome | 维护者能用 ECode 命令面板一键执行本仓常用 build/test/docs 命令 |
+| Scope | 新增示例 `.ecode/ecode.example.json` 或 `docs/configuration.md` 示例；不写入用户真实本地配置 |
+| 关联 | `05-cli-commands.md`、`docs/custom-commands.md` |
+| 验收 | 示例包含 build、unit test、docs build、status/health；所有高风险命令 `confirm:true` |
+| 风险 | 示例路径在 macOS / Windows 不一致 |
+| 回滚 | 删除示例文件，不影响源码 |
+
+### `DOG-02` - 设计 ecode.v2 本地 smoke 脚本
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P2 |
+| Outcome | 用 ECode 自身自动化 API 验证 workspace / pane / browser 的最小闭环 |
+| Scope | 先写 spec 或脚本草案；涉及 live app 的执行标记 Windows-only；不要求当前环境跑通 WPF |
+| 关联 | `03-data-and-ipc.md`、`05-cli-commands.md` |
+| 验收 | 脚本步骤覆盖 status -> workspace.create -> pane.write/read -> browser.open -> browser.snapshot；缺环境时输出清晰 skip |
+| 风险 | 依赖正在运行的 ECode 主应用 |
+| 回滚 | 脚本不接 CI，仅作为手动 smoke |
+
+### `REL-01` - 发布前证据清单自动化
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P2 |
+| Outcome | Release 前能快速汇总测试、docs、perf、doctor 的证据路径 |
+| Scope | `docs/release-readiness.md` 或脚本；不改变 release workflow |
+| 关联 | `04-build-deploy.md`、`docs/release-readiness.md` |
+| 验收 | 清单覆盖 build/test/docs/perf/release workflow；明确哪些是 Windows-only |
+| 风险 | 与现有 GitHub artifacts 命名漂移 |
+| 回滚 | 保留人工 release checklist |
+
+---
+
+## 3. Draft / Refinement 队列
+
+这些项需要先补 Ready 信息，不能自动开工。
+
+| ID | 状态 | Outcome | 缺口 | 下一步 |
+|---|---|---|---|---|
+| `OBS-01` | draft | Agent 会话、命令日志、terminal transcript 可串成一次失败 loop 的复盘视图 | 需要确认 UI 入口与用户故事 | 先读 `02-modules.md` 中 Agent / Session Vault 模块，写行为 spec |
+| `BRS-01` | draft | Browser scripting API 增加更多真实页面回归样例 | 需要本地测试页和 WebView2 环境策略 | 先列 P0 API 现有覆盖矩阵 |
+| `PKG-01` | draft | 安装 / 更新 / 卸载 rollback 证据更清晰 | 需要 Windows 测试环境和 artifact 命名 | 先整理 release workflow 产物清单 |
+| `DX-01` | draft | 新贡献者按 `spec/` 能 30 分钟跑通第一个小 PR | 需要观测真实 onboarding 缺口 | 先用一次 fresh clone 记录摩擦点 |
+
+---
+
+## 4. Blocked 队列
+
+| ID | 状态 | 阻塞原因 | 解除条件 |
+|---|---|---|---|
+| `WIN-01` | blocked | WPF / ConPTY / WebView2 live 验证需要 Windows 图形环境 | 在 Windows 机器上运行对应 smoke 并回填证据 |
+| `NET-01` | blocked | 需要联网或外部服务的检查不能默认自动执行 | 人工批准网络 / 凭据 / 发布操作后单独执行 |
+
+---
+
+## 5. Done 归档
+
+### 5.1 1.0 基线归档
+
+旧 M0-M7 backlog 已完成，详细用户可见变化见 `CHANGELOG.md` 的 `1.0.0` 节，公开路线见 `docs/roadmap.md`。后续不再在本文件维护历史 M0-M7 明细，避免当前队列被已完成任务淹没。
+
+| 范围 | 状态 | 归档位置 |
+|---|---|---|
+| M0 工程基线 | done | `CHANGELOG.md`、`docs/roadmap.md` |
+| M1 UI/UX 与 `ecode.json` | done | `CHANGELOG.md`、`docs/roadmap.md` |
+| M2 会话恢复 | done | `CHANGELOG.md`、`docs/session-restore.md` |
+| M3 Browser Pane | done | `CHANGELOG.md`、`docs/getting-started.md` |
+| M4 Browser scripting | done | `CHANGELOG.md`、`docs/browser-api.md` |
+| M5 v2 协议 | done | `CHANGELOG.md`、`docs/cli.md` |
+| M6 安装更新 | done | `CHANGELOG.md`、`docs/installation.md` |
+| M7 文档与社区 | done | `CHANGELOG.md`、`CONTRIBUTING.md`、`SECURITY.md` |
+
+---
+
+## 6. Backlog 条目模板
+
+新增条目时复制此模板。只有字段完整才能进入 `ready`。
+
+```markdown
+### `ID` - 标题
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | draft / ready / doing / blocked / done / icebox |
+| 优先级 | P0 / P1 / P2 / P3 |
+| Outcome | 完成后用户或维护者得到什么 |
+| Scope | 涉及文件 / 模块；明确非目标 |
+| 关联 | spec / docs / issue / 代码入口 |
+| 验收 | 可执行命令、手测脚本或明确截图要求 |
+| 风险 | 安全、兼容、性能、发布或验证风险 |
+| 回滚 | 如何关闭、撤销或降级 |
+```
+
+---
+
+## 7. Handoff Note 模板
+
+每轮结束，如果任务没有完全 done，必须留下 handoff：
+
+```markdown
+### Handoff - ID
+
+- 目标：
+- 已完成：
+- 已改文件：
+- 已验证：
+- 未验证 / 原因：
+- 当前阻塞：
+- 下一步建议：
+- 回滚点：
+```
+
+---
+
+## 8. 维护规则
+
+- 每次 loop 开始：确认选中条目为 `ready`，再把状态改为 `doing`。
+- 每次 loop 结束：只能改成 `done`、`blocked`、`ready`（拆小后）或保留 `doing` 并写 handoff。
+- 每周 review：清理超过 2 周未动的 `ready`，补齐验收或降回 `draft`。
+- 每个 `ready` 项必须能由一个 Agent 在单轮上下文内读完相关资料。
+- 不允许把“继续完善”“优化体验”这类无法验收的句子作为 backlog 标题。
