@@ -52,9 +52,20 @@ jobs:
         shell: pwsh
         run: ./scripts/publish.ps1 -Config Release -Rid win-x64 -Flavor Cli
 
+      - name: Generate performance budget report
+        shell: pwsh
+        run: ./scripts/perf/measure.ps1 -OutputDir artifacts/perf -CliPath publish/ecode-cli/ecode.exe -Samples 1
+
       - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
           name: ecode-cli-win-x64
           path: publish/ecode-cli/
+          retention-days: 14
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecode-perf-report
+          path: artifacts/perf/
           retention-days: 14

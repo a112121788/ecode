@@ -659,6 +659,33 @@ public class SmokeWorkflowTests
     }
 }
 
+public class PerfBudgetScriptTests
+{
+    [Fact]
+    public void PerfBudgetScript_DefinesBudgetsReportsAndReleaseArtifact()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "perf", "measure.ps1"));
+        var workflow = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, ".github", "workflows", "release.yml"));
+        var ci = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "ci.ps1"));
+
+        script.Should().Contain("cold_start_no_restore");
+        script.Should().Contain("ecode_status");
+        script.Should().Contain("browser_snapshot");
+        script.Should().Contain("save_session_10_panes_3000_lines");
+        script.Should().Contain("BudgetMs 1500");
+        script.Should().Contain("BudgetMs 100");
+        script.Should().Contain("BudgetMs 500");
+        script.Should().Contain("BudgetMs 300");
+        script.Should().Contain("perf-report.json");
+        script.Should().Contain("perf-report.md");
+        script.Should().Contain("ConvertTo-Json -Depth 20 -Compress");
+        script.Should().Contain("FailOnBudget");
+        workflow.Should().Contain("./scripts/perf/measure.ps1");
+        workflow.Should().Contain("ecode-perf-report");
+        ci.Should().Contain("Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'scripts') -Filter '*.ps1' -File -Recurse");
+    }
+}
+
 public class CommunityTemplateTests
 {
     [Fact]

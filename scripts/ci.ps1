@@ -207,8 +207,8 @@ try {
     }
 
     Write-Step 'Validate PowerShell scripts'
-    Test-PowerShellScriptSyntax (Join-Path $RepoRoot 'scripts/ci.ps1')
-    Test-PowerShellScriptSyntax $PublishScript
+    Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'scripts') -Filter '*.ps1' -File -Recurse |
+        ForEach-Object { Test-PowerShellScriptSyntax $_.FullName }
     Write-Host 'PowerShell syntax OK.' -ForegroundColor Green
 
     Write-Step 'Validate documentation links'
