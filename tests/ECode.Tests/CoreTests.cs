@@ -576,6 +576,22 @@ public class InnoSetupScriptTests
         script.Should().NotContain("%USERPROFILE%\\.ecode");
         script.Should().NotContain("{userappdata}\\.ecode");
     }
+
+    [Fact]
+    public void EcodeInnoScript_UsesSimplifiedChineseInstallerAndUninstallerText()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "installer", "ecode.iss");
+        var script = File.ReadAllText(path);
+
+        script.Should().Contain("Name: \"chinesesimplified\"; MessagesFile: \"compiler:Languages\\ChineseSimplified.isl\"");
+        script.Should().Contain("Description: \"{cm:CreateDesktopIcon}\"");
+        script.Should().Contain("GroupDescription: \"{cm:AdditionalIcons}\"");
+        script.Should().Contain("Description: \"{cm:LaunchProgram,{#MyAppName}}\"");
+        script.Should().NotContain("MessagesFile: \"compiler:Default.isl\"");
+        script.Should().NotContain("Create a &desktop shortcut");
+        script.Should().NotContain("Additional icons:");
+        script.Should().NotContain("Launch ECode");
+    }
 }
 
 public class ReleaseWorkflowTests
