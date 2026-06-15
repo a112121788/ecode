@@ -1,10 +1,10 @@
-# ECodeX PowerShell native argument completion.
+# ECodex PowerShell native argument completion.
 # Usage:
 #   . /path/to/scripts/completions/ecodex.ps1
 # or:
 #   ecodex completion powershell | Invoke-Expression
 
-$script:ECodeXCommands = @(
+$script:ECodexCommands = @(
     'notify',
     'notification',
     'window',
@@ -27,7 +27,7 @@ $script:ECodeXCommands = @(
     'version'
 )
 
-$script:ECodeXSubcommands = @{
+$script:ECodexSubcommands = @{
     notification = @('list', 'read', 'unread', 'jump-latest', 'clear')
     window = @('list', 'current', 'focus', 'create', 'close')
     workspace = @('list', 'create', 'select', 'close', 'rename', 'reorder')
@@ -42,9 +42,9 @@ $script:ECodeXSubcommands = @{
     completion = @('powershell')
 }
 
-$script:ECodeXResumeSubcommands = @('set', 'show', 'clear')
-$script:ECodeXGlobalOptions = @('--json', '--id-format')
-$script:ECodeXCommonOptions = @(
+$script:ECodexResumeSubcommands = @('set', 'show', 'clear')
+$script:ECodexGlobalOptions = @('--json', '--id-format')
+$script:ECodexCommonOptions = @(
     '--id', '--ref', '--window', '--workspace', '--surface', '--pane',
     '--name', '--title', '--body', '--lines', '--text', '--value',
     '--url', '--surfaceRef', '--direction', '--submit',
@@ -54,9 +54,9 @@ $script:ECodeXCommonOptions = @(
     '--feed-url', '--setup-url', '--installer-url', '--download-dir',
     '--download-only', '--pack-id', '--silent', '--wait'
 )
-$script:ECodeXRefPrefixes = @('window:', 'workspace:', 'surface:', 'pane:')
+$script:ECodexRefPrefixes = @('window:', 'workspace:', 'surface:', 'pane:')
 
-function New-ECodeXCompletionResult {
+function New-ECodexCompletionResult {
     param(
         [Parameter(Mandatory = $true)][string]$Text,
         [string]$ToolTip = $Text
@@ -70,7 +70,7 @@ function New-ECodeXCompletionResult {
     )
 }
 
-function Get-ECodeXMatchingResults {
+function Get-ECodexMatchingResults {
     param(
         [Parameter(Mandatory = $true)][string[]]$Items,
         [AllowNull()][string]$WordToComplete
@@ -80,18 +80,18 @@ function Get-ECodeXMatchingResults {
     $Items |
         Where-Object { $_ -like "$word*" } |
         Sort-Object -Unique |
-        ForEach-Object { New-ECodeXCompletionResult $_ }
+        ForEach-Object { New-ECodexCompletionResult $_ }
 }
 
-function Get-ECodeXRefResults {
+function Get-ECodexRefResults {
     param([AllowNull()][string]$WordToComplete)
 
     $word = if ($null -eq $WordToComplete) { '' } else { $WordToComplete }
-    foreach ($prefix in $script:ECodeXRefPrefixes) {
+    foreach ($prefix in $script:ECodexRefPrefixes) {
         foreach ($index in 1..9) {
             $candidate = "$prefix$index"
             if ($candidate -like "$word*") {
-                New-ECodeXCompletionResult $candidate "ECodeX short ref"
+                New-ECodexCompletionResult $candidate "ECodex short ref"
             }
         }
     }
@@ -106,34 +106,34 @@ Register-ArgumentCompleter -Native -CommandName ecodex -ScriptBlock {
     )
 
     if ($words.Count -le 1) {
-        Get-ECodeXMatchingResults $script:ECodeXCommands $wordToComplete
+        Get-ECodexMatchingResults $script:ECodexCommands $wordToComplete
         return
     }
 
     $command = $words[1].ToLowerInvariant()
 
     if ($wordToComplete -like '--*') {
-        Get-ECodeXMatchingResults ($script:ECodeXGlobalOptions + $script:ECodeXCommonOptions) $wordToComplete
+        Get-ECodexMatchingResults ($script:ECodexGlobalOptions + $script:ECodexCommonOptions) $wordToComplete
         return
     }
 
-    if ($words.Count -le 2 -and $script:ECodeXCommands -contains $command) {
-        Get-ECodeXMatchingResults $script:ECodeXCommands $wordToComplete
+    if ($words.Count -le 2 -and $script:ECodexCommands -contains $command) {
+        Get-ECodexMatchingResults $script:ECodexCommands $wordToComplete
         return
     }
 
-    if ($script:ECodeXSubcommands.ContainsKey($command) -and $words.Count -le 3) {
-        Get-ECodeXMatchingResults $script:ECodeXSubcommands[$command] $wordToComplete
+    if ($script:ECodexSubcommands.ContainsKey($command) -and $words.Count -le 3) {
+        Get-ECodexMatchingResults $script:ECodexSubcommands[$command] $wordToComplete
         return
     }
 
     if ($command -eq 'surface' -and $words.Count -ge 3 -and $words[2].ToLowerInvariant() -eq 'resume' -and $words.Count -le 4) {
-        Get-ECodeXMatchingResults $script:ECodeXResumeSubcommands $wordToComplete
+        Get-ECodexMatchingResults $script:ECodexResumeSubcommands $wordToComplete
         return
     }
 
     if ($wordToComplete -match '^(window|workspace|surface|pane):\d*$') {
-        Get-ECodeXRefResults $wordToComplete
+        Get-ECodexRefResults $wordToComplete
         return
     }
 
@@ -145,10 +145,10 @@ Register-ArgumentCompleter -Native -CommandName ecodex -ScriptBlock {
         )
 
         if ($commandsThatAcceptRefs -contains $subcommand) {
-            Get-ECodeXRefResults $wordToComplete
+            Get-ECodexRefResults $wordToComplete
             return
         }
     }
 
-    Get-ECodeXMatchingResults ($script:ECodeXGlobalOptions + $script:ECodeXCommonOptions) $wordToComplete
+    Get-ECodexMatchingResults ($script:ECodexGlobalOptions + $script:ECodexCommonOptions) $wordToComplete
 }

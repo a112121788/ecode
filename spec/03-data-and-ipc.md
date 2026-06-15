@@ -24,7 +24,7 @@ COMMAND [key1=value1] [key2=value2] ...
 ```
 
 - 命令名大写（服务端 `ToUpperInvariant` 后分派）
-- `ECodeX.Cli` 默认发送 `COMMAND {json}`，用于稳定传输带空格 / 引号的命令参数
+- `ECodex.Cli` 默认发送 `COMMAND {json}`，用于稳定传输带空格 / 引号的命令参数
 - 参数解析支持三种形态（`NamedPipeServer.ParseArgs`）：
   1. JSON 对象（首字符为 `{`）
   2. `key=value`，值带空格可用 `"..."` 或 `'...'`
@@ -67,7 +67,7 @@ CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超
 
 ### 2.4 CLI 顶层命令
 
-`ecodex.exe`（即 `ECodeX.Cli`）的 argv 入口：
+`ecodex.exe`（即 `ECodex.Cli`）的 argv 入口：
 
 ```text
 ecodex notify       --title <text> --body <text> --subtitle <text>
@@ -193,7 +193,7 @@ public class DaemonSessionInfo {
 
 ```text
 启动
-  ├─ 命名互斥体 Global\ECodeXDaemon 单实例
+  ├─ 命名互斥体 Global\ECodexDaemon 单实例
   ├─ 创建 DaemonSessionManager + DaemonPipeServer
   ├─ 后台线程 PipeServer-Accept 持续 AcceptNewConnection
   └─ 主线程每 5 分钟轮询：
@@ -351,10 +351,10 @@ Shell 写入 `\e]133;A` / `\e]133;B;<command>` / `\e]133;C` / `\e]133;D;<exitcod
 
 | 字段 | 含义 |
 |---|---|
-| `ECodeXSettings.CommandLogRetentionDays` | 命令日志按日清理（默认 90，`0` = 永久保留） |
-| `ECodeXSettings.TranscriptRetentionDays` | 脚本日志按文件 `LastWriteTime` 清理（默认 90，`0` = 永久保留） |
-| `ECodeXSettings.CaptureTranscriptsOnClose` | Surface/Pane 关闭 / 清理时是否落盘脚本 |
-| `ECodeXSettings.CaptureTranscriptsOnClear` | 清屏时是否落盘脚本 |
+| `ECodexSettings.CommandLogRetentionDays` | 命令日志按日清理（默认 90，`0` = 永久保留） |
+| `ECodexSettings.TranscriptRetentionDays` | 脚本日志按文件 `LastWriteTime` 清理（默认 90，`0` = 永久保留） |
+| `ECodexSettings.CaptureTranscriptsOnClose` | Surface/Pane 关闭 / 清理时是否落盘脚本 |
+| `ECodexSettings.CaptureTranscriptsOnClear` | 清屏时是否落盘脚本 |
 
 应用启动 + `SettingsChanged` 时调用 `ApplyRetentionPolicy / ApplyTranscriptRetentionPolicy / ScrubSensitiveData…`。
 

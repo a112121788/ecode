@@ -1,10 +1,10 @@
 # Security Policy
 
-Thank you for helping keep ECodeX users safe. Please report suspected vulnerabilities privately so maintainers have time to investigate and prepare a fix before details are public.
+Thank you for helping keep ECodex users safe. Please report suspected vulnerabilities privately so maintainers have time to investigate and prepare a fix before details are public.
 
 ## Supported Versions
 
-ECodeX is still pre-1.0. Security fixes are prioritized on the `main` branch and the latest published release line.
+ECodex is still pre-1.0. Security fixes are prioritized on the `main` branch and the latest published release line.
 
 | Version | Supported |
 |---|---|
@@ -51,7 +51,7 @@ Please redact secrets and sensitive local data before attaching files:
 
 ## Scope
 
-Security reports are in scope when they affect ECodeX or its distributed tooling, including:
+Security reports are in scope when they affect ECodex or its distributed tooling, including:
 
 - WPF app, CLI, daemon, named-pipe IPC, and `ecodex.v2` APIs.
 - Browser surface automation and WebView2 integration.

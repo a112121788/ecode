@@ -1,5 +1,5 @@
 name: Feature / 能力请求
-description: 提议 ECodeX 新增能力。强烈建议先在 backlog（`spec/07-implementation-backlog.md`）中查找是否已有对应 ID，再决定开新 issue。
+description: 提议 ECodex 新增能力。强烈建议先在 backlog（`spec/07-implementation-backlog.md`）中查找是否已有对应 ID，再决定开新 issue。
 title: "[Feature] <一句话描述>"
 labels: ["enhancement", "triage"]
 assignees: []

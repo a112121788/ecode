@@ -1,13 +1,13 @@
 # 路线图
 
-ECodeX 是 Windows 原生 SuperTerminal：把终端 Workspace、集成浏览器、脚本化控制、会话恢复和 Windows 安装更新整合到一个桌面工作流中。
+ECodex 是 Windows 原生 SuperTerminal：把终端 Workspace、集成浏览器、脚本化控制、会话恢复和 Windows 安装更新整合到一个桌面工作流中。
 
 本公开路线图同步 `spec/06-roadmap.md` 中稳定、面向用户的内容；具体 PR 级任务以 `spec/07-implementation-backlog.md` 为准。
 
 ## 当前重点
 
 - `1.0.0` 已作为稳定基线归档，后续工作按 Now / Next / Later 连续交付。
-- 当前冲刺聚焦 `S1 - 会话恢复与 AI loop 稳定化`，优先处理 `SES-01`：重开 ECodeX 后自动接回仍由 daemon 托管的后台终端进程。
+- 当前冲刺聚焦 `S1 - 会话恢复与 AI loop 稳定化`，优先处理 `SES-01`：重开 ECodex 后自动接回仍由 daemon 托管的后台终端进程。
 - 继续保持 P0 缺陷数量 = 0；涉及后台进程保活、静默执行、数据丢失的风险默认按 P0 处理。
 - 让 AI 自动交付循环稳定运行：backlog 可领取、验证证据可追溯、阻塞与回滚路径明确。
 - `docs/` 统一为简体中文单语；英文站点如需恢复，应拆独立 locale。

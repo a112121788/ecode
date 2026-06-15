@@ -1,4 +1,4 @@
-# ECodeX 敏捷实施 Backlog
+# ECodex 敏捷实施 Backlog
 
 > 本文是 AI Agent 的可执行队列。路线图只讲方向；本文件必须能直接指导下一轮开发。
 >
@@ -33,12 +33,13 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 1. 当前冲刺：S1 - 会话恢复与 AI loop 稳定化
 
-目标：优先交付 `SES-01`，让 ECodeX 在用户正常关闭主窗口后保留后台终端进程，并在重开时自动接回，同时补齐状态可见性、终止入口和安全回退。
+目标：优先交付 `SES-01`，让 ECodex 在用户正常关闭主窗口后保留后台终端进程，并在重开时自动接回，同时补齐状态可见性、终止入口和安全回退。
 
 | ID | 状态 | Outcome | Scope | Acceptance |
 |---|---|---|---|---|
-| `SES-01` | done | 用户关闭 ECodeX 窗口后，在同一 Windows 登录会话内重新打开，原 Codex / PowerShell 等终端进程仍由 daemon 托管，终端自动 attach 到原会话并可继续输入输出 | 首个切片覆盖“正常关闭主窗口 -> daemon 继续托管终端 -> 重开自动 attach”；涉及 `src/ECodeX` 关闭/启动流程、`src/ECodeX.Core` daemon session mapping、`session.json` pane/session id 持久化、状态可见性与“终止全部保留会话”入口；不覆盖 Windows 重启/关机后的进程存活，不做命令回放；默认先启用保活，设置开关后续再补 | Windows 手测：在 pane 启动 `pwsh` / Codex，关闭 ECodeX，确认后台会话未退出；重开 ECodeX 后恢复 workspace/surface/pane 布局并 attach 到同一进程，`pane.write/read` 可继续交互；无重复 shell；提供可见状态和“终止全部保留会话”入口；daemon 不可达时展示过期/已断开并回退到快照，不静默执行命令 |
+| `SES-01` | done | 用户关闭 ECodex 窗口后，在同一 Windows 登录会话内重新打开，原 Codex / PowerShell 等终端进程仍由 daemon 托管，终端自动 attach 到原会话并可继续输入输出 | 首个切片覆盖“正常关闭主窗口 -> daemon 继续托管终端 -> 重开自动 attach”；涉及 `src/ECodex` 关闭/启动流程、`src/ECodex.Core` daemon session mapping、`session.json` pane/session id 持久化、状态可见性与“终止全部保留会话”入口；不覆盖 Windows 重启/关机后的进程存活，不做命令回放；默认先启用保活，设置开关后续再补 | Windows 手测：在 pane 启动 `pwsh` / Codex，关闭 ECodex，确认后台会话未退出；重开 ECodex 后恢复 workspace/surface/pane 布局并 attach 到同一进程，`pane.write/read` 可继续交互；无重复 shell；提供可见状态和“终止全部保留会话”入口；daemon 不可达时展示过期/已断开并回退到快照，不静默执行命令 |
 | `AGL-01` | done | AI loop 修改文档后能快速发现坏链接或旧文件名，降低文档漂移 | 新增 `scripts/check-doc-links.ps1`；`scripts/ci.ps1` 调用独立脚本；同步 `spec/04-build-deploy.md`；顺手修复 `spec/README.md` 对缺失 `08-dotnet-csharp-handbook.md` 的坏链接引用 | `pwsh ./scripts/check-doc-links.ps1` 通过；临时坏链接用例返回失败；脚本语法检查通过 |
+| `NAM-01` | done | 用户、维护者和发布产物看到的品牌统一为 `ECodex`，代码项目 / namespace / XAML 类型命名也同步使用 `ECodex` | 已统一 README/docs/spec/历史文档、安装器显示名、solution/project/folder 名、C# namespace、XAML `x:Class`、资源 key 与测试命名；保留全小写 `ecodex` 命令、配置、管道、数据路径和产物名 | 旧 Pascal 品牌拼写搜索无命中；临时归档副本执行 `.\.dotnet\dotnet.exe build ECodex.sln -c Debug` 通过；`.\.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --no-restore` 通过 284/284；`.\.dotnet\dotnet.exe build tests\ECodex.Smoke\ECodex.Smoke.csproj -c Debug` 通过；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --cached --check` 通过 |
 
 ### 1.1 上一冲刺归档：S0 - spec 敏捷化与 AI loop
 
@@ -54,19 +55,6 @@ AI Agent 启动后按以下顺序选择任务：
 ---
 
 ## 2. Ready 队列（Now）
-
-### `NAM-01` - 将产品与代码命名统一为 ECodex
-
-| 字段 | 内容 |
-|---|---|
-| 状态 | ready |
-| 优先级 | P1 |
-| Outcome | 用户、维护者和发布产物看到的品牌统一为 `ECodex`，代码项目 / namespace / XAML 类型命名也同步使用 `ECodex`，避免 `ECodeX` 与 `ecodex` 混用造成认知和维护成本 |
-| Scope | 将用户可见文案、README/docs/spec/历史文档、安装器显示名、solution/project/folder 名、C# namespace、XAML `x:Class`、资源 key 与测试命名中的 `ECodeX` 调整为 `ECodex`；保留协议、命令、文件名、包名、数据目录和配置里的全小写 `ecodex`，例如 `ecodex.exe`、`ecodex.json`、`ecodex-daemon`、管道名与 `%USERPROFILE%\.ecodex`；不改变功能行为、兼容策略或发布产物语义 |
-| 关联 | `README.md`、`ECodeX.sln`、`src/ECodeX*`、`tests/ECodeX*`、`installer/`、`docs/`、`spec/` |
-| 验收 | case-sensitive 搜索旧品牌拼写只剩必要兼容说明或无命中；`.\.dotnet\dotnet.exe build ECodex.sln -c Debug` 通过；关键测试项目可运行；`pwsh ./scripts/check-doc-links.ps1` 通过；安装器 / UI 文案中的产品名显示为 `ECodex`；全小写 `ecodex` 命令、配置和数据路径保持不变 |
-| 风险 | Windows 文件系统上的仅大小写 / 近似大小写重命名可能需要两阶段 `git mv`；solution、csproj、XAML `x:Class` 与 namespace 不一致会导致构建失败；历史文档大范围替换可能误改兼容协议说明；安装包升级识别不应因显示名变化破坏现有用户数据 |
-| 回滚 | 以单独命名变更提交回滚；若实现阶段分多步，先回滚 solution/project/namespace，再回滚文档和安装器文案；保留全小写 `ecodex` 兼容项不参与回滚 |
 
 ### `PKG-02` - Inno 安装与卸载向导中文化
 
@@ -94,13 +82,13 @@ AI Agent 启动后按以下顺序选择任务：
 | 风险 | 模板过重导致普通 PR 填写成本上升 |
 | 回滚 | 从 PR 模板移除该块，保留本文 §7 作为内部手册 |
 
-### `DOG-01` - 新增 ECodeX 自举 dogfood 配置样例
+### `DOG-01` - 新增 ECodex 自举 dogfood 配置样例
 
 | 字段 | 内容 |
 |---|---|
 | 状态 | ready |
 | 优先级 | P2 |
-| Outcome | 维护者能用 ECodeX 命令面板一键执行本仓常用 build/test/docs 命令 |
+| Outcome | 维护者能用 ECodex 命令面板一键执行本仓常用 build/test/docs 命令 |
 | Scope | 新增示例 `.ecodex/ecodex.example.json` 或 `docs/configuration.md` 示例；不写入用户真实本地配置 |
 | 关联 | `05-cli-commands.md`、`docs/custom-commands.md` |
 | 验收 | 示例包含 build、unit test、docs build、status/health；所有高风险命令 `confirm:true` |
@@ -113,11 +101,11 @@ AI Agent 启动后按以下顺序选择任务：
 |---|---|
 | 状态 | ready |
 | 优先级 | P2 |
-| Outcome | 用 ECodeX 自身自动化 API 验证 workspace / pane / browser 的最小闭环 |
+| Outcome | 用 ECodex 自身自动化 API 验证 workspace / pane / browser 的最小闭环 |
 | Scope | 先写 spec 或脚本草案；涉及 live app 的执行标记 Windows-only；不要求当前环境跑通 WPF |
 | 关联 | `03-data-and-ipc.md`、`05-cli-commands.md` |
 | 验收 | 脚本步骤覆盖 status -> workspace.create -> pane.write/read -> browser.open -> browser.snapshot；缺环境时输出清晰 skip |
-| 风险 | 依赖正在运行的 ECodeX 主应用 |
+| 风险 | 依赖正在运行的 ECodex 主应用 |
 | 回滚 | 脚本不接 CI，仅作为手动 smoke |
 
 ### `REL-01` - 发布前证据清单自动化
@@ -208,10 +196,10 @@ AI Agent 启动后按以下顺序选择任务：
 
 ### Handoff - SES-01
 
-- 目标：ECodeX 重开后自动接回 daemon 托管的后台终端，并提供状态可见性与清理入口。
+- 目标：ECodex 重开后自动接回 daemon 托管的后台终端，并提供状态可见性与清理入口。
 - 已完成：启动 S1；将 `SES-01` 标记为 `doing`；完成首个子切片后经人工确认转为 `done`；新增 daemon `SESSION_CLOSE_ALL` 协议、客户端调用、daemon 会话清理实现、主窗口 daemon 状态右键“终止全部保留会话”入口；修正 daemon 终端自然退出后 active sessions 不移除的问题；同步公开路线图、session restore 文档与 daemon IPC spec。
-- 已改文件：`docs/roadmap.md`、`docs/session-restore.md`、`spec/03-data-and-ipc.md`、`spec/05-cli-commands.md`、`spec/07-implementation-backlog.md`、`src/ECodeX.Core/IPC/DaemonMessages.cs`、`src/ECodeX.Core/IPC/DaemonClient.cs`、`src/ECodeX.Daemon/DaemonSessionManager.cs`、`src/ECodeX.Daemon/DaemonPipeServer.cs`、`src/ECodeX/Views/MainWindow.xaml`、`src/ECodeX/Views/MainWindow.xaml.cs`、`tests/ECodeX.Tests/CoreTests.cs`。
-- 已验证：`git diff --check` 通过；`rg -n "SessionCloseAll|SESSION_CLOSE_ALL|终止全部保留会话|CloseAllSessions|Handoff - SES-01|active sessions" src tests docs spec` 命中预期位置；PATH 上的 `dotnet test tests\ECodeX.Tests\ECodeX.Tests.csproj --filter DaemonMessageRoundTripTests --no-restore` 已尝试执行但未解析到 SDK；改用 `.\.dotnet\dotnet.exe test tests\ECodeX.Tests\ECodeX.Tests.csproj --filter DaemonMessageRoundTripTests --no-restore` 后通过 5/5；`.\.dotnet\dotnet.exe build ECodeX.sln -c Debug` 通过，0 警告、0 错误；`Start-Process .\.dotnet\dotnet.exe run --project src\ECodeX\ECodeX.csproj -c Debug --no-build` 可启动主程序，检测到 `ecodex-app.exe` PID 13496/14868 与 `ecodex-daemon.exe` PID 11712。
+- 已改文件：`docs/roadmap.md`、`docs/session-restore.md`、`spec/03-data-and-ipc.md`、`spec/05-cli-commands.md`、`spec/07-implementation-backlog.md`、`src/ECodex.Core/IPC/DaemonMessages.cs`、`src/ECodex.Core/IPC/DaemonClient.cs`、`src/ECodex.Daemon/DaemonSessionManager.cs`、`src/ECodex.Daemon/DaemonPipeServer.cs`、`src/ECodex/Views/MainWindow.xaml`、`src/ECodex/Views/MainWindow.xaml.cs`、`tests/ECodex.Tests/CoreTests.cs`。
+- 已验证：`git diff --check` 通过；`rg -n "SessionCloseAll|SESSION_CLOSE_ALL|终止全部保留会话|CloseAllSessions|Handoff - SES-01|active sessions" src tests docs spec` 命中预期位置；PATH 上的 `dotnet test tests\ECodex.Tests\ECodex.Tests.csproj --filter DaemonMessageRoundTripTests --no-restore` 已尝试执行但未解析到 SDK；改用 `.\.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter DaemonMessageRoundTripTests --no-restore` 后通过 5/5；`.\.dotnet\dotnet.exe build ECodex.sln -c Debug` 通过，0 警告、0 错误；`Start-Process .\.dotnet\dotnet.exe run --project src\ECodex\ECodex.csproj -c Debug --no-build` 可启动主程序，检测到 `ecodex-app.exe` PID 13496/14868 与 `ecodex-daemon.exe` PID 11712。
 - 未验证 / 原因：无；Windows GUI / ConPTY live attach 验收已由人工确认完成。
 - 当前阻塞：无。
 - 下一步建议：按 ready 队列继续推进下一项。

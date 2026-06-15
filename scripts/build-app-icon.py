@@ -12,7 +12,7 @@ Outputs:
                            each entry is a 32-bit RGBA PNG, matching the
                            previous .ico structure that the WPF project
                            already references.
-  * src/ECodeX/Assets/*   - synchronized copies used by ECodeX.csproj.
+  * src/ECodex/Assets/*   - synchronized copies used by ECodex.csproj.
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SVG_PATH = ROOT / "assets" / "app-icon.svg"
 PNG_PATH = ROOT / "assets" / "app-icon.png"
 ICO_PATH = ROOT / "assets" / "app-icon.ico"
-PROJECT_ASSET_DIR = ROOT / "src" / "ECodeX" / "Assets"
+PROJECT_ASSET_DIR = ROOT / "src" / "ECodex" / "Assets"
 PROJECT_PNG_PATH = PROJECT_ASSET_DIR / "app-icon.png"
 PROJECT_ICO_PATH = PROJECT_ASSET_DIR / "app-icon.ico"
 

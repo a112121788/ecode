@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  为 Windows 构建并发布 ECodeX（ECodeX + ECodeX.Cli）。
+  为 Windows 构建并发布 ECodex（ECodex + ECodex.Cli）。
 
 .DESCRIPTION
   复现 README.md 中记录的三种发布形态：
@@ -56,9 +56,9 @@ param(
 
     [string]$OutputRoot,
 
-    [string]$VelopackPackId = 'ECodeX',
+    [string]$VelopackPackId = 'ECodex',
 
-    [string]$VelopackAuthors = 'ECodeX',
+    [string]$VelopackAuthors = 'ECodex',
 
     [string]$VpkCommand = 'vpk',
 
@@ -66,9 +66,9 @@ param(
 
     [string]$SignToolCommand = 'signtool.exe',
 
-    [string]$MsixPackageName = 'ECodeX',
+    [string]$MsixPackageName = 'ECodex',
 
-    [string]$MsixPublisher = 'CN=ECodeX',
+    [string]$MsixPublisher = 'CN=ECodex',
 
     [string]$MsixCertPath,
 
@@ -89,8 +89,8 @@ if ($OutputRoot) {
     $OutputRoot = Join-Path $RepoRoot 'publish'
 }
 
-$MainProj = Join-Path $RepoRoot 'src/ECodeX/ECodeX.csproj'
-$CliProj  = Join-Path $RepoRoot 'src/ECodeX.Cli/ECodeX.Cli.csproj'
+$MainProj = Join-Path $RepoRoot 'src/ECodex/ECodex.csproj'
+$CliProj  = Join-Path $RepoRoot 'src/ECodex.Cli/ECodex.Cli.csproj'
 $Validations = @()
 
 function Get-ProjectVersion {
@@ -249,7 +249,7 @@ function Invoke-VelopackPack {
     if ($setup) {
         Add-FileValidation -FlavorName 'VelopackSetup' -FilePath $setup.FullName
     } else {
-        Add-FileValidation -FlavorName 'VelopackSetup' -FilePath (Join-Path $OutputDir 'ECodeXSetup.exe')
+        Add-FileValidation -FlavorName 'VelopackSetup' -FilePath (Join-Path $OutputDir 'ECodexSetup.exe')
     }
 }
 
@@ -321,7 +321,7 @@ function Invoke-MsixPack {
 
     $assetsDir = Join-Path $staging 'Assets'
     Ensure-Dir $assetsDir
-    $sourceIcon = Join-Path $RepoRoot 'src/ECodeX/Assets/app-icon.png'
+    $sourceIcon = Join-Path $RepoRoot 'src/ECodex/Assets/app-icon.png'
     New-ResizedPngAsset -SourcePng $sourceIcon -DestinationPng (Join-Path $assetsDir 'StoreLogo.png') -Width 50 -Height 50
     New-ResizedPngAsset -SourcePng $sourceIcon -DestinationPng (Join-Path $assetsDir 'Square44x44Logo.png') -Width 44 -Height 44
     New-ResizedPngAsset -SourcePng $sourceIcon -DestinationPng (Join-Path $assetsDir 'Square150x150Logo.png') -Width 150 -Height 150
@@ -374,7 +374,7 @@ Ensure-Dir $OutputRoot
 $BuildRoot = Join-Path $OutputRoot '.build'
 
 $stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-Write-Host "=== ECodeX publish === Config=$Config Rid=$Rid Flavor=$Flavor Time=$stamp ===" -ForegroundColor Yellow
+Write-Host "=== ECodex publish === Config=$Config Rid=$Rid Flavor=$Flavor Time=$stamp ===" -ForegroundColor Yellow
 
 $ran = @()
 $selfContainedOut = Join-Path $OutputRoot "ecodex-$Rid-sc"

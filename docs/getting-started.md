@@ -1,6 +1,6 @@
 # 快速上手
 
-本页用 15 分钟带你完成 ECodeX 的第一次使用。ECodeX 是 Windows 原生 SuperTerminal，核心概念是 Workspace、Surface 和 Pane。
+本页用 15 分钟带你完成 ECodex 的第一次使用。ECodex 是 Windows 原生 SuperTerminal，核心概念是 Workspace、Surface 和 Pane。
 
 ## 1. 启动前检查
 
@@ -69,7 +69,7 @@ ecodex browser eval "document.title"
 
 ## 5. 尝试通知与跳转
 
-ECodeX 会记录终端通知并在 sidebar / tab 上显示未读状态。命令行示例：
+ECodex 会记录终端通知并在 sidebar / tab 上显示未读状态。命令行示例：
 
 ```powershell
 ecodex notify --title Build --body "Tests finished"
@@ -105,7 +105,7 @@ ecodex config diagnostics
 
 ## 7. 会话恢复
 
-ECodeX 会保存布局、cwd、终端快照、浏览器 URL / history。手动恢复入口：
+ECodex 会保存布局、cwd、终端快照、浏览器 URL / history。手动恢复入口：
 
 ```powershell
 ecodex restore-session

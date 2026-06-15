@@ -1,16 +1,16 @@
 # 架构概览
 
-ECodeX 是 Windows 原生 WPF 应用，面向高强度终端、多项目分屏、浏览器预览与脚本化控制。
+ECodex 是 Windows 原生 WPF 应用，面向高强度终端、多项目分屏、浏览器预览与脚本化控制。
 
 ## 主要组件
 
 | 组件 | 说明 |
 |---|---|
-| `src/ECodeX` | WPF 主应用，承载 Workspace、Surface、Pane、集成浏览器与设置窗口。 |
-| `src/ECodeX.Core` | Core 模型、终端缓冲区、ConPTY、IPC、配置、会话恢复与 浏览器脚本契约。 |
-| `src/ECodeX.Cli` | `ecodex` 命令行，负责本地命令、v1 pipe 兼容与 `ecodex.v2` 请求。 |
-| `src/ECodeX.Daemon` | daemon 托管终端会话、快照与 attach/reconnect。 |
-| `src/ECodeX.Updater` | Velopack feed 检查与静默安装辅助。 |
+| `src/ECodex` | WPF 主应用，承载 Workspace、Surface、Pane、集成浏览器与设置窗口。 |
+| `src/ECodex.Core` | Core 模型、终端缓冲区、ConPTY、IPC、配置、会话恢复与 浏览器脚本契约。 |
+| `src/ECodex.Cli` | `ecodex` 命令行，负责本地命令、v1 pipe 兼容与 `ecodex.v2` 请求。 |
+| `src/ECodex.Daemon` | daemon 托管终端会话、快照与 attach/reconnect。 |
+| `src/ECodex.Updater` | Velopack feed 检查与静默安装辅助。 |
 | `tests/` | xUnit 单元 / contract 测试与 Windows ConPTY smoke。 |
 
 ## 运行时数据流

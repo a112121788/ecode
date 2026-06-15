@@ -1,10 +1,10 @@
 # CLI 与 IPC 命令参考
 
-> 这份清单汇总 `ecodex`（CLI）、`\\.\pipe\ecodex`（主应用通道）、`\\.\pipe\ecodex-daemon`（守护进程通道）三处对外暴露的命令与消息。字段名、默认值、约束均来自源码（`src/ECodeX.Cli/Program.cs`、`src/ECodeX/ViewModels/MainViewModel.cs`、`src/ECodeX.Daemon/DaemonPipeServer.cs`、`src/ECodeX.Core/IPC/*`）。
+> 这份清单汇总 `ecodex`（CLI）、`\\.\pipe\ecodex`（主应用通道）、`\\.\pipe\ecodex-daemon`（守护进程通道）三处对外暴露的命令与消息。字段名、默认值、约束均来自源码（`src/ECodex.Cli/Program.cs`、`src/ECodex/ViewModels/MainViewModel.cs`、`src/ECodex.Daemon/DaemonPipeServer.cs`、`src/ECodex.Core/IPC/*`）。
 
 ---
 
-## 1. `ecodex.exe`（ECodeX.Cli）
+## 1. `ecodex.exe`（ECodex.Cli）
 
 ### 1.1 全局参数约定
 
@@ -213,7 +213,7 @@ COMMAND [k=v [k=v ...]]
 
 ```text
 启动
- ├─ 单实例互斥体 Global\ECodeXDaemon
+ ├─ 单实例互斥体 Global\ECodexDaemon
  ├─ 后台 Accept 线程（PipeServer-Accept）
  └─ 主线程每 5 分钟轮询：
     if 客户端==0 && 会话==0 && 距 lastActivity > 24h → 优雅退出

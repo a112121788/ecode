@@ -68,7 +68,7 @@ Get-Content "$env:USERPROFILE\.ecodex\daemon-debug.log" -Tail 120
 处理：
 
 1. 安装 Microsoft Edge WebView2 Runtime。
-2. 重启 ECodeX。
+2. 重启 ECodex。
 3. 运行 `ecodex doctor` 确认 `webview2` 状态。
 
 ## PATH / shell profile 问题
@@ -146,8 +146,8 @@ ecodex update install --feed <feed-url>
 
 ```powershell
 npm run docs:build
-.\.dotnet\dotnet.exe test tests\ECodeX.Tests\ECodeX.Tests.csproj -p:NuGetAudit=false
-.\.dotnet\dotnet.exe build ECodeX.sln -c Debug -p:NuGetAudit=false
+.\.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj -p:NuGetAudit=false
+.\.dotnet\dotnet.exe build ECodex.sln -c Debug -p:NuGetAudit=false
 ```
 
 如果 NuGet audit 因证书或网络失败，本地验证可临时加 `NuGetAudit=false`。CI / release 环境应保持网络与证书链正常。

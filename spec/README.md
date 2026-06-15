@@ -1,6 +1,6 @@
-# ECodeX 设计文档（`spec/`）
+# ECodex 设计文档（`spec/`）
 
-本目录是 ECodeX 的工程内部设计与敏捷交付控制台。它不同于面向最终用户的 `README.md` / `docs/`，目标是：
+本目录是 ECodex 的工程内部设计与敏捷交付控制台。它不同于面向最终用户的 `README.md` / `docs/`，目标是：
 
 - 让新贡献者在 30 分钟内理解项目结构、关键模块、数据契约与发布流程。
 - 让 AI Agent 能自动读取路线图与 backlog，按小步 loop 持续开发。
@@ -9,7 +9,7 @@
 
 > 范围：本仓库主线是 **Windows 原生版**（WPF + ConPTY + WebView2 + Named Pipe + .NET 10）。macOS 可用于部分 Core / CLI / Tests 验证，但不能替代 Windows GUI / ConPTY / WebView2 验证。
 >
-> 品牌：项目代号 **ECodeX**（旧称 `cmux-windows`，参见 `CHANGELOG.md` 的 “Breaking changes” 段）。`cmux` 一词在 spec/ 中仅作为上游 macOS 原版（`manaflow-ai/cmux`）的引用、协议 v1 命令名（`WORKSPACE.* / PANE.*`）与配置文件兼容名（`cmux.json`）出现。
+> 品牌：项目代号 **ECodex**（旧称 `cmux-windows`，参见 `CHANGELOG.md` 的 “Breaking changes” 段）。`cmux` 一词在 spec/ 中仅作为上游 macOS 原版（`manaflow-ai/cmux`）的引用、协议 v1 命令名（`WORKSPACE.* / PANE.*`）与配置文件兼容名（`cmux.json`）出现。
 
 ---
 

@@ -6,7 +6,7 @@ const base = rawBase === '/' ? '/' : `/${rawBase.replace(/^\/|\/$/g, '')}/`
 
 export default defineConfig({
   base,
-  title: 'ECodeX',
+  title: 'ECodex',
   description: 'Windows 原生 SuperTerminal 文档',
   cleanUrls: true,
   lastUpdated: true,
@@ -63,7 +63,7 @@ export default defineConfig({
     ],
     footer: {
       message: '基于 MIT License 发布。',
-      copyright: 'Copyright (c) ECodeX contributors'
+      copyright: 'Copyright (c) ECodex contributors'
     }
   }
 })

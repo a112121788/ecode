@@ -1,6 +1,6 @@
 # Changelog
 
-ECodeX 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.2 与 `spec/07-implementation-backlog.md`。
+ECodex 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3.2 与 `spec/07-implementation-backlog.md`。
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)；roadmap 规划版本线从 `0.1.0` 起步（详见 `spec/06-roadmap.md` §3.1）。
 
@@ -73,7 +73,7 @@ ECodeX 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 - 新增 `ecodex profile import` Windows Terminal 导入计划器，可写入 / dry-run shell profile、配色与字体设置。
 - 新增 `ecodex doctor` 环境诊断，输出 ConPTY、WebView2、PATH、主应用管道与运行时配置目录状态。
 - 新增 `ecodex setup install/status/uninstall`，可 dry-run 或应用 PATH、PowerShell profile 与 cmd AutoRun 集成变更。
-- 新增 `ECodeX.Updater` 与 `publish.ps1 -Flavor Velopack`，支持 Velopack installer/feed 打包和 `RELEASES` 新版本检测。
+- 新增 `ECodex.Updater` 与 `publish.ps1 -Flavor Velopack`，支持 Velopack installer/feed 打包和 `RELEASES` 新版本检测。
 - 新增 `ecodex update check/install`，可检查 Velopack feed 并下载/后台静默启动最新 setup。
 - 新增 Inno Setup fallback 安装脚本，支持安装 app/CLI、创建快捷方式并在卸载时只清理安装目录。
 - 新增 MSIX manifest 与 `publish.ps1 -Flavor MSIX`，用于企业可选的 Windows app package 打包。
@@ -89,7 +89,7 @@ ECodeX 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 - 新增 Troubleshooting 文档，覆盖 `ecodex doctor`、`daemon-debug.log` 字段、WebView2、PATH、配置、恢复和更新排障。
 - 新增 `CONTRIBUTING.md`，覆盖本地构建、测试、文档、PR 流程、标签与安全注意事项。
 - 新增 `SECURITY.md`，说明漏洞私下报告方式、支持范围、披露流程与敏感日志脱敏要求。
-- 更新 Issue / PR 模板，校正 ECodeX 命名、运行时路径、测试命令与 bug / feature 提交流程。
+- 更新 Issue / PR 模板，校正 ECodex 命名、运行时路径、测试命令与 bug / feature 提交流程。
 - 新增 Discord release 通知脚本与 `release.published` workflow，可通过 `DISCORD_WEBHOOK_URL` webhook 同步发布公告。
 - 新增 1.0 发布就绪文档，记录 P0/P1 缺陷门槛、当前阻塞项台账与发布前验证命令。
 - 新增 1.0.0 发布说明页面，覆盖下载选择、新特性、升级步骤、已知限制与文档入口。
@@ -118,17 +118,17 @@ ECodeX 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 
 ### Breaking changes
 
-- 项目品牌与代码标识统一为 **ECodeX**（旧称 `cmux-windows`），覆盖以下外部契约：
+- 项目品牌与代码标识统一为 **ECodex**（旧称 `cmux-windows`），覆盖以下外部契约：
   - 主程序：`cmuxw.exe` → `ecodex-app.exe`
   - CLI：`cmux.exe` → `ecodex.exe`
   - 守护进程：`cmux-daemon.exe` → `ecodex-daemon.exe`
-  - 解决方案：`Cmux.sln` → `ECodeX.sln`
-  - C# 根命名空间：`Cmux.*` → `ECodeX.*`；类名 `CmuxSettings` → `ECodeXSettings`
+  - 解决方案：`Cmux.sln` → `ECodex.sln`
+  - C# 根命名空间：`Cmux.*` → `ECodex.*`；类名 `CmuxSettings` → `ECodexSettings`
   - 自动化工具名：`cmux_status` / `cmux_pane_*` / `cmux_workspace_*` / `cmux_surface_*` / `cmux_split_*` / `cmux_notify` → `ecodex_*`
 - 命名管道与互斥体：
   - `\\.\pipe\cmux`、`\\.\pipe\cmux-{tag}` → `\\.\pipe\ecodex`、`\\.\pipe\ecodex-{tag}`
   - `\\.\pipe\cmux-daemon` → `\\.\pipe\ecodex-daemon`
-  - `Global\CmuxDaemon` → `Global\ECodeXDaemon`
+  - `Global\CmuxDaemon` → `Global\ECodexDaemon`
 - 数据目录与配置文件：
   - `%LOCALAPPDATA%\cmux\` / `%LOCALAPPDATA%\ecodex\` → `%USERPROFILE%\.ecodex\`
   - `.cmux/cmux.json` / `%USERPROFILE%\.config\cmux\cmux.json` → `.ecodex/ecodex.json` / `%USERPROFILE%\.config\ecodex\ecodex.json`
@@ -147,7 +147,7 @@ ECodeX 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 ### Migration
 
 1. 升级到 `0.1.0` 之前，请停止旧版 `cmuxw.exe` / `ecodex-app.exe`。
-2. 卸载旧安装器；删除 `C:\Program Files\ECodeX` 旧安装目录（若已存在）。
+2. 卸载旧安装器；删除 `C:\Program Files\ECodex` 旧安装目录（若已存在）。
 3. 安装新版 `0.1.x`（`ecodex-setup.exe` 或 `ecodex-cli`）后，运行时数据只写入 `%USERPROFILE%\.ecodex\`；旧 `%LOCALAPPDATA%\ecodex\` / `%LOCALAPPDATA%\cmux\` 不再自动读取或迁移。
 4. 自动化脚本中的 `cmux status` 等命令在 CLI 顶层继续可运行，但建议改写为 `ecodex ...`。
 5. 自动化集成方需更新工具调用名为 `ecodex_*`。

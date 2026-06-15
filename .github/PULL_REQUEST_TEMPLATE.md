@@ -26,12 +26,12 @@
 
 ## 测试
 
-- [ ] `.\.dotnet\dotnet.exe build ECodeX.sln -c Debug -p:NuGetAudit=false` 零警告。
-- [ ] `.\.dotnet\dotnet.exe test tests\ECodeX.Tests\ECodeX.Tests.csproj -p:NuGetAudit=false` 全绿。
+- [ ] `.\.dotnet\dotnet.exe build ECodex.sln -c Debug -p:NuGetAudit=false` 零警告。
+- [ ] `.\.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj -p:NuGetAudit=false` 全绿。
 - [ ] `npm run docs:build`（涉及 docs / README / spec 链接时）。
 - [ ] 涉及 UI：附截图或短录屏。
 - [ ] 涉及 IPC / CLI / ecodex.json：附 contract 测试或手测脚本。
-- [ ] 涉及 ConPTY：附 `tests/ECodeX.Smoke` 输出。
+- [ ] 涉及 ConPTY：附 `tests/ECodex.Smoke` 输出。
 - [ ] 涉及 WebView2：标注为 Windows-only integration 或已在 CI 跳过。
 
 ## spec / 文档同步

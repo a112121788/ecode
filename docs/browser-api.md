@@ -1,6 +1,6 @@
 # 浏览器 API
 
-ECodeX 集成浏览器基于 WebView2。命令行可以打开网页、读取可访问快照、定位元素、执行点击/输入/键盘/脚本和截图，适合本地开发 smoke、登录表单检查、页面状态读取与发布前验证。
+ECodex 集成浏览器基于 WebView2。命令行可以打开网页、读取可访问快照、定位元素、执行点击/输入/键盘/脚本和截图，适合本地开发 smoke、登录表单检查、页面状态读取与发布前验证。
 
 ## 推荐流程
 
@@ -52,7 +52,7 @@ ecodex browser snapshot --surfaceRef surface:1
 
 | 字段 | 说明 |
 | --- | --- |
-| `nodeId` | ECodeX 注入的临时节点 id，用于动作执行。 |
+| `nodeId` | ECodex 注入的临时节点 id，用于动作执行。 |
 | `role` | 由显式 `role` 或 HTML 标签推导，例如 `button`、`link`、`textbox`。 |
 | `name` | 来自 `aria-label`、`alt`、`title`、`placeholder`、value 或文本。 |
 | `text` | 节点文本，最多保留一段摘要。 |

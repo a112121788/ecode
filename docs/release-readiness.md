@@ -33,8 +33,8 @@
 
 ```powershell
 npm run docs:build
-.\.dotnet\dotnet.exe test tests\ECodeX.Tests\ECodeX.Tests.csproj -p:NuGetAudit=false
-.\.dotnet\dotnet.exe build ECodeX.sln -c Debug -p:NuGetAudit=false
+.\.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj -p:NuGetAudit=false
+.\.dotnet\dotnet.exe build ECodex.sln -c Debug -p:NuGetAudit=false
 ```
 
 发布产物 workflow 还会上传 `ecodex-perf-report`，本地可运行：

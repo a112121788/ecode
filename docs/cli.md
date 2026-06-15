@@ -1,6 +1,6 @@
 # 命令行
 
-`ecodex` 是 ECodeX 的控制入口：既能运行本地诊断与安装集成命令，也能连接主应用 pipe，驱动 Workspace、Surface、Pane、通知、集成浏览器和会话恢复。
+`ecodex` 是 ECodex 的控制入口：既能运行本地诊断与安装集成命令，也能连接主应用 pipe，驱动 Workspace、Surface、Pane、通知、集成浏览器和会话恢复。
 
 ## 先用这几条
 
@@ -15,7 +15,7 @@
 
 ## 命令模型
 
-ECodeX 命令行分成三类，排障时先确认你正在使用哪一种：
+ECodex 命令行分成三类，排障时先确认你正在使用哪一种：
 
 | 类型 | 是否需要主应用运行 | 代表命令 | 说明 |
 | --- | --- | --- | --- |
@@ -23,7 +23,7 @@ ECodeX 命令行分成三类，排障时先确认你正在使用哪一种：
 | v1 兼容 | 是 | `ecodex status`、`ecodex split right`、`ecodex reload-config` | 发送旧式 pipe 命令，适合快捷操作。 |
 | `ecodex.v2` | 是 | `ecodex workspace list`、`ecodex pane write`、`ecodex notification list` | 使用结构化 request/response，适合自动化。 |
 
-> 看到 `Error: Could not connect to ecodex. Is it running?` 时，先启动 ECodeX 主应用；本地命令不受影响。
+> 看到 `Error: Could not connect to ecodex. Is it running?` 时，先启动 ECodex 主应用；本地命令不受影响。
 
 ## 全局参数
 
@@ -225,7 +225,7 @@ ecodex notify --title "Build" --body "等待输入"
 
 | 错误/现象 | 处理方式 |
 | --- | --- |
-| `Could not connect to ecodex` | 启动 ECodeX 主应用后重试需要 pipe 的命令。 |
+| `Could not connect to ecodex` | 启动 ECodex 主应用后重试需要 pipe 的命令。 |
 | 找不到 `workspace:1` / `pane:1` | 先运行 `ecodex --json status` 或对应 `list` 命令获取最新 ref。 |
 | 浏览器命令找不到元素 | 先运行 `ecodex browser snapshot --surfaceRef <ref>`，确认 `--testid`、`--text` 或 `--role` 是否匹配。 |
 | setup 没有写入 | 默认是 dry-run，需要加 `--write true`。 |

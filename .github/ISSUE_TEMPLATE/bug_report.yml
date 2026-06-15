@@ -1,5 +1,5 @@
 name: Bug Report
-description: 报告 ECodeX 缺陷。终端渲染、IPC、CLI、ConPTY、守护进程、WebView2、Toast、发布产物等任何不符合预期行为。
+description: 报告 ECodex 缺陷。终端渲染、IPC、CLI、ConPTY、守护进程、WebView2、Toast、发布产物等任何不符合预期行为。
 title: "[Bug] <一句话描述>"
 labels: ["bug", "triage"]
 assignees: []
@@ -16,7 +16,7 @@ body:
   - type: input
     id: ecodex_version
     attributes:
-      label: ECodeX 版本
+      label: ECodex 版本
       description: |
         `ecodex version` 或 `STATUS.version` 的输出（roadmap 已从 0.1.x 起步）。
       placeholder: "0.1.0 (commit 44154c5)"

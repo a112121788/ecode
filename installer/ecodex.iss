@@ -1,5 +1,5 @@
-#define MyAppName "ECodeX"
-#define MyAppPublisher "ECodeX"
+#define MyAppName "ECodex"
+#define MyAppPublisher "ECodex"
 #define MyAppExeName "ecodex-app.exe"
 #define MyCliExeName "ecodex.exe"
 #define MyAppVersion GetEnv("ECODEX_VERSION")
@@ -13,7 +13,7 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 SetupIconFile=..\assets\app-icon.ico
-DefaultDirName={localappdata}\Programs\ECodeX
+DefaultDirName={localappdata}\Programs\ECodex
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}
@@ -43,9 +43,9 @@ Source: "..\publish\ecodex-win-x64-sc\*"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\publish\ecodex-cli\*"; DestDir: "{app}\cli"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\ECodeX"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
-Name: "{group}\ECodeX CLI"; Filename: "{app}\cli\{#MyCliExeName}"; WorkingDir: "{app}\cli"
-Name: "{autodesktop}\ECodeX"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{group}\ECodex"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
+Name: "{group}\ECodex CLI"; Filename: "{app}\cli\{#MyCliExeName}"; WorkingDir: "{app}\cli"
+Name: "{autodesktop}\ECodex"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent

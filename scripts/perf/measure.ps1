@@ -113,9 +113,9 @@ function Invoke-ColdStartProxy {
     }
 }
 
-function Invoke-EcodexStatus {
+function Invoke-ECodexStatus {
     if (-not $MeasureLiveCli) {
-        throw 'Live CLI timing disabled; pass -MeasureLiveCli when the ECodeX app pipe is available.'
+        throw 'Live CLI timing disabled; pass -MeasureLiveCli when the ECodex app pipe is available.'
     }
 
     if ([string]::IsNullOrWhiteSpace($CliPath) -or -not (Test-Path -LiteralPath $CliPath -PathType Leaf)) {
@@ -124,7 +124,7 @@ function Invoke-EcodexStatus {
 
     & $CliPath status | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        throw "ecodex status exited with $LASTEXITCODE. Start ECodeX first or omit -MeasureLiveCli."
+        throw "ecodex status exited with $LASTEXITCODE. Start ECodex first or omit -MeasureLiveCli."
     }
 }
 
@@ -198,7 +198,7 @@ function Write-MarkdownReport {
     )
 
     $lines = New-Object System.Collections.Generic.List[string]
-    $lines.Add('# ECodeX Performance Budget Report')
+    $lines.Add('# ECodex Performance Budget Report')
     $lines.Add('')
     $lines.Add("Generated: $((Get-Date).ToUniversalTime().ToString('o'))")
     $lines.Add('')
@@ -223,7 +223,7 @@ if ($MeasureColdStart) {
     $results += New-PerfResult -Name 'cold_start_no_restore' -Display 'Cold start to ready (no restore)' -BudgetMs 1500 -Status 'skipped' -Notes 'Pass -MeasureColdStart with -AppPath to run this check.'
 }
 
-$results += Measure-Operation -Name 'ecodex_status' -Display 'ecodex status' -BudgetMs 100 -Operation { Invoke-EcodexStatus } -Notes 'Requires a running ECodeX app pipe.'
+$results += Measure-Operation -Name 'ecodex_status' -Display 'ecodex status' -BudgetMs 100 -Operation { Invoke-ECodexStatus } -Notes 'Requires a running ECodex app pipe.'
 $results += Measure-Operation -Name 'browser_snapshot' -Display 'browser.snapshot' -BudgetMs 500 -Operation { Invoke-BrowserSnapshot } -Notes 'Pass -SnapshotCommand when a browser surface is available.'
 $results += Measure-Operation -Name 'save_session_10_panes_3000_lines' -Display 'Save session (10 panes x 3000 lines)' -BudgetMs 300 -Operation { Invoke-SyntheticSaveSession } -Notes 'Synthetic session.json serialization budget.'
 

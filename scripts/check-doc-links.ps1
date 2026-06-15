@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Validate Markdown relative links in ECodeX docs and specs.
+  Validate Markdown relative links in ECodex docs and specs.
 
 .DESCRIPTION
   Scans Markdown files under the provided paths and reports relative links whose
