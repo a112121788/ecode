@@ -66,6 +66,7 @@ public sealed class DaemonSessionManager : IDisposable
 
         session.ProcessExited += () =>
         {
+            _sessions.TryRemove(paneId, out _);
             SessionExited?.Invoke(paneId, 0);
         };
 
@@ -118,6 +119,21 @@ public sealed class DaemonSessionManager : IDisposable
     {
         if (_sessions.TryRemove(paneId, out var session))
             session.Dispose();
+    }
+
+    public int CloseAllSessions()
+    {
+        var closed = 0;
+        foreach (var (paneId, session) in _sessions.ToArray())
+        {
+            if (!_sessions.TryRemove(paneId, out _))
+                continue;
+
+            session.Dispose();
+            closed++;
+        }
+
+        return closed;
     }
 
     public List<DaemonSessionInfo> ListSessions()

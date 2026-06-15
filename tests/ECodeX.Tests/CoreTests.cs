@@ -1420,6 +1420,19 @@ public class DaemonMessageRoundTripTests
     }
 
     [Fact]
+    public void DaemonCloseAllRequest_UsesStableMessageType()
+    {
+        var request = new DaemonRequest
+        {
+            Type = DaemonMessageTypes.SessionCloseAll,
+        };
+
+        var roundTripped = RoundTrip<DaemonRequest>(request);
+
+        roundTripped.Type.Should().Be("SESSION_CLOSE_ALL");
+    }
+
+    [Fact]
     public void DaemonSessionInfo_RoundTripsAttachMetadata()
     {
         var session = new DaemonSessionInfo

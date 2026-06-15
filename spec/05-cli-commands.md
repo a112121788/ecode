@@ -163,6 +163,7 @@ COMMAND [k=v [k=v ...]]
 { "type": "SESSION_WRITE",  "paneId": "pane-uuid", "data": "SGVsbG8=" }
 { "type": "SESSION_RESIZE", "paneId": "pane-uuid", "cols": 132, "rows": 40 }
 { "type": "SESSION_CLOSE",  "paneId": "pane-uuid" }
+{ "type": "SESSION_CLOSE_ALL" }
 { "type": "SESSION_LIST" }
 { "type": "SESSION_SNAPSHOT","paneId": "pane-uuid" }
 { "type": "PING" }
@@ -177,6 +178,7 @@ COMMAND [k=v [k=v ...]]
 | `type` | `data` 解码 |
 |---|---|
 | `SESSION_CREATE` | `JsonSerializer.Deserialize<DaemonSessionInfo>(data)` |
+| `SESSION_CLOSE_ALL` | `{ "closed": <int> }` |
 | `SESSION_LIST`   | `List<DaemonSessionInfo>` |
 | `SESSION_SNAPSHOT`| `TerminalBufferSnapshot`（`Cols/Rows/CursorRow/CursorCol/ScrollbackLines/ScreenLines`） |
 | `PING`           | `"pong"` |
@@ -214,8 +216,10 @@ COMMAND [k=v [k=v ...]]
  ├─ 单实例互斥体 Global\ECodeXDaemon
  ├─ 后台 Accept 线程（PipeServer-Accept）
  └─ 主线程每 5 分钟轮询：
-     if 客户端==0 && 会话==0 && 距 lastActivity > 24h → 优雅退出
+    if 客户端==0 && 会话==0 && 距 lastActivity > 24h → 优雅退出
 ```
+
+终端进程自然退出时，daemon 会将对应 pane 从 active sessions 移除并广播 `EXITED`；`SESSION_CLOSE_ALL` 可由主窗口 daemon 状态入口触发，用于显式清理关闭窗口后继续保留的后台终端进程。
 
 ## 4. 用法示例
 

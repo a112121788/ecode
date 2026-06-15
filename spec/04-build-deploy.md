@@ -14,6 +14,7 @@
 | 可选 | Visual Studio 2022 / MSBuild / Build Tools |
 
 > 当前 `Directory.Build.props` 强制 `TreatWarningsAsErrors=true` + `WarningLevel=7`，所有目标项目必须零警告通过。
+> `global.json` 固定 SDK `10.0.301`；如果 PATH 上的 `dotnet` 报告找不到兼容 SDK，优先使用仓库/用户本地 `.dotnet` 目录中的 `dotnet.exe`，例如 `.\.dotnet\dotnet.exe --list-sdks` 或 `$HOME\.dotnet\dotnet.exe --list-sdks`。
 
 ## 2. 解决方案布局
 
@@ -79,6 +80,13 @@ dotnet test tests/ECodeX.Tests/ECodeX.Tests.csproj
 
 # 跑 ConPTY 烟雾测试（输出到 %TEMP%/ecodex-smoke.log）
 dotnet run --project tests/ECodeX.Smoke/ECodeX.Smoke.csproj
+```
+
+如果 PATH 上的 `dotnet` 不可用，但本地 `.dotnet` 已包含 `10.0.301`，使用显式路径执行同一命令：
+
+```powershell
+.\.dotnet\dotnet.exe test tests\ECodeX.Tests\ECodeX.Tests.csproj --filter DaemonMessageRoundTripTests --no-restore
+.\.dotnet\dotnet.exe build ECodeX.sln -c Debug
 ```
 
 ### 4.2 守护进程查找

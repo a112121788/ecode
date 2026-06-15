@@ -497,6 +497,11 @@
                                 <!-- Daemon status -->
                                 <Border x:Name="DaemonStatusBorder" CornerRadius="3" Padding="5,1" Margin="0,0,12,0"
                                         VerticalAlignment="Center" Background="Transparent">
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="终止全部保留会话" Click="DaemonCloseAllSessions_Click" />
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
                                     <StackPanel Orientation="Horizontal">
                                         <Ellipse x:Name="DaemonStatusDot" Width="6" Height="6"
                                                  Fill="#FF6B7280" Margin="0,0,4,0" VerticalAlignment="Center" />

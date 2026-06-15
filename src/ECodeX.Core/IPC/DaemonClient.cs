@@ -553,6 +553,15 @@ public sealed class DaemonClient : IDisposable
         });
     }
 
+    public async Task<bool> CloseAllSessionsAsync()
+    {
+        var response = await SendRequestAsync(new DaemonRequest
+        {
+            Type = DaemonMessageTypes.SessionCloseAll,
+        });
+        return response?.Success == true;
+    }
+
     public async Task<List<DaemonSessionInfo>> ListSessionsAsync()
     {
         var response = await SendRequestAsync(new DaemonRequest

@@ -110,6 +110,7 @@ public static class DaemonMessageTypes {
     public const string SessionWrite     = "SESSION_WRITE";
     public const string SessionResize    = "SESSION_RESIZE";
     public const string SessionClose     = "SESSION_CLOSE";
+    public const string SessionCloseAll  = "SESSION_CLOSE_ALL";
     public const string SessionList      = "SESSION_LIST";
     public const string SessionSnapshot  = "SESSION_SNAPSHOT";
     public const string Ping             = "PING";
@@ -145,6 +146,7 @@ public static class DaemonMessageTypes {
   "error":   null,                  // 失败时填写
   "data":    "<string>"            // CREATE → 序列化的 DaemonSessionInfo；
                                    // LIST → 序列化的 List<DaemonSessionInfo>；
+                                   // CLOSE_ALL → {"closed": <int>}；
                                    // SNAPSHOT → 序列化的 TerminalBufferSnapshot JSON；
                                    // PING → "pong"
 }
@@ -196,8 +198,12 @@ public class DaemonSessionInfo {
   ├─ 后台线程 PipeServer-Accept 持续 AcceptNewConnection
   └─ 主线程每 5 分钟轮询：
        if 客户端==0 && 会话==0 && 距 lastActivity > 24h → 优雅退出
-       lastActivity 在 ClientConnected/Disconnected/SessionCreated 时刷新
+      lastActivity 在 ClientConnected/Disconnected/SessionCreated 时刷新
 ```
+
+`SESSION_CLOSE_ALL` 会终止 daemon 当前托管的全部终端会话，并返回已清理的会话数；主窗口右下角 daemon 状态入口提供同等操作，用于用户显式清理关闭窗口后继续保留的后台进程。
+
+终端进程自然退出时，`DaemonSessionManager` 会从 active sessions 中移除对应 pane，再广播 `EXITED`；因此 daemon 空闲退出判断不会被已结束的终端进程阻塞。
 
 ---
 
