@@ -56,6 +56,7 @@
     <None Include="..\..\docs\cli.md" Link="docs\cli.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\browser-api.md" Link="docs\browser-api.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\troubleshooting.md" Link="docs\troubleshooting.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\docs\release-readiness.md" Link="docs\release-readiness.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

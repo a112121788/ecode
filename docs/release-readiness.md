@@ -1,0 +1,68 @@
+# Release Readiness
+
+This page records the M7-C-01 quality gate for the 1.0 line. It is the
+maintainer-facing checklist that must be updated before tagging a stable
+release.
+
+## Bug Gate
+
+- P0 bug count must be 0.
+- P1 bug count must be 3 or fewer.
+- Every open P1 must have a documented workaround.
+- Any crash, data loss, silent command execution, or unrecoverable state is P0
+  until proven otherwise.
+- Any core workflow outage with a workaround is P1.
+
+## Current Snapshot
+
+Snapshot date: 2026-06-15
+
+Source: local backlog/spec audit plus the current validation suite. Before
+publishing a GitHub Release, re-check public issues with the `p0` and `p1`
+labels and copy any open blockers into this page.
+
+| Severity | Open count | Limit | Status | Workaround status |
+|---|---:|---:|---|---|
+| P0 | 0 | 0 | Pass | N/A |
+| P1 | 0 | 3 | Pass | N/A; no repo-tracked P1 blockers are open |
+
+## Blocker Ledger
+
+| ID | Severity | Area | Status | Workaround |
+|---|---|---|---|---|
+| None | P0/P1 | terminal/layout/notification/session restore/ecode.json/browser/v2 CLI/install/update | No open release blocker in repo | N/A |
+
+## Required Validation
+
+Run these commands before moving this gate to a release tag:
+
+```powershell
+npm run docs:build
+.\.dotnet\dotnet.exe test tests\ECode.Tests\ECode.Tests.csproj -p:NuGetAudit=false
+.\.dotnet\dotnet.exe build ECode.sln -c Debug -p:NuGetAudit=false
+```
+
+For release candidates, also run:
+
+```powershell
+.\scripts\ci.ps1 -Config Release -IncludeSmoke -IncludePublishDryRun
+```
+
+## Triage Workflow
+
+1. Label incoming critical issues with `p0` or `p1` in addition to `bug`.
+2. Keep P0 issues assigned and release-blocking until fixed and tested.
+3. For each P1, add the workaround to the issue and mirror it in the blocker
+   ledger above.
+4. If P1 count exceeds 3, defer the release or downgrade only after confirming
+   the issue does not block a core workflow.
+5. After fixes land, update `CHANGELOG.md`, this page, and the backlog row.
+
+## Core Areas To Re-check
+
+- Terminal creation, ConPTY attach, scrollback, and command input.
+- Workspace/surface/pane layout persistence and notification routing.
+- `ecode.json` load, merge, command palette display, and reload diagnostics.
+- Session restore, trusted resume bindings, and sensitive environment stripping.
+- Browser surface creation plus `ecode browser` snapshot/click/fill/eval flows.
+- Installer, setup, doctor, updater, and uninstall data-retention behavior.

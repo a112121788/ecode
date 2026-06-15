@@ -34,3 +34,4 @@ features:
 - [Getting Started](./getting-started.md) introduces workspaces, surfaces, panes, and browser views.
 - [CLI Reference](./cli.md) tracks the v1/v2 command surface.
 - [Troubleshooting](./troubleshooting.md) explains doctor output and daemon logs.
+- [Release Readiness](./release-readiness.md) records the P0/P1 gate for 1.0.

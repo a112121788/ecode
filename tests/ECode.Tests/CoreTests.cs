@@ -709,7 +709,7 @@ public class DocsSiteTests
         config.Should().Contain("provider: 'local'");
         config.Should().Contain("link: '/getting-started'");
 
-        foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "custom-commands.md", "session-restore.md", "cli.md", "browser-api.md", "troubleshooting.md" })
+        foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "custom-commands.md", "session-restore.md", "cli.md", "browser-api.md", "troubleshooting.md", "release-readiness.md" })
             File.Exists(Path.Combine(docsRoot, page)).Should().BeTrue(page);
     }
 
@@ -844,6 +844,24 @@ public class DocsSiteTests
         troubleshooting.Should().Contain("AutoResumeTrustedBindings");
         troubleshooting.Should().Contain("ecode update check");
         troubleshooting.Should().Contain("NuGetAudit=false");
+    }
+
+    [Fact]
+    public void ReleaseReadinessDocs_CoverP0P1GateAndValidation()
+    {
+        var config = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", ".vitepress", "config.mts"));
+        var readiness = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "release-readiness.md"));
+
+        config.Should().Contain("Release Readiness");
+        config.Should().Contain("link: '/release-readiness'");
+        readiness.Should().Contain("P0 bug count must be 0");
+        readiness.Should().Contain("P1 bug count must be 3 or fewer");
+        readiness.Should().Contain("| P0 | 0 | 0 | Pass | N/A |");
+        readiness.Should().Contain("| P1 | 0 | 3 | Pass | N/A; no repo-tracked P1 blockers are open |");
+        readiness.Should().Contain("documented workaround");
+        readiness.Should().Contain("npm run docs:build");
+        readiness.Should().Contain("NuGetAudit=false");
+        readiness.Should().Contain("scripts\\ci.ps1");
     }
 
     [Fact]

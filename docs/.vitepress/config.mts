@@ -42,6 +42,7 @@ export default defineConfig({
         text: 'Operate',
         items: [
           { text: 'Troubleshooting', link: '/troubleshooting' },
+          { text: 'Release Readiness', link: '/release-readiness' },
           { text: 'Architecture', link: '/architecture' },
           { text: 'Roadmap', link: '/roadmap' }
         ]
