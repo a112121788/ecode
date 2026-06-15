@@ -20,7 +20,7 @@
 1. [`00-agile-ai-delivery.md`](00-agile-ai-delivery.md) — 敏捷交付规则、自动 loop、Definition of Ready / Done、停止规则与验证矩阵。
 2. [`06-roadmap.md`](06-roadmap.md) — Now / Next / Later 路线图、当前 Outcome、质量门槛与风险登记。
 3. [`07-implementation-backlog.md`](07-implementation-backlog.md) — AI 可领取的 `ready` 队列、任务模板、handoff note 与归档。
-4. 按 backlog 的 `关联` 字段读取 `01`-`05` 或 `08` 中的具体事实。
+4. 按 backlog 的 `关联` 字段读取 `01`-`05` 中的具体事实。
 
 ### 人类贡献者理解项目
 
@@ -29,7 +29,6 @@
 3. [`03-data-and-ipc.md`](03-data-and-ipc.md) — 数据模型、命名管道协议、JSON 形状、错误码。
 4. [`04-build-deploy.md`](04-build-deploy.md) — 解决方案布局、构建脚本、发布形态、运行依赖、故障排查。
 5. [`05-cli-commands.md`](05-cli-commands.md) — `ecodex.exe` CLI 与 IPC 命令参考。
-6. [`08-dotnet-csharp-handbook.md`](08-dotnet-csharp-handbook.md) — 给只有 Ruby / Python 经验的贡献者准备的 .NET 10 / C# 速通手册。
 
 ---
 
@@ -40,7 +39,6 @@
 - AI Agent 每轮 loop 开始前读取 `00` + `06` + `07`；结束时更新 backlog 状态、验证结果或 handoff note。
 - 当文档与源码出现冲突时：以源码为准，并在文档里加 `TODO(spec): align with src/...` 注明。修复冲突需在同一个 PR 内完成。
 - 每周刷新 `06-roadmap.md` 的 Now 区域、风险登记与 `07-implementation-backlog.md` 的 ready 队列。
-- `08-dotnet-csharp-handbook.md` 跟随代码演进：当新增 C# 14+ 特性、第三方包、`unsafe`/P/Invoke 调用、`CommunityToolkit.Mvvm` 用法或 xUnit 写法时，相应小节要保持与 `src/` 一致。
 
 ---
 
@@ -69,7 +67,6 @@
 | `05-cli-commands.md` | CLI / IPC 命令事实源，跟随实现校准 | 1.0 基线 |
 | `06-roadmap.md` | 重构为 Now / Next / Later 敏捷路线图 | 本次 spec 重构 |
 | `07-implementation-backlog.md` | 重构为 AI 可执行敏捷 backlog | 本次 spec 重构 |
-| `08-dotnet-csharp-handbook.md` | .NET / C# 贡献者速通手册 | 1.0 基线 |
 | `2026-06-11-ecodex-rename-plan.md` | 历史重命名计划归档 | 0.1.0 归档 |
 
 > 验证方法：在每个 PR 合并前，至少跑一次 `wc -l spec/*.md` 与 `git diff --stat spec/` 复核改动量；涉及 docs 导航时再运行 `npm run docs:build`。

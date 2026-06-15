@@ -41,7 +41,6 @@ ECodeX 的研发方式调整为 **敏捷交付 + AI 自动化开发**：
 | `05-cli-commands.md` | CLI 与 IPC 命令参考 | 命令 / 参数 / 错误码变化时 |
 | `06-roadmap.md` | Now / Next / Later 与成果指标 | 每个迭代 planning / review 时 |
 | `07-implementation-backlog.md` | 可执行任务队列与状态 | 每个 loop 开始和结束时 |
-| `08-dotnet-csharp-handbook.md` | C# / .NET 贡献者速通 | 语言 / 框架用法变化时 |
 
 ### 2.1 单一事实来源
 

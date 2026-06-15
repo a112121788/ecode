@@ -65,6 +65,7 @@ $Solution = Join-Path $RepoRoot 'ECodeX.sln'
 $UnitTestProject = Join-Path $RepoRoot 'tests/ECodeX.Tests/ECodeX.Tests.csproj'
 $SmokeProject = Join-Path $RepoRoot 'tests/ECodeX.Smoke/ECodeX.Smoke.csproj'
 $PublishScript = Join-Path $RepoRoot 'scripts/publish.ps1'
+$DocLinkScript = Join-Path $RepoRoot 'scripts/check-doc-links.ps1'
 
 $StepCount = 0
 $StartedAt = Get-Date
@@ -107,71 +108,6 @@ function Test-PowerShellScriptSyntax {
     }
 }
 
-function Test-MarkdownRelativeLinks {
-    param([Parameter(Mandatory)][string]$Root)
-
-    $candidatePaths = @(
-        (Join-Path $Root 'README.md'),
-        (Join-Path $Root 'spec'),
-        (Join-Path $Root 'docs')
-    )
-
-    $markdownFiles = @()
-    foreach ($path in $candidatePaths) {
-        if (Test-Path -LiteralPath $path -PathType Leaf) {
-            $markdownFiles += Get-Item -LiteralPath $path
-        } elseif (Test-Path -LiteralPath $path -PathType Container) {
-            $markdownFiles += Get-ChildItem -LiteralPath $path -Filter '*.md' -File -Recurse
-        }
-    }
-
-    $missing = New-Object System.Collections.Generic.List[string]
-    $linkPattern = '(!?\[[^\]]*\]\((?<target>[^)]+)\))'
-
-    foreach ($file in $markdownFiles) {
-        $content = Get-Content -LiteralPath $file.FullName -Raw
-        foreach ($match in [regex]::Matches($content, $linkPattern)) {
-            $target = $match.Groups['target'].Value.Trim()
-            if ([string]::IsNullOrWhiteSpace($target) -or $target.StartsWith('#')) {
-                continue
-            }
-
-            if ($target.StartsWith('<') -and $target.EndsWith('>')) {
-                $target = $target.Substring(1, $target.Length - 2)
-            }
-
-            if ($target -match '^[a-z][a-z0-9+.-]*:') {
-                continue
-            }
-
-            $pathOnly = ($target -split '#', 2)[0]
-            $pathOnly = ($pathOnly -split '\?', 2)[0]
-            $pathOnly = ($pathOnly -split '\s+', 2)[0]
-            if ([string]::IsNullOrWhiteSpace($pathOnly)) {
-                continue
-            }
-
-            $baseDir = Split-Path -Parent $file.FullName
-            if ($pathOnly.StartsWith('/')) {
-                $resolved = Join-Path $Root $pathOnly.TrimStart('/', '\')
-            } else {
-                $resolved = Join-Path $baseDir $pathOnly
-            }
-
-            if (-not (Test-Path -LiteralPath $resolved)) {
-                $relativeFile = [System.IO.Path]::GetRelativePath($Root, $file.FullName)
-                $missing.Add("${relativeFile}: missing link target '$target'")
-            }
-        }
-    }
-
-    if ($missing.Count -gt 0) {
-        throw "Markdown relative link check failed:`n$($missing -join "`n")"
-    }
-
-    Write-Host "Markdown relative links OK ($($markdownFiles.Count) files)." -ForegroundColor Green
-}
-
 Push-Location $RepoRoot
 try {
     Write-Host "=== ECodeX local CI === Config=$Config Rid=$Rid PublishFlavor=$PublishFlavor Time=$($StartedAt.ToString('yyyy-MM-dd HH:mm:ss')) ===" -ForegroundColor Yellow
@@ -212,7 +148,7 @@ try {
     Write-Host 'PowerShell syntax OK.' -ForegroundColor Green
 
     Write-Step 'Validate documentation links'
-    Test-MarkdownRelativeLinks $RepoRoot
+    & $DocLinkScript
 
     Write-Step 'Smoke test gate'
     if ($IncludeSmoke) {

@@ -37,7 +37,8 @@ AI Agent 启动后按以下顺序选择任务：
 
 | ID | 状态 | Outcome | Scope | Acceptance |
 |---|---|---|---|---|
-| `SES-01` | doing | 用户关闭 ECodeX 窗口后，在同一 Windows 登录会话内重新打开，原 Codex / PowerShell 等终端进程仍由 daemon 托管，终端自动 attach 到原会话并可继续输入输出 | 首个切片覆盖“正常关闭主窗口 -> daemon 继续托管终端 -> 重开自动 attach”；涉及 `src/ECodeX` 关闭/启动流程、`src/ECodeX.Core` daemon session mapping、`session.json` pane/session id 持久化、状态可见性与“终止全部保留会话”入口；不覆盖 Windows 重启/关机后的进程存活，不做命令回放；默认先启用保活，设置开关后续再补 | Windows 手测：在 pane 启动 `pwsh` / Codex，关闭 ECodeX，确认后台会话未退出；重开 ECodeX 后恢复 workspace/surface/pane 布局并 attach 到同一进程，`pane.write/read` 可继续交互；无重复 shell；提供可见状态和“终止全部保留会话”入口；daemon 不可达时展示过期/已断开并回退到快照，不静默执行命令 |
+| `SES-01` | blocked | 用户关闭 ECodeX 窗口后，在同一 Windows 登录会话内重新打开，原 Codex / PowerShell 等终端进程仍由 daemon 托管，终端自动 attach 到原会话并可继续输入输出 | 首个切片覆盖“正常关闭主窗口 -> daemon 继续托管终端 -> 重开自动 attach”；涉及 `src/ECodeX` 关闭/启动流程、`src/ECodeX.Core` daemon session mapping、`session.json` pane/session id 持久化、状态可见性与“终止全部保留会话”入口；不覆盖 Windows 重启/关机后的进程存活，不做命令回放；默认先启用保活，设置开关后续再补 | Windows 手测：在 pane 启动 `pwsh` / Codex，关闭 ECodeX，确认后台会话未退出；重开 ECodeX 后恢复 workspace/surface/pane 布局并 attach 到同一进程，`pane.write/read` 可继续交互；无重复 shell；提供可见状态和“终止全部保留会话”入口；daemon 不可达时展示过期/已断开并回退到快照，不静默执行命令 |
+| `AGL-01` | done | AI loop 修改文档后能快速发现坏链接或旧文件名，降低文档漂移 | 新增 `scripts/check-doc-links.ps1`；`scripts/ci.ps1` 调用独立脚本；同步 `spec/04-build-deploy.md`；顺手修复 `spec/README.md` 对缺失 `08-dotnet-csharp-handbook.md` 的坏链接引用 | `pwsh ./scripts/check-doc-links.ps1` 通过；临时坏链接用例返回失败；脚本语法检查通过 |
 
 ### 1.1 上一冲刺归档：S0 - spec 敏捷化与 AI loop
 
@@ -66,19 +67,6 @@ AI Agent 启动后按以下顺序选择任务：
 | 验收 | Windows 环境使用 Inno Setup Compiler 编译通过；安装向导、覆盖安装向导、卸载向导、开始菜单/桌面快捷方式任务与完成页用户可见文案均为简体中文；静默安装/卸载不受影响；卸载仍只清理 `{app}`，保留 `%USERPROFILE%\.ecodex` |
 | 风险 | 构建机缺少 `compiler:Languages\ChineseSimplified.isl` 导致编译失败；自定义英文文案遗漏；第三方系统按钮或 Windows 控件文案不能被 Inno 脚本完全覆盖 |
 | 回滚 | 移除新增自定义消息与强制语言配置，恢复 Inno 默认语言行为；保留现有 `ChineseSimplified.isl` 引用不影响安装功能 |
-
-### `AGL-01` - 增加 spec/docs 链接检查脚本
-
-| 字段 | 内容 |
-|---|---|
-| 状态 | ready |
-| 优先级 | P1 |
-| Outcome | AI loop 修改文档后能快速发现坏链接或旧文件名，降低文档漂移 |
-| Scope | `scripts/` 新增轻量检查脚本；可选接入 `scripts/ci.ps1` 的 docs gate；不改用户文档内容 |
-| 关联 | `00-agile-ai-delivery.md` §6、`04-build-deploy.md` §4.3 |
-| 验收 | 本地运行脚本能扫描 `spec/*.md` 与 `docs/*.md` 中相对链接；故意填一个坏链接时返回非 0 |
-| 风险 | Windows PowerShell 与 macOS shell 路径差异 |
-| 回滚 | 从 CI 中移除 gate，保留脚本手动运行 |
 
 ### `AGL-02` - 将 handoff note 接入 PR 流程
 
@@ -208,7 +196,7 @@ AI Agent 启动后按以下顺序选择任务：
 ### Handoff - SES-01
 
 - 目标：ECodeX 重开后自动接回 daemon 托管的后台终端，并提供状态可见性与清理入口。
-- 已完成：启动 S1；将 `SES-01` 标记为 `doing`；新增 daemon `SESSION_CLOSE_ALL` 协议、客户端调用、daemon 会话清理实现、主窗口 daemon 状态右键“终止全部保留会话”入口；修正 daemon 终端自然退出后 active sessions 不移除的问题；同步公开路线图、session restore 文档与 daemon IPC spec。
+- 已完成：启动 S1；将 `SES-01` 标记为 `doing`；完成首个子切片后因 Windows GUI / ConPTY live attach 手测未完成转为 `blocked`；新增 daemon `SESSION_CLOSE_ALL` 协议、客户端调用、daemon 会话清理实现、主窗口 daemon 状态右键“终止全部保留会话”入口；修正 daemon 终端自然退出后 active sessions 不移除的问题；同步公开路线图、session restore 文档与 daemon IPC spec。
 - 已改文件：`docs/roadmap.md`、`docs/session-restore.md`、`spec/03-data-and-ipc.md`、`spec/05-cli-commands.md`、`spec/07-implementation-backlog.md`、`src/ECodeX.Core/IPC/DaemonMessages.cs`、`src/ECodeX.Core/IPC/DaemonClient.cs`、`src/ECodeX.Daemon/DaemonSessionManager.cs`、`src/ECodeX.Daemon/DaemonPipeServer.cs`、`src/ECodeX/Views/MainWindow.xaml`、`src/ECodeX/Views/MainWindow.xaml.cs`、`tests/ECodeX.Tests/CoreTests.cs`。
 - 已验证：`git diff --check` 通过；`rg -n "SessionCloseAll|SESSION_CLOSE_ALL|终止全部保留会话|CloseAllSessions|Handoff - SES-01|active sessions" src tests docs spec` 命中预期位置；PATH 上的 `dotnet test tests\ECodeX.Tests\ECodeX.Tests.csproj --filter DaemonMessageRoundTripTests --no-restore` 已尝试执行但未解析到 SDK；改用 `.\.dotnet\dotnet.exe test tests\ECodeX.Tests\ECodeX.Tests.csproj --filter DaemonMessageRoundTripTests --no-restore` 后通过 5/5；`.\.dotnet\dotnet.exe build ECodeX.sln -c Debug` 通过，0 警告、0 错误；`Start-Process .\.dotnet\dotnet.exe run --project src\ECodeX\ECodeX.csproj -c Debug --no-build` 可启动主程序，检测到 `ecodex-app.exe` PID 13496/14868 与 `ecodex-daemon.exe` PID 11712。
 - 未验证 / 原因：Windows GUI / ConPTY live attach 手测仍需在 Windows 图形环境完成。
