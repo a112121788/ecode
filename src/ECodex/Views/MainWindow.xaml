@@ -160,7 +160,7 @@
                                 <Style TargetType="Separator" BasedOn="{StaticResource AppMenuSeparatorStyle}" />
                             </Menu.Resources>
                             <MenuItem Header="文件(_F)" Style="{StaticResource AppMenuTopItemStyle}" ItemContainerStyle="{StaticResource AppMenuSubItemStyle}">
-                                <MenuItem Header="新建项目(_N)" Command="{Binding CreateNewWorkspaceCommand}" InputGestureText="Ctrl+N" />
+                                <MenuItem Header="添加项目(_N)" Command="{Binding CreateNewWorkspaceCommand}" InputGestureText="Ctrl+N" />
                                 <MenuItem Header="新建标签页(_S)" Command="{Binding SelectedWorkspace.CreateNewSurfaceCommand}" InputGestureText="Ctrl+T" />
                                 <MenuItem Header="命令日志(_L)" Click="MenuOpenLogs_Click" InputGestureText="Ctrl+Shift+L" />
                                 <MenuItem Header="会话存档(_V)" Click="MenuOpenSessionVault_Click" InputGestureText="Ctrl+Shift+V" />
@@ -246,7 +246,7 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Style="{StaticResource IconButton}" ToolTip="新建项目 (Ctrl+N)"
+                                    <Button Style="{StaticResource IconButton}" ToolTip="添加项目 (Ctrl+N)"
                                             Width="24" Height="24" Command="{Binding CreateNewWorkspaceCommand}">
                                         <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="10" />
                                     </Button>
@@ -341,7 +341,7 @@
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                    Margin="0,0,8,0" Opacity="0.6" />
-                                        <TextBlock Text="新建项目" FontSize="12" />
+                                        <TextBlock Text="添加项目" FontSize="12" />
                                     </StackPanel>
                                 </Button>
 

@@ -770,7 +770,7 @@
                                 <!-- 项目 -->
                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+N" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentBrush}" FontSize="13" VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="新建项目"
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="添加项目"
                                            Foreground="{StaticResource ForegroundDimBrush}" FontSize="13" VerticalAlignment="Center" />
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+1-8" FontWeight="SemiBold"

@@ -52,7 +52,7 @@ CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超
 |---|---|---|
 | `NOTIFY` | `title?` `body?` `subtitle?` | 向当前选中项目 / Surface 添加一条 `NotificationSource.Cli` 通知；返回 `{ok:true}` |
 | `WORKSPACE.LIST` | — | 返回项目列表 `[ {id, name, selected, surfaces, workingDirectory}, ... ]` |
-| `WORKSPACE.CREATE` | `workingDirectory`/`cwd` + `name?` | 新建项目；`workingDirectory` 必填且同一文件夹只能绑定一个项目；未传 `name` 时使用文件夹名；返回 `{ok, id, name, workingDirectory}` |
+| `WORKSPACE.CREATE` | `workingDirectory`/`cwd` + `name?` | 添加项目；`workingDirectory` 必填且同一文件夹只能绑定一个项目；未传 `name` 时使用文件夹名；返回 `{ok, id, name, workingDirectory}` |
 | `WORKSPACE.SELECT` | `index?` `id?` `name?` | 按 index（0/1-based）/ id / 名称匹配；`name` 支持精确与 `Contains`；返回 `{ok:true}` |
 | `SURFACE.CREATE` | — | 新建 Surface；返回 `{ok:true}` |
 | `SURFACE.SELECT` | `workspaceId?`/`workspaceName?`/`workspaceIndex?` + `surfaceId?`/`surfaceName?`/`surfaceIndex?` | 切换项目 + Surface；返回 `{ok, workspaceId, workspaceName, surfaceId, surfaceName}` |

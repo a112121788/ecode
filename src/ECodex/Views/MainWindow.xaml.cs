@@ -378,7 +378,7 @@ public partial class MainWindow : Window
         {
             switch (e.Key)
             {
-                case Key.N: // 新建项目
+                case Key.N: // 添加项目
                     ViewModel.CreateNewWorkspace();
                     e.Handled = true;
                     return;
@@ -745,7 +745,7 @@ public partial class MainWindow : Window
     {
         List<PaletteItem> items =
         [
-            new() { Id = "new-workspace", Label = "新建项目", Icon = "\uE710", Shortcut = "Ctrl+N", Category = "项目", Execute = () => ViewModel.CreateNewWorkspace() },
+            new() { Id = "new-workspace", Label = "添加项目", Icon = "\uE710", Shortcut = "Ctrl+N", Category = "项目", Execute = () => ViewModel.CreateNewWorkspace() },
             new() { Id = "new-surface", Label = "新建标签页", Icon = "\uE710", Shortcut = "Ctrl+T", Category = "标签页", Execute = () => ViewModel.SelectedWorkspace?.CreateNewSurface() },
             new() { Id = "close-surface", Label = "关闭标签页", Icon = "\uE711", Shortcut = "Ctrl+W", Category = "标签页", Execute = () => { var s = ViewModel.SelectedWorkspace?.SelectedSurface; if (s != null) ViewModel.SelectedWorkspace?.CloseSurface(s); } },
             new() { Id = "close-workspace", Label = "关闭项目", Icon = "\uE711", Shortcut = "Ctrl+Shift+W", Category = "项目", Execute = () => ViewModel.CloseWorkspace(ViewModel.SelectedWorkspace) },
