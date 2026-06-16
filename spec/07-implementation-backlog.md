@@ -31,7 +31,22 @@ AI Agent 启动后按以下顺序选择任务：
 
 ---
 
-## 1. 当前冲刺：S1 - 会话恢复与 AI loop 稳定化
+## 1. 当前冲刺：S2 - 常驻通知与开箱体验
+
+目标：让下一版本的 ECodex 默认成为常驻后台工作台：关闭/最小化后进入系统托盘，通知能基于命令生命周期提醒用户，预制 skills 可安全种子安装，并让 `Ctrl+Enter` 在终端里稳定输入换行。
+
+| ID | 状态 | Outcome | Scope | Acceptance |
+|---|---|---|---|---|
+| `TTY-01` | ready | 所有 ECodex Terminal 中 `Ctrl+Enter` 默认输入换行，不立即执行；普通 `Enter` 仍提交 | 调整 `src/ECodex/Controls/TerminalControl.cs` 的按键映射与 IME 代理转发；同步 `docs/keyboard-shortcuts.md`；不新增设置项，不做 Codex 进程专属判断 | 单元或可测试辅助逻辑覆盖 `Ctrl+Enter -> LF`、`Enter -> CR`；Windows 手测 PowerShell / cmd / Codex CLI 中 `Ctrl+Enter` 不提交，`Enter` 提交；`git diff --check` 通过 |
+| `SKL-01` | ready | App 首次启动时把仓库预制 skills 安全复制到 `%USERPROFILE%\.agents\skills`，用户已有同名 skill 不被覆盖 | 约定模板源目录 `assets/default-skills/`，发布包内目录 `default-skills`；新增启动时种子安装服务，按第一层目录复制到用户目录；同名目录跳过，不合并、不删除；安装器只负责带上模板目录，不绑定具体 skill 清单 | 放入 `assets/default-skills/foo/SKILL.md` 后首次启动创建 `%USERPROFILE%\.agents\skills\foo\SKILL.md`；目标已有 `foo` 时内容不变并记录 skipped；zip / Inno / Velopack 路径都能找到包内模板；docs 说明目录约定与不覆盖策略 |
+| `TRAY-01A` | ready | 关闭按钮与最小化都隐藏到系统托盘，后台终端和通知继续运行 | WPF 主窗口生命周期、系统托盘图标、双击/菜单“打开 ECodex”；保持单实例策略，第二次启动仍聚焦/恢复已有窗口；不改变 daemon 终端保留设置语义 | 点击关闭按钮后进程仍在、窗口隐藏、托盘图标可恢复；最小化同样隐藏；再次启动 ECodex 恢复现有窗口而不创建第二主窗口；`AppSingleWindowSourceTests` 或等效测试覆盖 |
+| `TRAY-01B` | ready | 托盘菜单提供“退出并保留终端”和“退出并终止终端”，退出语义与现有设置一致 | 复用 `app.exit {"terminateTerminals":true}` 与现有 daemon session termination；菜单包含打开、退出并保留终端、退出并终止终端；同步 session restore / troubleshooting 文档 | “退出并保留终端”关闭 UI 但保留 daemon 托管会话；“退出并终止终端”逐个关闭 daemon 会话后退出；两条路径有测试或 Windows 手测证据；失败时显示/记录可诊断错误 |
+| `NOT-02A` | ready | PowerShell shell integration hook 默认随 App 首次启动安装，可回传命令开始、结束和退出码 | 扩展现有 setup/profile 机制：ECodex 专属标记块、写入前备份到 `%USERPROFILE%\.ecodex\backups\`、`setup status` 可检查、`setup uninstall --write true` 可移除；默认仅 PowerShell，cmd/Git Bash 后续再做；冲突时跳过并提示，不静默覆盖 | 首次启动缺 hook 时写入标记块并备份；再次启动幂等；用户已有冲突块时跳过；status 能显示 installed/missing/drifted；uninstall 只移除 ECodex 标记块；不读取 `.env*` / secrets |
+| `NOT-02B` | draft | 后台/非激活时，基于命令生命周期发送完成、失败、等待输入通知，并进入未读中心 | 依赖 `NOT-02A` 的 hook 事件；定义 pane/session/command id 数据流、退出码映射、通知去重与节流；没有 hook 时降级到 OSC / `ecodex notify` / 关键输出规则 | 后台执行命令成功结束只产生完成通知；非 0 退出码产生失败通知；前台活跃时不刷 Toast；通知能定位 workspace/surface/pane；普通流式输出不逐条通知 |
+| `NOT-02C` | draft | 点击 Windows Toast 精准打开 ECodex 并跳转到对应 workspace / surface / pane | 明确 Toast activation/AppUserModelID/非打包应用策略；复用通知 ID、workspaceId、surfaceId、paneId；窗口隐藏到托盘时也能恢复并跳转 | Toast 点击后窗口显示并聚焦对应 pane；通知标记为已读；目标 pane 不存在时给出可见 fallback；Windows Toast 不可用时不影响应用主流程 |
+| `NOT-02D` | draft | Codex 等待输入、关键确认、错误决策等交互状态能触发低噪声提醒 | 在生命周期通知之外补充状态识别；优先识别 Codex 常见等待输入/确认语义，再扩展可配置规则；仅窗口隐藏/非激活且匹配关键状态时提醒 | Codex 等待用户输入时后台收到通知；普通日志不通知；同一状态有去重/冷却；规则可在后续版本扩展 |
+
+### 1.1 上一冲刺归档：S1 - 会话恢复与 AI loop 稳定化
 
 目标：优先交付 `SES-01`，让 ECodex 在用户正常关闭主窗口后保留后台终端进程，并在重开时自动接回，同时补齐状态可见性、终止入口和安全回退。
 
@@ -45,7 +60,7 @@ AI Agent 启动后按以下顺序选择任务：
 | `AGL-01` | done | AI loop 修改文档后能快速发现坏链接或旧文件名，降低文档漂移 | 新增 `scripts/check-doc-links.ps1`；`scripts/ci.ps1` 调用独立脚本；同步 `spec/04-build-deploy.md`；顺手修复 `spec/README.md` 对缺失 `08-dotnet-csharp-handbook.md` 的坏链接引用 | `pwsh ./scripts/check-doc-links.ps1` 通过；临时坏链接用例返回失败；脚本语法检查通过 |
 | `NAM-01` | done | 用户、维护者和发布产物看到的品牌统一为 `ECodex`，代码项目 / namespace / XAML 类型命名也同步使用 `ECodex` | 已统一 README、`docs/`、spec 与历史文档、安装器显示名、solution/project/folder 名、C# namespace、XAML `x:Class`、资源 key 与测试命名；保留全小写 `ecodex` 命令、配置、管道、数据路径和产物名 | 旧 Pascal 品牌拼写搜索无命中；临时归档副本执行 `.\.dotnet\dotnet.exe build ECodex.sln -c Debug` 通过；`.\.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --no-restore` 通过 284/284；`.\.dotnet\dotnet.exe build tests\ECodex.Smoke\ECodex.Smoke.csproj -c Debug` 通过；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --cached --check` 通过 |
 
-### 1.1 上一冲刺归档：S0 - spec 敏捷化与 AI loop
+### 1.2 上一冲刺归档：S0 - spec 敏捷化与 AI loop
 
 目标：把 `spec/` 从静态规划文档重构为可指导 AI 自动化开发的敏捷交付系统。
 
