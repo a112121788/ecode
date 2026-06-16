@@ -263,7 +263,6 @@ public sealed class DaemonPipeServer
                 DaemonMessageTypes.SessionWrite => HandleSessionWrite(request),
                 DaemonMessageTypes.SessionResize => HandleSessionResize(request),
                 DaemonMessageTypes.SessionClose => HandleSessionClose(request),
-                DaemonMessageTypes.SessionCloseAll => HandleSessionCloseAll(),
                 DaemonMessageTypes.SessionList => HandleSessionList(),
                 DaemonMessageTypes.SessionSnapshot => HandleSessionSnapshot(request),
                 DaemonMessageTypes.Ping => JsonSerializer.Serialize(new DaemonResponse { Success = true, Data = "pong" }),
@@ -311,16 +310,6 @@ public sealed class DaemonPipeServer
         if (request.PaneId == null) throw new ArgumentException("PaneId required");
         _sessionManager.CloseSession(request.PaneId);
         return JsonSerializer.Serialize(new DaemonResponse { Success = true });
-    }
-
-    private string HandleSessionCloseAll()
-    {
-        var closed = _sessionManager.CloseAllSessions();
-        LogDaemon("daemon-pipe-server", "sessions.close-all", message: "Closed all daemon sessions", fields: new Dictionary<string, object?>
-        {
-            ["closed"] = closed,
-        });
-        return JsonSerializer.Serialize(new DaemonResponse { Success = true, Data = JsonSerializer.Serialize(new { closed }) });
     }
 
     private string HandleSessionList()

@@ -87,6 +87,10 @@ ecodex window close window:1
 
 对应方法：`window.list`、`window.current`、`window.focus`、`window.create`、`window.close`。ECodex 主程序使用 `Global\ECodexMainApp` 保证单实例；再次启动应用只激活已有窗口，不转发启动参数。
 
+### App Lifecycle（内部 IPC）
+
+`app.exit` 是主应用 `ecodex.v2` 内部方法，用于自动化“退出 ECodex”。传入 `{"terminateTerminals":true}` 时，会先通过 daemon 的 `SESSION_LIST` + 逐个 `SESSION_CLOSE` 终止托管终端，再请求主应用退出；不再提供独立的 daemon `SESSION_CLOSE_ALL` 清理入口。
+
 ### Workspace
 
 ```powershell

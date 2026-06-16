@@ -148,6 +148,12 @@ COMMAND [k=v [k=v ...]]
 
 未知命令 / 未找到目标 / 缺少必填参数 → `{error:"…"}`；成功 → `{ok:true, ...}` 或直接返回对象数组。
 
+### 2.4 `ecodex.v2` 生命周期方法
+
+| 方法 | 参数 | 说明 |
+|---|---|---|
+| `app.exit` | `terminateTerminals?: bool` | 内部 IPC 入口；请求主应用退出。`terminateTerminals=true` 时先通过 daemon `SESSION_LIST` 获取会话，再逐个发送 `SESSION_CLOSE`，响应包含 `requestedDaemonSessions` 与 `terminatedDaemonSessions`。 |
+
 ## 3. `\\.\pipe\ecodex-daemon` 守护进程通道
 
 ### 3.1 消息格式
@@ -163,7 +169,6 @@ COMMAND [k=v [k=v ...]]
 { "type": "SESSION_WRITE",  "paneId": "pane-uuid", "data": "SGVsbG8=" }
 { "type": "SESSION_RESIZE", "paneId": "pane-uuid", "cols": 132, "rows": 40 }
 { "type": "SESSION_CLOSE",  "paneId": "pane-uuid" }
-{ "type": "SESSION_CLOSE_ALL" }
 { "type": "SESSION_LIST" }
 { "type": "SESSION_SNAPSHOT","paneId": "pane-uuid" }
 { "type": "PING" }
@@ -178,7 +183,6 @@ COMMAND [k=v [k=v ...]]
 | `type` | `data` 解码 |
 |---|---|
 | `SESSION_CREATE` | `JsonSerializer.Deserialize<DaemonSessionInfo>(data)` |
-| `SESSION_CLOSE_ALL` | `{ "closed": <int> }` |
 | `SESSION_LIST`   | `List<DaemonSessionInfo>` |
 | `SESSION_SNAPSHOT`| `TerminalBufferSnapshot`（`Cols/Rows/CursorRow/CursorCol/ScrollbackLines/ScreenLines`） |
 | `PING`           | `"pong"` |
@@ -219,7 +223,7 @@ COMMAND [k=v [k=v ...]]
     if 客户端==0 && 会话==0 && 距 lastActivity > 24h → 优雅退出
 ```
 
-终端进程自然退出时，daemon 会将对应 pane 从 active sessions 移除并广播 `EXITED`；`SESSION_CLOSE_ALL` 可由主窗口 daemon 状态入口触发，用于显式清理关闭窗口后继续保留的后台终端进程。
+终端进程自然退出时，daemon 会将对应 pane 从 active sessions 移除并广播 `EXITED`。daemon 不再暴露独立的 `SESSION_CLOSE_ALL`；显式“退出并终止终端”走主应用 `app.exit {"terminateTerminals":true}`，由主应用枚举并逐个关闭 daemon 会话。
 
 ## 4. 用法示例
 
@@ -306,6 +310,7 @@ $pipe.Close()
 ## 6. 一致性约束
 
 - ECodex 主窗口是单实例；`window.create` 为兼容命令，已有窗口存在时只聚焦当前窗口并返回 `created:false`，不会创建第二个 `MainWindow`
+- “退出并终止终端”只通过主应用 `app.exit {"terminateTerminals":true}` 实现，不保留 daemon `SESSION_CLOSE_ALL` 入口
 - 同一管道上的所有响应 / 事件均由对应客户端的**单一写线程**串行写入，避免交错字节
 - 请求与响应通过 `SemaphoreSlim(1,1)` 串行化（同一 `DaemonClient` 同时只允许一个未决请求）
 - 监听循环优先按响应解析（启发式："包含 `Success` 字段"），避免误把事件当成响应

@@ -30,6 +30,12 @@ ecodex config diagnostics
 ecodex config reload
 ```
 
+## 运行时行为设置
+
+| 字段 | 默认 | 说明 |
+|---|---|---|
+| `PreserveDaemonSessionsOnClose` | `true` | 关闭 ECodex 主窗口时保留 daemon 托管终端；设为 `false` 时关闭前逐个终止当前 daemon 会话。 |
+
 ## 兼容开关
 
 设置窗口的“高级”页包含兼容选项：

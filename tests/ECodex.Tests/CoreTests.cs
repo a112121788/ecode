@@ -2,11 +2,13 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Text.Json;
+using ECodex.Core.Config;
 using ECodex.Core.IPC;
 using ECodex.Core.IPC.V2;
 using ECodex.Core.Models;
 using ECodex.Core.Services;
 using ECodex.Core.Terminal;
+using ECodex.Services;
 using ECodex.Cli.Commands;
 using ECodex.Updater;
 using FluentAssertions;
@@ -880,6 +882,8 @@ public class DocsSiteTests
         sessionRestore.Should().Contain("kind\": \"tmux\"");
         sessionRestore.Should().Contain("trusted");
         sessionRestore.Should().Contain("AutoResumeTrustedBindings");
+        sessionRestore.Should().Contain("PreserveDaemonSessionsOnClose");
+        sessionRestore.Should().Contain("app.exit");
         sessionRestore.Should().Contain("ecodex surface resume set");
         sessionRestore.Should().Contain("ecodex surface resume show");
         sessionRestore.Should().Contain("ecodex surface resume clear");
@@ -910,6 +914,8 @@ public class DocsSiteTests
         cli.Should().Contain("ecodex restore-session");
         cli.Should().Contain("单窗口模式下会聚焦现有窗口");
         cli.Should().Contain(@"Global\ECodexMainApp");
+        cli.Should().Contain("app.exit");
+        cli.Should().Contain("terminateTerminals");
         cli.Should().Contain("ecodex setup install");
         cli.Should().Contain("ecodex update check");
         cli.Should().Contain("ecodex doctor");
@@ -1424,16 +1430,16 @@ public class DaemonMessageRoundTripTests
     }
 
     [Fact]
-    public void DaemonCloseAllRequest_UsesStableMessageType()
+    public void DaemonProtocol_DoesNotExposeStandaloneCloseAllRequest()
     {
-        var request = new DaemonRequest
-        {
-            Type = DaemonMessageTypes.SessionCloseAll,
-        };
+        var messages = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex.Core", "IPC", "DaemonMessages.cs"));
+        var client = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex.Core", "IPC", "DaemonClient.cs"));
+        var server = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex.Daemon", "DaemonPipeServer.cs"));
 
-        var roundTripped = RoundTrip<DaemonRequest>(request);
-
-        roundTripped.Type.Should().Be("SESSION_CLOSE_ALL");
+        messages.Should().NotContain("SESSION_CLOSE_ALL");
+        messages.Should().NotContain("SessionCloseAll");
+        client.Should().NotContain("CloseAllSessionsAsync");
+        server.Should().NotContain("HandleSessionCloseAll");
     }
 
     [Fact]
@@ -2018,6 +2024,105 @@ public class WindowApiServiceTests
             Params = parameters == null
                 ? null
                 : JsonDocument.Parse(parameters).RootElement.Clone(),
+        };
+    }
+
+    private static JsonDocument ParseResult(V2Response response)
+    {
+        response.Result.Should().NotBeNull();
+        return JsonDocument.Parse(JsonSerializer.Serialize(response.Result));
+    }
+}
+
+/// <summary>
+/// Daemon 会话终止策略测试 - 默认保留后台终端，只有显式退出策略才逐个终止 daemon 会话。
+/// </summary>
+public class DaemonSessionTerminationPolicyTests
+{
+    [Fact]
+    public void Settings_DefaultToPreserveDaemonSessionsOnWindowClose()
+    {
+        var settings = new ECodexSettings();
+
+        settings.PreserveDaemonSessionsOnClose.Should().BeTrue();
+
+        var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        });
+        json.Should().Contain("preserveDaemonSessionsOnClose");
+    }
+
+    [Fact]
+    public async Task Terminator_ClosesListedDaemonSessionsWithoutCloseAllMessage()
+    {
+        var closed = new List<string>();
+
+        var result = await DaemonSessionTerminator.TerminateAllAsync(
+            () => Task.FromResult(new List<DaemonSessionInfo>
+            {
+                new() { PaneId = "pane-1" },
+                new() { PaneId = "pane-2" },
+                new() { PaneId = "" },
+            }),
+            paneId =>
+            {
+                closed.Add(paneId);
+                return Task.CompletedTask;
+            });
+
+        closed.Should().Equal("pane-1", "pane-2");
+        result.Terminated.Should().Be(2);
+        result.Requested.Should().Be(2);
+    }
+
+    [Fact]
+    public void MainWindow_ClosePathHonorsPreserveDaemonSessionsSetting()
+    {
+        var source = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex", "Views", "MainWindow.xaml.cs"));
+
+        source.Should().Contain("TerminateDaemonSessionsOnCloseIfConfigured();");
+        source.Should().Contain("SettingsService.Current.PreserveDaemonSessionsOnClose");
+        source.Should().Contain("DaemonSessionTerminator.TerminateAllAsync(App.DaemonClient)");
+    }
+}
+
+/// <summary>
+/// 主应用生命周期 IPC 测试 - 退出并终止终端走 ecodex.v2 主应用管道，而不是 daemon close-all 协议。
+/// </summary>
+public class AppLifecycleApiServiceTests
+{
+    [Fact]
+    public async Task Exit_WithTerminateTerminals_RequestsTerminationThenShutdown()
+    {
+        var terminated = false;
+        var shutdownRequested = false;
+        var api = new AppLifecycleApiService(
+            terminateDaemonSessions: () =>
+            {
+                terminated = true;
+                return Task.FromResult(new DaemonSessionTerminationResult(1, 1));
+            },
+            requestShutdown: () => shutdownRequested = true);
+
+        var response = await api.HandleRequestAsync(CreateV2Request("app.exit", """{"terminateTerminals":true}"""));
+
+        response.Error.Should().BeNull();
+        terminated.Should().BeTrue();
+        shutdownRequested.Should().BeTrue();
+        using var result = ParseResult(response);
+        result.RootElement.GetProperty("exiting").GetBoolean().Should().BeTrue();
+        result.RootElement.GetProperty("terminateTerminals").GetBoolean().Should().BeTrue();
+        result.RootElement.GetProperty("terminatedDaemonSessions").GetInt32().Should().Be(1);
+    }
+
+    private static V2Request CreateV2Request(string method, string parameters)
+    {
+        return new V2Request
+        {
+            Id = JsonSerializer.SerializeToElement("test"),
+            Method = method,
+            Params = JsonSerializer.Deserialize<JsonElement>(parameters),
         };
     }
 

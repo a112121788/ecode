@@ -37,6 +37,7 @@ public class ECodexSettings
 
     public bool RestoreSessionOnStartup { get; set; } = true;
     public bool AutoResumeTrustedBindings { get; set; } = false;
+    public bool PreserveDaemonSessionsOnClose { get; set; } = true;
     public bool ConfirmOnClose { get; set; } = true;
     public bool AutoCopyOnSelect { get; set; } = false;
     public bool CtrlClickOpensUrls { get; set; } = true;

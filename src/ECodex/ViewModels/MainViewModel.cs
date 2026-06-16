@@ -21,6 +21,7 @@ using PaneV2ApiWorkspace = ECodex.Services.PaneApiWorkspace<ECodex.ViewModels.Wo
 using NotificationV2ApiService = ECodex.Services.NotificationApiService;
 using ConfigV2ApiService = ECodex.Services.ConfigApiService;
 using StatusV2ApiService = ECodex.Services.StatusApiService;
+using AppLifecycleV2ApiService = ECodex.Services.AppLifecycleApiService;
 
 namespace ECodex.ViewModels;
 
@@ -74,6 +75,7 @@ public partial class MainViewModel : ObservableObject
     private readonly NotificationV2ApiService _notificationApiService;
     private readonly ConfigV2ApiService _configApiService;
     private readonly StatusV2ApiService _statusApiService;
+    private readonly AppLifecycleV2ApiService _appLifecycleApiService;
 
     public NotificationService NotificationService => _notificationService;
 
@@ -128,6 +130,9 @@ public partial class MainViewModel : ObservableObject
             JumpToNotification);
         _configApiService = new ConfigV2ApiService(HandleConfigReload);
         _statusApiService = new StatusV2ApiService(HandleStatus);
+        _appLifecycleApiService = new AppLifecycleV2ApiService(
+            () => DaemonSessionTerminator.TerminateAllAsync(App.DaemonClient),
+            RequestApplicationShutdownAfterResponse);
 
         // 连接命名管道的命令处理程序
         if (App.PipeServer != null)
@@ -594,6 +599,9 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
+            if (AppLifecycleV2ApiService.CanHandle(request.Method))
+                return await _appLifecycleApiService.HandleRequestAsync(request);
+
             return await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 return request.Method switch
@@ -616,6 +624,19 @@ public partial class MainViewModel : ObservableObject
         {
             return V2Response.FromStableError(request.Id, V2ErrorCodes.InternalError, ex.Message);
         }
+    }
+
+    private static void RequestApplicationShutdownAfterResponse()
+    {
+        var app = Application.Current;
+        if (app?.Dispatcher == null)
+            return;
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(150).ConfigureAwait(false);
+            await app.Dispatcher.InvokeAsync(() => app.Shutdown(0));
+        });
     }
 
     private static JsonElement ParseJsonElement(string json)

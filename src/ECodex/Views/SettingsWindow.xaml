@@ -635,6 +635,18 @@
                                       Content="关闭窗口前询问" />
                         </Grid>
 
+                        <!-- 关闭时保留 daemon 会话 -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="保留终端会话" Style="{StaticResource SectionLabel}" />
+                            <CheckBox x:Name="PreserveDaemonSessionsOnCloseCheck" Grid.Column="1"
+                                      Style="{StaticResource SettingsCheck}"
+                                      Content="关闭 ECodex 窗口时保留 daemon 中仍运行的终端" />
+                        </Grid>
+
                         <!-- 自动复制 -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>

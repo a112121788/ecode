@@ -19,6 +19,12 @@
 
 ECodex 主程序通过 `Global\ECodexMainApp` Mutex 保证单实例。第二个 `ecodex-app.exe` 启动时只尝试通过主应用 pipe 发送 `window.focus {"target":"current"}` 激活已有窗口，然后退出；当前不转发启动参数。
 
+`ecodex.v2` 生命周期方法：
+
+| 方法 | 参数 | 响应 | 说明 |
+|---|---|---|---|
+| `app.exit` | `terminateTerminals?: bool` | `{exiting, terminateTerminals, requestedDaemonSessions, terminatedDaemonSessions}` | 请求主应用退出；`terminateTerminals=true` 时先通过 daemon `SESSION_LIST` + 逐个 `SESSION_CLOSE` 终止托管会话 |
+
 ### 2.1 请求行格式
 
 ```
@@ -112,7 +118,6 @@ public static class DaemonMessageTypes {
     public const string SessionWrite     = "SESSION_WRITE";
     public const string SessionResize    = "SESSION_RESIZE";
     public const string SessionClose     = "SESSION_CLOSE";
-    public const string SessionCloseAll  = "SESSION_CLOSE_ALL";
     public const string SessionList      = "SESSION_LIST";
     public const string SessionSnapshot  = "SESSION_SNAPSHOT";
     public const string Ping             = "PING";
@@ -148,7 +153,6 @@ public static class DaemonMessageTypes {
   "error":   null,                  // 失败时填写
   "data":    "<string>"            // CREATE → 序列化的 DaemonSessionInfo；
                                    // LIST → 序列化的 List<DaemonSessionInfo>；
-                                   // CLOSE_ALL → {"closed": <int>}；
                                    // SNAPSHOT → 序列化的 TerminalBufferSnapshot JSON；
                                    // PING → "pong"
 }
@@ -203,9 +207,9 @@ public class DaemonSessionInfo {
       lastActivity 在 ClientConnected/Disconnected/SessionCreated 时刷新
 ```
 
-`SESSION_CLOSE_ALL` 会终止 daemon 当前托管的全部终端会话，并返回已清理的会话数；主窗口右下角 daemon 状态入口提供同等操作，用于用户显式清理关闭窗口后继续保留的后台进程。
+daemon 不再暴露 `SESSION_CLOSE_ALL` 这类独立全量清理请求。需要“退出 ECodex 并终止终端”时，主应用 `app.exit {"terminateTerminals":true}` 会先 `SESSION_LIST`，再对每个 paneId 发送 `SESSION_CLOSE`，最后请求应用退出。
 
-主应用主动退出时，`DaemonClient.Dispose()` 只关闭客户端管道，不广播 `Disconnected`；因此 `SurfaceViewModel.OnDaemonDisconnected()` 的本地 ConPTY 回退仅用于运行中 daemon 意外断开，不用于正常关闭窗口。
+主应用主动退出时，`DaemonClient.Dispose()` 只关闭客户端管道，不广播 `Disconnected`；因此 `SurfaceViewModel.OnDaemonDisconnected()` 的本地 ConPTY 回退仅用于运行中 daemon 意外断开，不用于正常关闭窗口。`ECodexSettings.PreserveDaemonSessionsOnClose` 默认 `true`；设为 `false` 时主窗口关闭前会逐个关闭 daemon 托管会话。
 
 终端进程自然退出时，`DaemonSessionManager` 会从 active sessions 中移除对应 pane，再广播 `EXITED`；因此 daemon 空闲退出判断不会被已结束的终端进程阻塞。
 
@@ -361,6 +365,7 @@ Shell 写入 `\e]133;A` / `\e]133;B;<command>` / `\e]133;C` / `\e]133;D;<exitcod
 | `ECodexSettings.TranscriptRetentionDays` | 脚本日志按文件 `LastWriteTime` 清理（默认 90，`0` = 永久保留） |
 | `ECodexSettings.CaptureTranscriptsOnClose` | Surface/Pane 关闭 / 清理时是否落盘脚本 |
 | `ECodexSettings.CaptureTranscriptsOnClear` | 清屏时是否落盘脚本 |
+| `ECodexSettings.PreserveDaemonSessionsOnClose` | 关闭主窗口时是否保留 daemon 托管终端（默认 `true`） |
 
 应用启动 + `SettingsChanged` 时调用 `ApplyRetentionPolicy / ApplyTranscriptRetentionPolicy / ScrubSensitiveData…`。
 

@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\src\ECodex\Services\ConfigApiService.cs" Link="Services\ConfigApiService.cs" />
+    <Compile Include="..\..\src\ECodex\Services\AppLifecycleApiService.cs" Link="Services\AppLifecycleApiService.cs" />
     <Compile Include="..\..\src\ECodex\Services\PaneApiService.cs" Link="Services\PaneApiService.cs" />
     <Compile Include="..\..\src\ECodex\Services\NotificationApiService.cs" Link="Services\NotificationApiService.cs" />
     <Compile Include="..\..\src\ECodex\Services\StatusApiService.cs" Link="Services\StatusApiService.cs" />
@@ -57,6 +58,8 @@
     <None Include="..\..\spec\06-roadmap.md" Link="spec\06-roadmap.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\spec\07-implementation-backlog.md" Link="spec\07-implementation-backlog.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\ECodex.Core\IPC\DaemonClient.cs" Link="src\ECodex.Core\IPC\DaemonClient.cs" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\ECodex.Core\IPC\DaemonMessages.cs" Link="src\ECodex.Core\IPC\DaemonMessages.cs" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\ECodex.Daemon\DaemonPipeServer.cs" Link="src\ECodex.Daemon\DaemonPipeServer.cs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\ECodex\App.xaml.cs" Link="src\ECodex\App.xaml.cs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\ECodex\Controls\TerminalControl.cs" Link="src\ECodex\Controls\TerminalControl.cs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\ECodex\ViewModels\MainViewModel.cs" Link="src\ECodex\ViewModels\MainViewModel.cs" CopyToOutputDirectory="PreserveNewest" />

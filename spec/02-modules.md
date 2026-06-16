@@ -49,6 +49,7 @@
 | `Services/SnippetService.cs` | `SnippetService` | 增删改查 + 搜索（按 name / content / category / tags / description，收藏优先）+ 首次启动播种 10 条默认 |
 | `Services/ECodexJsonService.cs` | `ECodexJsonService` | 读取 `%USERPROFILE%\.config\ecodex\ecodex.json`、`<cwd>\.ecodex\ecodex.json`、`<cwd>\ecodex.json`；支持 JSONC 注释 / 尾随逗号；全局与本地配置合并；输出可显示的诊断 |
 | `Services/ResumeBindingService.cs` | `ResumeBindingService` | 读写 `%USERPROFILE%/.ecodex/resume.json`；支持 `Load / Save / Add / Remove / FindForSurface / TrustPrefix`；保存前剔除 TOKEN / PASSWORD / SECRET / API_KEY 等敏感环境变量 |
+| `Services/DaemonSessionTerminator.cs` | `DaemonSessionTerminator` | 通过 `SESSION_LIST` 获取 daemon 会话，再逐个发送 `SESSION_CLOSE`；用于退出 ECodex 并终止托管终端，不再暴露 daemon `SESSION_CLOSE_ALL` |
 | `Services/AgentConversationStoreService.cs` | `AgentConversationStoreService` | Agent 会话线程索引（`agent/threads.json`）+ 单线程消息追加文件（`agent/threads/<id>.jsonl`），容忍 BOM/多值 JSON/单行回退解析 |
 | `Services/SecretStoreService.cs` | `SecretStoreService` (static) | DPAPI `ProtectedData.Protect/Unprotect` 存取 `secrets.json`；`GetSecret/SetSecret/RemoveSecret` |
 | `Services/GitService.cs` | `GitService` (static) | 快速读 `.git/HEAD`；`git rev-parse --abbrev-ref HEAD` 回退；`GetRemoteUrl` |
@@ -60,7 +61,7 @@
 
 | 文件 | 类型 | 说明 |
 |---|---|---|
-| `Config/ECodexSettings.cs` | `ECodexSettings` | 全局设置：字体、主题、Cursor 样式、Scrollback、保留策略、ShellProfiles、KeyBindings、RecentDirectories、嵌套 `AgentSettings` |
+| `Config/ECodexSettings.cs` | `ECodexSettings` | 全局设置：字体、主题、Cursor 样式、Scrollback、`PreserveDaemonSessionsOnClose`、保留策略、ShellProfiles、KeyBindings、RecentDirectories |
 | `Config/AgentSettings.cs` | `AgentSettings / OpenAiCompatibleAgentSettings / AnthropicAgentSettings / ExaSearchSettings / AgentCustomToolConfig / AgentMcpServerConfig / AgentSubmitProfileConfig` | Agent 启用、Provider、模型、密钥名（DPAPI）、Bash/WebSearch 工具、提交策略、自动压缩 |
 | `Config/SettingsService.cs` | `SettingsService` (static) | `Current` 懒加载；`Load/Save/Reset/NotifyChanged`；`SettingsChanged` 事件 |
 | `Config/TerminalThemes.cs` | `TerminalTheme` + `TerminalThemes` (static) | 内置 8 套主题；`GetEffective(settings)` 叠加自定义色；`TryParseHexColor` 支持 `#RRGGBB` / `#RRGGBBAA` |
@@ -96,6 +97,7 @@
 |---|---|---|
 | `src/ECodex/App.xaml.cs` | `App : Application` | 单例服务：`NotificationService / PipeServer / SnippetService / CommandLogService / DaemonClient / WindowApi / DaemonConnectTask`；`OnStartup` 先用 `Global\ECodexMainApp` 保证主应用单实例，第二实例只通过 pipe 聚焦已有窗口后退出；随后启管道 + 异步连守护进程；注册全局异常；非焦点时弹 Toast |
 | `src/ECodex/Services/ToastNotificationHelper.cs` | `ToastNotificationHelper` | 通过 `Microsoft.Toolkit.Uwp.Notifications` 显示 Windows Toast |
+| `src/ECodex/Services/AppLifecycleApiService.cs` | `AppLifecycleApiService` | 主应用 `ecodex.v2` 生命周期入口；`app.exit {"terminateTerminals":true}` 先终止 daemon 会话再请求应用退出 |
 | `src/ECodex/Services/AgentRuntimeService.cs` | `AgentRuntimeService` | 内置 Agent 运行时（OpenAI 兼容 / Anthropic），流式响应、工具调用（Bash / WebSearch / 自定义 / MCP）、上下文压缩、会话持久化（AgentConversationStoreService）、`TryHandlePaneCommand` 拦截 `/agent` 命令等 |
 | `src/ECodex/Converters/*` | (略) | XAML 值转换器 |
 | `src/ECodex/Themes/*` | (略) | 资源字典与样式 |
@@ -127,8 +129,8 @@
 
 | 文件 | 类型 | 说明 |
 |---|---|---|
-| `src/ECodex/Views/MainWindow.xaml(.cs)` | `MainWindow : Window` | 主窗口：侧边栏 + 主区；`OnLoaded` 恢复窗口几何；`OnClosing` 调 `ViewModel.SaveSession`；`OnSettingsChanged` 广播主题 / 字号到所有终端；`UpdateDaemonStatus` 用绿/灰点指示；大量 `OnKeyDown` 绑定应用级快捷键；命令面板打开时读取 `ecodex.json` 并执行项目命令；`Ctrl+Shift+,` / CLI 可热重载配置 |
-| `src/ECodex/Views/SettingsWindow.xaml(.cs)` | `SettingsWindow` | 设置（外观 / 终端 / 行为 / 集合 / Agent 等标签页，93KB XAML） |
+| `src/ECodex/Views/MainWindow.xaml(.cs)` | `MainWindow : Window` | 主窗口：侧边栏 + 主区；`OnLoaded` 恢复窗口几何；`OnClosing` 调 `ViewModel.SaveSession`，并按 `PreserveDaemonSessionsOnClose` 决定是否逐个终止 daemon 会话；`OnSettingsChanged` 广播主题 / 字号到所有终端；`UpdateDaemonStatus` 用绿/灰点指示；大量 `OnKeyDown` 绑定应用级快捷键；命令面板打开时读取 `ecodex.json` 并执行项目命令；`Ctrl+Shift+,` / CLI 可热重载配置 |
+| `src/ECodex/Views/SettingsWindow.xaml(.cs)` | `SettingsWindow` | 设置（外观 / 终端 / 行为 / 键盘 / 高级），行为页持久化 `PreserveDaemonSessionsOnClose` |
 | `src/ECodex/Views/SessionVaultWindow.xaml(.cs)` | `SessionVaultWindow` | 脚本回放浏览器（依赖 WebView2） |
 | `src/ECodex/Views/LogsWindow.xaml(.cs)` | `LogsWindow` | 命令日志查看（按日期 / 搜索） |
 | `src/ECodex/Views/HistoryWindow.xaml(.cs)` | `HistoryWindow` | 命令历史选择器 |

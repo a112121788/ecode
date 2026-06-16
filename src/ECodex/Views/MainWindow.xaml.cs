@@ -186,33 +186,6 @@ public partial class MainWindow : Window
             : "本地运行——重启后会话不会保留";
     }
 
-    private async void DaemonCloseAllSessions_Click(object sender, RoutedEventArgs e)
-    {
-        if (!App.DaemonClient.IsConnected)
-        {
-            MessageBox.Show(this, "当前未连接到 ecodex-daemon。", "终止保留会话", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var result = MessageBox.Show(
-            this,
-            "这会终止 ecodex-daemon 托管的全部终端进程，包括当前窗口中仍连接到 daemon 的面板。\n\n是否继续？",
-            "终止全部保留会话",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        if (result != MessageBoxResult.Yes)
-            return;
-
-        var ok = await App.DaemonClient.CloseAllSessionsAsync();
-        MessageBox.Show(
-            this,
-            ok ? "已请求 ecodex-daemon 终止全部保留会话。" : "终止请求失败，请检查 daemon 状态或 daemon-debug.log。",
-            "终止全部保留会话",
-            MessageBoxButton.OK,
-            ok ? MessageBoxImage.Information : MessageBoxImage.Warning);
-    }
-
     private void UpdateWindowChrome()
     {
         bool maximized = WindowState == WindowState.Maximized;
@@ -242,6 +215,23 @@ public partial class MainWindow : Window
         ViewModel.ConfigReloadRequested -= ReloadECodexJsonConfigForIpc;
         SurfaceTabBarControl.SurfaceOrderChanged -= CheckpointCurrentSession;
         PersistCurrentSession();
+        TerminateDaemonSessionsOnCloseIfConfigured();
+    }
+
+    private static void TerminateDaemonSessionsOnCloseIfConfigured()
+    {
+        if (ECodex.Core.Config.SettingsService.Current.PreserveDaemonSessionsOnClose)
+            return;
+
+        try
+        {
+            var result = DaemonSessionTerminator.TerminateAllAsync(App.DaemonClient).GetAwaiter().GetResult();
+            App.DaemonLog($"[MainWindow] PreserveDaemonSessionsOnClose=false; terminated {result.Terminated}/{result.Requested} daemon sessions");
+        }
+        catch (Exception ex)
+        {
+            App.DaemonLog($"[MainWindow] Failed to terminate daemon sessions on close: {ex.Message}");
+        }
     }
 
     private void PersistCurrentSession() => PersistCurrentSession(captureTranscripts: true);

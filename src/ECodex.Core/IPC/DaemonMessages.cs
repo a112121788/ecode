@@ -9,7 +9,6 @@ public static class DaemonMessageTypes
     public const string SessionWrite = "SESSION_WRITE";
     public const string SessionResize = "SESSION_RESIZE";
     public const string SessionClose = "SESSION_CLOSE";
-    public const string SessionCloseAll = "SESSION_CLOSE_ALL";
     public const string SessionList = "SESSION_LIST";
     public const string SessionSnapshot = "SESSION_SNAPSHOT";
     public const string Ping = "PING";

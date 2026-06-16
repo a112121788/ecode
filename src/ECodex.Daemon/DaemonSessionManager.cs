@@ -121,21 +121,6 @@ public sealed class DaemonSessionManager : IDisposable
             session.Dispose();
     }
 
-    public int CloseAllSessions()
-    {
-        var closed = 0;
-        foreach (var (paneId, session) in _sessions.ToArray())
-        {
-            if (!_sessions.TryRemove(paneId, out _))
-                continue;
-
-            session.Dispose();
-            closed++;
-        }
-
-        return closed;
-    }
-
     public List<DaemonSessionInfo> ListSessions()
     {
         return _sessions.Select(kvp => new DaemonSessionInfo
