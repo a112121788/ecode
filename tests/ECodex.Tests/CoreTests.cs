@@ -4260,6 +4260,24 @@ public class VtParserTests
     }
 }
 
+public class TerminalSessionTests
+{
+    [Fact]
+    public void Start_InvalidCommand_DoesNotThrowAndMarksSessionStopped()
+    {
+        using var session = new TerminalSession("invalid-shell", 80, 8);
+        var missingShell = Path.Combine(
+            Path.GetTempPath(),
+            $"ecodex-missing-shell-{Guid.NewGuid():N}.exe");
+
+        var act = () => session.Start(command: missingShell);
+
+        act.Should().NotThrow();
+        session.IsRunning.Should().BeFalse();
+        session.Buffer.ExportPlainText().Should().Contain("Failed to start terminal");
+    }
+}
+
 /// <summary>
 /// 终端缓冲区测试 - 验证字符写入、光标移动、滚动、擦除、CJK 字符处理和窗口调整
 /// </summary>
