@@ -2,7 +2,7 @@
 name: mvp
 description: 指导 MVP（最小可行产品）构建，帮助产品快速验证核心价值、选择正确用户并制定高效方案。
 metadata:
-  anthor: "pengpeng"
+  author: "pengpeng"
   version: "1.0.0"
 ---
 
