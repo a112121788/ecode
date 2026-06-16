@@ -61,7 +61,13 @@ public sealed class TerminalProcess : IDisposable
         }
 
         if (!success)
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create process with ConPTY.");
+        {
+            var error = Marshal.GetLastWin32Error();
+            DeleteProcThreadAttributeList(_attributeList);
+            Marshal.FreeHGlobal(_attributeList);
+            _attributeList = IntPtr.Zero;
+            throw new Win32Exception(error, "Failed to create process with ConPTY.");
+        }
 
         // 启动后台线程等待进程退出
         _waitThread = new Thread(WaitForExitThread)

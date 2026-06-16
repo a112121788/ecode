@@ -37,6 +37,7 @@
     <None Include="..\..\scripts\perf\measure.ps1" Link="scripts\perf\measure.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\tests\ECodex.Smoke\Program.cs" Link="tests\ECodex.Smoke\Program.cs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\installer\ecodex.iss" Link="installer\ecodex.iss" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\installer\Languages\ChineseSimplified.isl" Link="installer\Languages\ChineseSimplified.isl" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\installer\AppXManifest.xml" Link="installer\AppXManifest.xml" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\.github\workflows\ci.yml" Link=".github\workflows\ci.yml" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\.github\workflows\release.yml" Link=".github\workflows\release.yml" CopyToOutputDirectory="PreserveNewest" />

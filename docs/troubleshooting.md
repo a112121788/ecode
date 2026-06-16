@@ -108,6 +108,8 @@ ecodex config reload
 
 ## 会话恢复异常
 
+如果恢复的 shell 命令或工作目录已失效，ECodex 会在对应终端面板显示 `Failed to start terminal`，但不应阻断主窗口启动。
+
 ```powershell
 ecodex surface resume show
 ecodex restore-session
@@ -118,6 +120,8 @@ ecodex restore-session
 - `resume.json` 是否存在。
 - binding 是否 `trusted: true`。
 - `AutoResumeTrustedBindings` 是否启用。
+- `settings.json` 中的默认 shell 或恢复快照里的 shell 路径是否仍存在。
+- 恢复快照里的工作目录是否仍存在或可访问。
 - `daemon-debug.log` 是否出现 `SESSION_CREATE`、`session.create`、`session.created`。
 
 ## 浏览器 API 找不到元素

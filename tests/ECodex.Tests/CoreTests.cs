@@ -585,7 +585,8 @@ public class InnoSetupScriptTests
         var path = Path.Combine(AppContext.BaseDirectory, "installer", "ecodex.iss");
         var script = File.ReadAllText(path);
 
-        script.Should().Contain("Name: \"chinesesimplified\"; MessagesFile: \"compiler:Languages\\ChineseSimplified.isl\"");
+        script.Should().Contain("Name: \"chinesesimplified\"; MessagesFile: \".\\Languages\\ChineseSimplified.isl\"");
+        File.Exists(Path.Combine(AppContext.BaseDirectory, "installer", "Languages", "ChineseSimplified.isl")).Should().BeTrue();
         script.Should().Contain("Description: \"{cm:CreateDesktopIcon}\"");
         script.Should().Contain("GroupDescription: \"{cm:AdditionalIcons}\"");
         script.Should().Contain("Description: \"{cm:LaunchProgram,{#MyAppName}}\"");

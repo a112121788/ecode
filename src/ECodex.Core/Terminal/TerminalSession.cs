@@ -1,5 +1,6 @@
 using System.IO.Pipes;
 using System.Text;
+using System.ComponentModel;
 using System.Diagnostics;
 using ECodex.Core.IPC;
 using Microsoft.Win32.SafeHandles;
@@ -30,6 +31,7 @@ public sealed class TerminalSession : IDisposable
     public string? WorkingDirectory { get; set; }
     public bool IsRunning => _process != null && !_process.HasExited;
     public int? ProcessId => _process?.ProcessId;
+    public Exception? StartupException { get; private set; }
 
     // 守护进程模式委托：设置后，Write/Resize 通过这些委托转发，而非本地 ConPTY
     public Func<byte[], Task>? DaemonWrite { get; set; }
@@ -164,27 +166,72 @@ public sealed class TerminalSession : IDisposable
 
         lock (_lock)
         {
-            _console = PseudoConsole.Create((short)Buffer.Cols, (short)Buffer.Rows);
-            _process = new TerminalProcess(_console, command, effectiveWorkingDirectory, environment);
-
-            _readStream = new FileStream(_console.ReadPipe, FileAccess.Read);
-            _writeStream = new FileStream(_console.WritePipe, FileAccess.Write);
-
-            _process.Exited += () =>
+            try
             {
-                ProcessExited?.Invoke();
-            };
+                _console = PseudoConsole.Create((short)Buffer.Cols, (short)Buffer.Rows);
+                _process = new TerminalProcess(_console, command, effectiveWorkingDirectory, environment);
 
-            _readThread = new Thread(ReadLoop)
+                _readStream = new FileStream(_console.ReadPipe, FileAccess.Read);
+                _writeStream = new FileStream(_console.WritePipe, FileAccess.Write);
+
+                _process.Exited += () =>
+                {
+                    ProcessExited?.Invoke();
+                };
+
+                _readThread = new Thread(ReadLoop)
+                {
+                    IsBackground = true,
+                    Name = $"Terminal-Read-{PaneId}",
+                };
+                _readThread.Start();
+            }
+            catch (Exception ex) when (IsRecoverableStartupException(ex))
             {
-                IsBackground = true,
-                Name = $"Terminal-Read-{PaneId}",
-            };
-            _readThread.Start();
+                StartupException = ex;
+                DisposeStartupHandles();
+                WriteStartupFailure(command, effectiveWorkingDirectory, ex);
+                return;
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(WorkingDirectory))
             WorkingDirectoryChanged?.Invoke(WorkingDirectory);
+    }
+
+    private static bool IsRecoverableStartupException(Exception ex)
+    {
+        return ex is Win32Exception
+            or IOException
+            or UnauthorizedAccessException
+            or ArgumentException
+            or PlatformNotSupportedException;
+    }
+
+    private void DisposeStartupHandles()
+    {
+        _readStream?.Dispose();
+        _writeStream?.Dispose();
+        _process?.Dispose();
+        _console?.Dispose();
+        _readStream = null;
+        _writeStream = null;
+        _process = null;
+        _console = null;
+    }
+
+    private void WriteStartupFailure(string? command, string workingDirectory, Exception ex)
+    {
+        var message = new StringBuilder()
+            .AppendLine("Failed to start terminal.")
+            .Append("Command: ").AppendLine(string.IsNullOrWhiteSpace(command) ? "(default shell)" : command)
+            .Append("Working directory: ").AppendLine(workingDirectory)
+            .Append("Error: ").AppendLine(ex.Message)
+            .ToString();
+
+        Buffer.WriteString(message);
+        OutputReceived?.Invoke();
+        Redraw?.Invoke();
     }
 
     private void ReadLoop()
