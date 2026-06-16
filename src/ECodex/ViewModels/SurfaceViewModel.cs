@@ -66,6 +66,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     private int _resumeBindingVersion;
 
     public event Action<string>? WorkingDirectoryChanged;
+    public event Action? SessionCheckpointRequested;
 
     public bool IsBrowser => Surface.Kind == SurfaceKind.Browser;
 
@@ -768,6 +769,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
 
         // 触发 UI 更新
         OnPropertyChanged(nameof(RootNode));
+        SessionCheckpointRequested?.Invoke();
     }
 
     public void OpenPaneWithShell(string shellPath)
@@ -816,6 +818,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
             FocusedPaneId = nextPaneId;
 
         OnPropertyChanged(nameof(RootNode));
+        SessionCheckpointRequested?.Invoke();
     }
 
     public void FocusPane(string paneId)
@@ -856,7 +859,10 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     {
         var resized = RootNode.ResizePane(paneId, delta);
         if (resized)
+        {
             OnPropertyChanged(nameof(RootNode));
+            SessionCheckpointRequested?.Invoke();
+        }
 
         return resized;
     }
@@ -865,7 +871,10 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     {
         var swapped = RootNode.SwapPanes(paneId, otherPaneId);
         if (swapped)
+        {
             OnPropertyChanged(nameof(RootNode));
+            SessionCheckpointRequested?.Invoke();
+        }
 
         return swapped;
     }
@@ -874,6 +883,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     {
         RootNode.Equalize();
         OnPropertyChanged(nameof(RootNode));
+        SessionCheckpointRequested?.Invoke();
     }
 
     partial void OnFocusedPaneIdChanged(string? value)

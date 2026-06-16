@@ -300,8 +300,10 @@ Browser surface 示例：
 `Save` → `tmp = path + ".tmp"` → `File.WriteAllText(tmp)` → `File.Move(tmp, path, overwrite:true)`。
 
 `BuildState` 在调用前需先触发：
-- `MainViewModel.SaveSession` 调用所有 `Surface.CapturePaneSnapshotsForPersistence()`，把当前 `TerminalBuffer.CreateSnapshot(maxScrollbackLines:3000)` 写入 `Surface.PaneSnapshots`。
-- 同时 `Workspace.CaptureAllSurfaceTranscripts("session-close")` → `CommandLogService.SaveTerminalTranscript` 落盘到 `logs/terminal/YYYY-MM-DD/...`。
+- `MainViewModel.SaveSession(..., captureTranscripts)` 调用所有 `Surface.CapturePaneSnapshotsForPersistence()`，把当前 `TerminalBuffer.CreateSnapshot(maxScrollbackLines:3000)` 写入 `Surface.PaneSnapshots`。
+- 主窗口关闭时使用 `captureTranscripts:true`，同时 `Workspace.CaptureAllSurfaceTranscripts("session-close")` → `CommandLogService.SaveTerminalTranscript` 落盘到 `logs/terminal/YYYY-MM-DD/...`。
+- 运行期结构变化（新建 / 关闭 Surface、分屏 / 关闭 pane、移动或调整分屏）通过 `SessionCheckpointRequested` 触发 `captureTranscripts:false` checkpoint，只更新 `session.json`，不生成 terminal transcript。
+- 崩溃后重开采用保守恢复：只 attach `session.json` 已记录 paneId 对应的 daemon 会话，不自动创建未持久化的 daemon 孤儿 pane。
 
 ---
 

@@ -49,7 +49,7 @@ public partial class MainWindow : Window
         SurfaceTabBarControl.SearchTextChanged += OnSearchTextChanged;
         SurfaceTabBarControl.NextMatchRequested += OnSearchNext;
         SurfaceTabBarControl.PreviousMatchRequested += OnSearchPrevious;
-        SurfaceTabBarControl.SurfaceOrderChanged += PersistCurrentSession;
+        SurfaceTabBarControl.SurfaceOrderChanged += CheckpointCurrentSession;
 
         // 连接终端 Surface 的事件
         SplitPaneContainerControl.SearchRequested += () =>
@@ -72,7 +72,7 @@ public partial class MainWindow : Window
         OnSettingsChanged();
 
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-        ViewModel.WorkspaceOrderChanged += PersistCurrentSession;
+        ViewModel.SessionCheckpointRequested += CheckpointCurrentSession;
         ViewModel.ConfigReloadRequested += ReloadECodexJsonConfigForIpc;
 
         var windowInfo = App.WindowManager.RegisterWindow(this, Title);
@@ -238,15 +238,22 @@ public partial class MainWindow : Window
         _uiRefreshTimer.Stop();
         _terminalFocusTimer.Stop();
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
-        ViewModel.WorkspaceOrderChanged -= PersistCurrentSession;
+        ViewModel.SessionCheckpointRequested -= CheckpointCurrentSession;
         ViewModel.ConfigReloadRequested -= ReloadECodexJsonConfigForIpc;
-        SurfaceTabBarControl.SurfaceOrderChanged -= PersistCurrentSession;
+        SurfaceTabBarControl.SurfaceOrderChanged -= CheckpointCurrentSession;
         PersistCurrentSession();
     }
 
-    private void PersistCurrentSession()
+    private void PersistCurrentSession() => PersistCurrentSession(captureTranscripts: true);
+
+    private void CheckpointCurrentSession()
     {
-        ViewModel.SaveSession(Left, Top, Width, Height, WindowState == WindowState.Maximized);
+        PersistCurrentSession(captureTranscripts: false);
+    }
+
+    private void PersistCurrentSession(bool captureTranscripts)
+    {
+        ViewModel.SaveSession(Left, Top, Width, Height, WindowState == WindowState.Maximized, captureTranscripts);
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -922,7 +929,7 @@ public partial class MainWindow : Window
         }
 
         if (appliedCount > 0)
-            PersistCurrentSession();
+            CheckpointCurrentSession();
 
         return appliedCount;
     }

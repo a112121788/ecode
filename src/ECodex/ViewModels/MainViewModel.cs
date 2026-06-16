@@ -78,6 +78,7 @@ public partial class MainViewModel : ObservableObject
     public NotificationService NotificationService => _notificationService;
 
     public event Action? WorkspaceOrderChanged;
+    public event Action? SessionCheckpointRequested;
     public event Func<string>? ConfigReloadRequested;
 
     public MainViewModel()
@@ -160,11 +161,28 @@ public partial class MainViewModel : ObservableObject
         workspace.Surfaces.Add(surface);
         workspace.SelectedSurface = surface;
 
-        var vm = new WorkspaceViewModel(workspace, _notificationService);
+        var vm = CreateWorkspaceViewModel(workspace);
         Workspaces.Add(vm);
         SelectedWorkspace = vm;
+        RequestSessionCheckpoint();
         return vm;
     }
+
+    private WorkspaceViewModel CreateWorkspaceViewModel(Workspace workspace)
+    {
+        var vm = new WorkspaceViewModel(workspace, _notificationService);
+        vm.SessionCheckpointRequested += OnWorkspaceSessionCheckpointRequested;
+        return vm;
+    }
+
+    private void DetachWorkspaceViewModel(WorkspaceViewModel workspace)
+    {
+        workspace.SessionCheckpointRequested -= OnWorkspaceSessionCheckpointRequested;
+    }
+
+    private void OnWorkspaceSessionCheckpointRequested() => RequestSessionCheckpoint();
+
+    private void RequestSessionCheckpoint() => SessionCheckpointRequested?.Invoke();
 
     public void DuplicateWorkspace(WorkspaceViewModel source)
     {
@@ -243,9 +261,10 @@ public partial class MainViewModel : ObservableObject
             clone.SelectedSurface = fallbackSurface;
         }
 
-        var vm = new WorkspaceViewModel(clone, _notificationService);
+        var vm = CreateWorkspaceViewModel(clone);
         Workspaces.Add(vm);
         SelectedWorkspace = vm;
+        RequestSessionCheckpoint();
     }
 
     [RelayCommand]
@@ -256,6 +275,7 @@ public partial class MainViewModel : ObservableObject
 
         int index = Workspaces.IndexOf(workspace);
         workspace.CaptureAllSurfaceTranscripts("workspace-close");
+        DetachWorkspaceViewModel(workspace);
         workspace.Dispose();
         Workspaces.Remove(workspace);
 
@@ -263,6 +283,8 @@ public partial class MainViewModel : ObservableObject
         {
             SelectedWorkspace = Workspaces[Math.Min(index, Workspaces.Count - 1)];
         }
+
+        RequestSessionCheckpoint();
     }
 
     [RelayCommand]
@@ -286,6 +308,7 @@ public partial class MainViewModel : ObservableObject
 
         Workspaces.Move(sourceIndex, targetIndex);
         WorkspaceOrderChanged?.Invoke();
+        RequestSessionCheckpoint();
         return true;
     }
 
@@ -394,14 +417,15 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    public void SaveSession(double windowX, double windowY, double windowWidth, double windowHeight, bool isMaximized)
+    public void SaveSession(double windowX, double windowY, double windowWidth, double windowHeight, bool isMaximized, bool captureTranscripts = true)
     {
         // 在序列化前，先捕获终端脚本和内存中的终端上下文。
         foreach (var workspace in Workspaces)
         {
             foreach (var surface in workspace.Surfaces)
             {
-                surface.CaptureAllPaneTranscripts("session-close");
+                if (captureTranscripts)
+                    surface.CaptureAllPaneTranscripts("session-close");
                 surface.CapturePaneSnapshotsForPersistence();
             }
         }
@@ -481,7 +505,7 @@ public partial class MainViewModel : ObservableObject
                 workspace.SelectedSurface = workspace.Surfaces[0];
             }
 
-            var vm = new WorkspaceViewModel(workspace, _notificationService);
+            var vm = CreateWorkspaceViewModel(workspace);
             Workspaces.Add(vm);
         }
 
@@ -1331,6 +1355,7 @@ public partial class MainViewModel : ObservableObject
 
         workspace.Name = name.Trim();
         WorkspaceOrderChanged?.Invoke();
+        RequestSessionCheckpoint();
         return true;
     }
 

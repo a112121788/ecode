@@ -48,6 +48,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     private readonly NotificationService _notificationService;
     private System.Threading.Timer? _infoRefreshTimer;
+    public event Action? SessionCheckpointRequested;
 
     public WorkspaceViewModel(Workspace workspace, NotificationService notificationService)
     {
@@ -60,8 +61,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         // 为已有的 Surface 创建 VM
         foreach (var surface in workspace.Surfaces)
         {
-            var surfaceVm = new SurfaceViewModel(surface, workspace.Id, notificationService);
-            surfaceVm.WorkingDirectoryChanged += OnSurfaceWorkingDirectoryChanged;
+            var surfaceVm = CreateSurfaceViewModel(surface);
             Surfaces.Add(surfaceVm);
         }
 
@@ -89,10 +89,10 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         var surface = new Surface { Name = string.IsNullOrWhiteSpace(name) ? $"Terminal {Surfaces.Count + 1}" : name };
         Workspace.Surfaces.Add(surface);
 
-        var surfaceVm = new SurfaceViewModel(surface, Workspace.Id, _notificationService);
-        surfaceVm.WorkingDirectoryChanged += OnSurfaceWorkingDirectoryChanged;
+        var surfaceVm = CreateSurfaceViewModel(surface);
         Surfaces.Add(surfaceVm);
         SelectedSurface = surfaceVm;
+        SessionCheckpointRequested?.Invoke();
         return surfaceVm;
     }
 
@@ -108,10 +108,10 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         };
         Workspace.Surfaces.Add(surface);
 
-        var surfaceVm = new SurfaceViewModel(surface, Workspace.Id, _notificationService);
-        surfaceVm.WorkingDirectoryChanged += OnSurfaceWorkingDirectoryChanged;
+        var surfaceVm = CreateSurfaceViewModel(surface);
         Surfaces.Add(surfaceVm);
         SelectedSurface = surfaceVm;
+        SessionCheckpointRequested?.Invoke();
         return surfaceVm;
     }
 
@@ -123,6 +123,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
         int index = Surfaces.IndexOf(surface);
         surface.CaptureAllPaneTranscripts("surface-close");
+        DetachSurfaceViewModel(surface);
         surface.Dispose();
         Surfaces.Remove(surface);
         Workspace.Surfaces.Remove(surface.Surface);
@@ -131,6 +132,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         {
             SelectedSurface = Surfaces[Math.Min(index, Surfaces.Count - 1)];
         }
+
+        SessionCheckpointRequested?.Invoke();
     }
 
     public bool MoveSurface(SurfaceViewModel surface, int targetIndex)
@@ -147,6 +150,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         Workspace.Surfaces.Remove(surface.Surface);
         Workspace.Surfaces.Insert(targetIndex, surface.Surface);
         Workspace.SelectedSurface = SelectedSurface?.Surface;
+        SessionCheckpointRequested?.Invoke();
         return true;
     }
 
@@ -177,6 +181,22 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         WorkingDirectory = directory;
         Workspace.WorkingDirectory = directory;
     }
+
+    private SurfaceViewModel CreateSurfaceViewModel(Surface surface)
+    {
+        var surfaceVm = new SurfaceViewModel(surface, Workspace.Id, _notificationService);
+        surfaceVm.WorkingDirectoryChanged += OnSurfaceWorkingDirectoryChanged;
+        surfaceVm.SessionCheckpointRequested += OnSurfaceSessionCheckpointRequested;
+        return surfaceVm;
+    }
+
+    private void DetachSurfaceViewModel(SurfaceViewModel surface)
+    {
+        surface.WorkingDirectoryChanged -= OnSurfaceWorkingDirectoryChanged;
+        surface.SessionCheckpointRequested -= OnSurfaceSessionCheckpointRequested;
+    }
+
+    private void OnSurfaceSessionCheckpointRequested() => SessionCheckpointRequested?.Invoke();
 
     private void RefreshInfo()
     {
@@ -247,7 +267,10 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
     {
         _infoRefreshTimer?.Dispose();
         foreach (var surface in Surfaces)
+        {
+            DetachSurfaceViewModel(surface);
             surface.Dispose();
+        }
     }
 }
 

@@ -887,6 +887,7 @@ public class DocsSiteTests
         sessionRestore.Should().Contain("Ctrl+Shift+O");
         sessionRestore.Should().Contain("ECODEX_WORKSPACE_ID");
         sessionRestore.Should().Contain("主动关闭 ECodex 只断开主程序与 daemon 的客户端连接");
+        sessionRestore.Should().Contain("重开时仅自动挂载 `session.json` 中已有 paneId 对应的 daemon 会话");
     }
 
     [Fact]
@@ -3090,6 +3091,49 @@ public class DaemonClientLifecycleSourceTests
 
         normalized.Should().Contain("if (!_disposed)\n                Disconnected?.Invoke();");
     }
+}
+
+/// <summary>
+/// 崩溃恢复 checkpoint 测试 - 结构变化应实时写 session.json，但不能生成关闭 transcript。
+/// </summary>
+public class CrashRecoveryCheckpointSourceTests
+{
+    [Fact]
+    public void SaveSession_SupportsCheckpointWithoutTranscriptCapture()
+    {
+        var source = Normalize(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex", "ViewModels", "MainViewModel.cs")));
+
+        source.Should().Contain("bool captureTranscripts = true");
+        source.Should().Contain("if (captureTranscripts)");
+        source.Should().Contain("surface.CaptureAllPaneTranscripts(\"session-close\");");
+    }
+
+    [Fact]
+    public void MainWindow_UsesCheckpointForRuntimeStructureChanges()
+    {
+        var source = Normalize(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex", "Views", "MainWindow.xaml.cs")));
+
+        source.Should().Contain("SurfaceTabBarControl.SurfaceOrderChanged += CheckpointCurrentSession;");
+        source.Should().Contain("ViewModel.SessionCheckpointRequested += CheckpointCurrentSession;");
+        source.Should().Contain("private void CheckpointCurrentSession()");
+        source.Should().Contain("PersistCurrentSession(captureTranscripts: false);");
+        source.Should().Contain("ViewModel.SaveSession(Left, Top, Width, Height, WindowState == WindowState.Maximized, captureTranscripts);");
+    }
+
+    [Fact]
+    public void SurfaceAndWorkspaceViewModels_RequestCheckpointAfterTopologyChanges()
+    {
+        var workspace = Normalize(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex", "ViewModels", "WorkspaceViewModel.cs")));
+        var surface = Normalize(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex", "ViewModels", "SurfaceViewModel.cs")));
+
+        workspace.Should().Contain("public event Action? SessionCheckpointRequested;");
+        workspace.Should().Contain("surfaceVm.SessionCheckpointRequested += OnSurfaceSessionCheckpointRequested;");
+        workspace.Should().Contain("SessionCheckpointRequested?.Invoke();");
+        surface.Should().Contain("public event Action? SessionCheckpointRequested;");
+        surface.Should().Contain("SessionCheckpointRequested?.Invoke();");
+    }
+
+    private static string Normalize(string value) => value.Replace("\r\n", "\n", StringComparison.Ordinal);
 }
 
 /// <summary>

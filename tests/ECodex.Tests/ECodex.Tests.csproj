@@ -58,6 +58,10 @@
     <None Include="..\..\spec\07-implementation-backlog.md" Link="spec\07-implementation-backlog.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\ECodex.Core\IPC\DaemonClient.cs" Link="src\ECodex.Core\IPC\DaemonClient.cs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\ECodex\Controls\TerminalControl.cs" Link="src\ECodex\Controls\TerminalControl.cs" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\ECodex\ViewModels\MainViewModel.cs" Link="src\ECodex\ViewModels\MainViewModel.cs" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\ECodex\ViewModels\SurfaceViewModel.cs" Link="src\ECodex\ViewModels\SurfaceViewModel.cs" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\ECodex\ViewModels\WorkspaceViewModel.cs" Link="src\ECodex\ViewModels\WorkspaceViewModel.cs" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\ECodex\Views\MainWindow.xaml.cs" Link="src\ECodex\Views\MainWindow.xaml.cs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\ECodex\Views\SettingsWindow.xaml" Link="src\ECodex\Views\SettingsWindow.xaml" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\.vitepress\config.mts" Link="docs\.vitepress\config.mts" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\index.md" Link="docs\index.md" CopyToOutputDirectory="PreserveNewest" />
