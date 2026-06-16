@@ -1489,7 +1489,7 @@ public class TerminalControl : FrameworkElement
         {
             if (e.Key == Key.Back)
                 TrackInputText("\b");
-            else if (e.Key == Key.Enter)
+            else if (e.Key == Key.Enter && !ctrl)
             {
                 SubmitBufferedCommand();
                 if (_suppressNextEnterToShell)
@@ -2177,6 +2177,9 @@ public class TerminalControl : FrameworkElement
         e.Handled = true;
         if (_session != null && !string.IsNullOrEmpty(e.Text))
         {
+            if (e.Text.Contains('\r') || e.Text.Contains('\n'))
+                return;
+
             _session.Write(e.Text);
             TrackInputText(e.Text);
         }
@@ -2279,6 +2282,7 @@ public class TerminalControl : FrameworkElement
 
         return key switch
         {
+            Key.Enter when modifiers.HasFlag(ModifierKeys.Control) => "\n",
             Key.Enter => "\r",
             Key.Escape => "\x1b",
             Key.Back => "\x7f",

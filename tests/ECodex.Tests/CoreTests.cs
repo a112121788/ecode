@@ -694,6 +694,16 @@ public class TerminalControlSourceTests
         source.Should().Contain("DispatchIfRequired(OnBell");
         source.Should().Contain("DispatchIfRequired(UpdateImeProxyPosition");
     }
+
+    [Fact]
+    public void TerminalControl_MapsCtrlEnterToLineFeedWithoutSubmitting()
+    {
+        var source = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex", "Controls", "TerminalControl.cs"));
+
+        source.Should().Contain("else if (e.Key == Key.Enter && !ctrl)");
+        source.Should().Contain("Key.Enter when modifiers.HasFlag(ModifierKeys.Control) => \"\\n\"");
+        source.Should().Contain("Key.Enter => \"\\r\"");
+    }
 }
 
 public class PerfBudgetScriptTests

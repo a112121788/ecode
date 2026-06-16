@@ -8,6 +8,10 @@ ECodex 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 
 ## [Unreleased]
 
+### Added
+
+- 终端输入新增全局 `Ctrl+Enter` 换行，适合 Codex CLI 等多行输入场景；普通 `Enter` 仍提交命令。
+
 ### Changed
 
 - `docs/` 用户文档统一调整为简体中文单语，并在 `spec/` 中明确文档站语言策略。
