@@ -39,6 +39,19 @@ ecodex config reload
 }
 ```
 
+## 本仓 dogfood 示例
+
+维护者可参考仓库内置的 `.ecodex/ecodex.example.json`，它预置了本仓常用的 build、unit test、docs build、status 和 health 命令；其中会触发构建、测试或 npm 脚本的命令都设置了 `confirm: true`。
+
+如需在本仓启用该示例，请复制为真实项目配置后重载：
+
+```powershell
+Copy-Item .ecodex/ecodex.example.json .ecodex/ecodex.json
+ecodex config reload
+```
+
+示例文件不会自动覆盖你的 `.ecodex/ecodex.json`，复制前请先检查已有本地配置。
+
 ## `commands`
 
 `commands` 是命令面板中的普通命令列表。

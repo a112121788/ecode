@@ -13,9 +13,15 @@ ECodex 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 - 终端输入新增全局 `Ctrl+Enter` 换行，适合 Codex CLI 等多行输入场景；普通 `Enter` 仍提交命令。
 - App 启动时新增默认 skills 种子安装：从安装目录 `default-skills` 复制到 `%USERPROFILE%\.agents\skills`，同名 skill 跳过且不覆盖。
 - 新增系统托盘常驻入口：关闭按钮或最小化会隐藏 ECodex 到托盘，双击托盘图标或菜单“打开 ECodex”可恢复窗口，托盘菜单也提供“退出并保留终端”和“退出并终止终端”。
+- 新增默认 PowerShell shell integration：App 启动时幂等安装 ECodex 标记块，写入前备份 profile，并通过 `ecodex hook event` 回传命令开始、结束和退出码。
+- 新增 `.ecodex/ecodex.example.json` dogfood 示例，预置本仓 build、unit test、docs build、status 和 health 命令。
+- 新增 `scripts/smoke-ecodex-v2.ps1` 手动 smoke 脚本，用真实 ECodex pipe 验证 status、workspace、pane 与 browser 最小闭环，并在缺环境时清晰跳过。
+- 新增 `scripts/release-evidence.ps1` 只读发布证据清单脚本，汇总 build、test、docs、perf、doctor 和 release workflow 证据路径及 Windows-only 标记。
 
 ### Changed
 
+- Inno Setup 备用安装器固定使用简体中文界面，并为桌面快捷方式、附加快捷方式和完成页启动项提供项目自定义中文文案。
+- PR 模板新增可选 Handoff 区块，便于 Agent 中断或交接时记录目标、验证、风险、下一步和回滚点。
 - `docs/` 用户文档统一调整为简体中文单语，并在 `spec/` 中明确文档站语言策略。
 
 ## [1.0.1] - 2026-06-16

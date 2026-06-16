@@ -41,7 +41,7 @@ AI Agent 启动后按以下顺序选择任务：
 | `SKL-01` | done | App 首次启动时把仓库预制 skills 安全复制到 `%USERPROFILE%\.agents\skills`，用户已有同名 skill 不被覆盖 | 约定模板源目录 `assets/default-skills/`，发布包内目录 `default-skills`；新增启动时种子安装服务，按第一层目录复制到用户目录；同名目录跳过，不合并、不删除；安装器只负责带上模板目录，不绑定具体 skill 清单 | `DefaultSkillSeedServiceTests` 覆盖复制第一层目录、递归复制子文件、跳过同名目录、忽略根文件和缺源 no-op；`DefaultSkillsPackagingTests` 覆盖 App 启动调用与 publish 内容声明；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~DefaultSkillSeedServiceTests|FullyQualifiedName~DefaultSkillsPackagingTests" --no-restore` 通过；docs 说明目录约定与不覆盖策略 |
 | `TRAY-01A` | done | 关闭按钮与最小化都隐藏到系统托盘，后台终端和通知继续运行 | WPF 主窗口生命周期、系统托盘图标、双击/菜单“打开 ECodex”；保持单实例策略，第二次启动仍聚焦/恢复已有窗口；不改变 daemon 终端保留设置语义 | `TrayResidencySourceTests` 与 `AppSingleWindowSourceTests` 覆盖关闭/最小化隐藏、托盘恢复、显式退出和单实例恢复；`.dotnet\dotnet.exe build src\ECodex\ECodex.csproj -c Debug --no-restore` 通过；Windows GUI 手测待人工确认 |
 | `TRAY-01B` | done | 托盘菜单提供“退出并保留终端”和“退出并终止终端”，退出语义与现有设置一致 | 复用现有 daemon session termination；菜单包含打开、退出并保留终端、退出并终止终端；同步 session restore / troubleshooting 文档 | `TrayResidencySourceTests` 覆盖托盘菜单文案、保留退出、终止退出、失败日志与文档；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~TrayResidencySourceTests" --no-restore` 通过；Windows GUI 手测待人工确认 |
-| `NOT-02A` | ready | PowerShell shell integration hook 默认随 App 首次启动安装，可回传命令开始、结束和退出码 | 扩展现有 setup/profile 机制：ECodex 专属标记块、写入前备份到 `%USERPROFILE%\.ecodex\backups\`、`setup status` 可检查、`setup uninstall --write true` 可移除；默认仅 PowerShell，cmd/Git Bash 后续再做；冲突时跳过并提示，不静默覆盖 | 首次启动缺 hook 时写入标记块并备份；再次启动幂等；用户已有冲突块时跳过；status 能显示 installed/missing/drifted；uninstall 只移除 ECodex 标记块；不读取 `.env*` / secrets |
+| `NOT-02A` | done | PowerShell shell integration hook 默认随 App 首次启动安装，可回传命令开始、结束和退出码 | 扩展现有 setup/profile 机制：ECodex 专属标记块、写入前备份到 `%USERPROFILE%\.ecodex\backups\`、`setup status` 可检查、`setup uninstall --write true` 可移除；默认仅 PowerShell，cmd/Git Bash 后续再做；冲突时跳过并提示，不静默覆盖 | `PowerShellHookSetupServiceTests` 覆盖缺失安装、幂等、冲突跳过、写前备份与 App/CLI 接入；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~PowerShellHookSetupServiceTests" --no-restore` 通过；真实 profile 写入手测待人工确认 |
 | `NOT-02B` | draft | 后台/非激活时，基于命令生命周期发送完成、失败、等待输入通知，并进入未读中心 | 依赖 `NOT-02A` 的 hook 事件；定义 pane/session/command id 数据流、退出码映射、通知去重与节流；没有 hook 时降级到 OSC / `ecodex notify` / 关键输出规则 | 后台执行命令成功结束只产生完成通知；非 0 退出码产生失败通知；前台活跃时不刷 Toast；通知能定位 workspace/surface/pane；普通流式输出不逐条通知 |
 | `NOT-02C` | draft | 点击 Windows Toast 精准打开 ECodex 并跳转到对应 workspace / surface / pane | 明确 Toast activation/AppUserModelID/非打包应用策略；复用通知 ID、workspaceId、surfaceId、paneId；窗口隐藏到托盘时也能恢复并跳转 | Toast 点击后窗口显示并聚焦对应 pane；通知标记为已读；目标 pane 不存在时给出可见 fallback；Windows Toast 不可用时不影响应用主流程 |
 | `NOT-02D` | draft | Codex 等待输入、关键确认、错误决策等交互状态能触发低噪声提醒 | 在生命周期通知之外补充状态识别；优先识别 Codex 常见等待输入/确认语义，再扩展可配置规则；仅窗口隐藏/非激活且匹配关键状态时提醒 | Codex 等待用户输入时后台收到通知；普通日志不通知；同一状态有去重/冷却；规则可在后续版本扩展 |
@@ -79,12 +79,12 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | 使用 Inno Setup 安装包的用户，在安装、升级覆盖、创建快捷方式、完成页、卸载确认与卸载进度等流程中看到一致的简体中文界面 |
 | Scope | 调整 `installer/ecodex.iss` 的语言配置、安装任务描述、运行后提示和必要的自定义消息；同步 `docs/installation.md` 的构建/验收说明；不改变安装目录、卸载数据保留策略、Velopack/MSIX 行为或发布产物命名 |
 | 关联 | `installer/ecodex.iss`、`docs/installation.md`、`04-build-deploy.md` §Installer / Update |
-| 验收 | Windows 环境使用 Inno Setup Compiler 编译通过；安装向导、覆盖安装向导、卸载向导、开始菜单/桌面快捷方式任务与完成页用户可见文案均为简体中文；静默安装/卸载不受影响；卸载仍只清理 `{app}`，保留 `%USERPROFILE%\.ecodex` |
+| 验收 | `InnoSetupScriptTests` 覆盖固定简体中文语言包、隐藏语言选择、setup logging、桌面快捷方式 / 完成页自定义中文文案、卸载只清理 `{app}` 和 installation 文档验收清单；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~InnoSetupScriptTests" --no-restore` 通过；Inno Setup Compiler 实机编译待人工确认 |
 | 风险 | 构建机缺少 `compiler:Languages\ChineseSimplified.isl` 导致编译失败；自定义英文文案遗漏；第三方系统按钮或 Windows 控件文案不能被 Inno 脚本完全覆盖 |
 | 回滚 | 移除新增自定义消息与强制语言配置，恢复 Inno 默认语言行为；保留现有 `ChineseSimplified.isl` 引用不影响安装功能 |
 
@@ -92,12 +92,12 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | Agent 中断或交接时，PR 描述能直接承载固定 handoff 信息 |
 | Scope | 可选更新 `.github/PULL_REQUEST_TEMPLATE.md` 或新增 docs 指引；不改运行时代码 |
 | 关联 | `00-agile-ai-delivery.md` §3、§8，本文 §7 |
-| 验收 | PR 模板或说明中出现目标、已改文件、验证、未跑验证、风险、下一步、回滚点 |
+| 验收 | PR 模板新增可选 Handoff 区块，包含目标、已改文件、已验证、未跑验证 / 原因、风险、下一步、回滚点；`CommunityTemplateTests.PullRequestTemplate_CoversTestingDocsRiskAndCurrentPaths` 通过 |
 | 风险 | 模板过重导致普通 PR 填写成本上升 |
 | 回滚 | 从 PR 模板移除该块，保留本文 §7 作为内部手册 |
 
@@ -105,7 +105,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P2 |
 | Outcome | 维护者能用 ECodex 命令面板一键执行本仓常用 build/test/docs 命令 |
 | Scope | 新增示例 `.ecodex/ecodex.example.json` 或 `docs/configuration.md` 示例；不写入用户真实本地配置 |
@@ -118,12 +118,12 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P2 |
 | Outcome | 用 ECodex 自身自动化 API 验证 workspace / pane / browser 的最小闭环 |
 | Scope | 先写 spec 或脚本草案；涉及 live app 的执行标记 Windows-only；不要求当前环境跑通 WPF |
 | 关联 | `03-data-and-ipc.md`、`05-cli-commands.md` |
-| 验收 | 脚本步骤覆盖 status -> workspace.create -> pane.write/read -> browser.open -> browser.snapshot；缺环境时输出清晰 skip |
+| 验收 | `ECodexV2SmokeScript_CoversManualLiveApiLoopAndSkipsClearly` 覆盖 `scripts/smoke-ecodex-v2.ps1` 的 status -> workspace.create -> pane.write/read -> browser.open -> browser.snapshot 步骤、缺环境 skip 与不接 setup install；`CliDocs_CoverGlobalFlagsV1V2AndOperationalCommands` 覆盖 CLI 文档入口；真实 live smoke 手动运行 |
 | 风险 | 依赖正在运行的 ECodex 主应用 |
 | 回滚 | 脚本不接 CI，仅作为手动 smoke |
 
@@ -131,12 +131,12 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P2 |
 | Outcome | Release 前能快速汇总测试、docs、perf、doctor 的证据路径 |
 | Scope | `docs/release-readiness.md` 或脚本；不改变 release workflow |
 | 关联 | `04-build-deploy.md`、`docs/release-readiness.md` |
-| 验收 | 清单覆盖 build/test/docs/perf/release workflow；明确哪些是 Windows-only |
+| 验收 | `ReleaseEvidenceScriptTests` 覆盖 `scripts/release-evidence.ps1` 的 build、unit_tests、docs_build、perf_report、doctor、release_workflow、Windows-only 标记和 release artifact 名称；`ReleaseReadinessDocs_CoverP0P1GateAndValidation` 覆盖 docs 入口；`pwsh ./scripts/release-evidence.ps1` stdout smoke 通过 |
 | 风险 | 与现有 GitHub artifacts 命名漂移 |
 | 回滚 | 保留人工 release checklist |
 

@@ -1,0 +1,44 @@
+{
+  "commands": [
+    {
+      "name": "ECodex: Build app",
+      "description": "Build the WPF app in Debug mode.",
+      "keywords": ["build", "app", "debug"],
+      "command": ".\\.dotnet\\dotnet.exe build src\\ECodex\\ECodex.csproj -c Debug --no-restore",
+      "target": "currentTerminal",
+      "confirm": true
+    },
+    {
+      "name": "ECodex: Unit tests",
+      "description": "Run the xUnit suite.",
+      "keywords": ["test", "unit", "verify"],
+      "command": ".\\.dotnet\\dotnet.exe test tests\\ECodex.Tests\\ECodex.Tests.csproj --no-restore",
+      "target": "currentTerminal",
+      "confirm": true
+    },
+    {
+      "name": "ECodex: Docs build",
+      "description": "Build the VitePress documentation site.",
+      "keywords": ["docs", "vitepress", "build"],
+      "command": "npm run docs:build",
+      "target": "currentTerminal",
+      "confirm": true
+    },
+    {
+      "name": "ECodex: Status",
+      "description": "Show the current ECodex app status through the local CLI.",
+      "keywords": ["status", "app"],
+      "command": ".\\src\\ECodex.Cli\\bin\\Debug\\net10.0-windows\\ecodex.exe status",
+      "target": "currentTerminal",
+      "confirm": false
+    },
+    {
+      "name": "ECodex: Health",
+      "description": "Show the ecodex.v2 health summary through the local CLI.",
+      "keywords": ["health", "doctor", "v2"],
+      "command": ".\\src\\ECodex.Cli\\bin\\Debug\\net10.0-windows\\ecodex.exe health",
+      "target": "currentTerminal",
+      "confirm": false
+    }
+  ]
+}

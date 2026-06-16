@@ -49,6 +49,17 @@ npm run docs:build
 .\scripts\ci.ps1 -Config Release -IncludeSmoke
 ```
 
+## 发布证据清单
+
+发布前可先生成只读清单，快速确认每一项证据要从哪里取得：
+
+```powershell
+pwsh ./scripts/release-evidence.ps1
+pwsh ./scripts/release-evidence.ps1 -OutputPath artifacts/release/evidence-checklist.md
+```
+
+清单覆盖 build、unit tests、docs build、perf report、doctor 与 release workflow；每项都会标出证据路径和是否 Windows-only。当前 release workflow 的关键产物必须包含 `ecodex-win-x64-sc`、`ecodex-win-x86-sc`、`ecodex-win-arm64-sc`、`ecodex-cli-win-x64` 和 `ecodex-perf-report`。
+
 ## 分诊流程
 
 1. 关键 issue 同时标记 `bug` 与 `p0` / `p1`。

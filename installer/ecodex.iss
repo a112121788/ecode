@@ -23,12 +23,19 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
+ShowLanguageDialog=no
+SetupLogging=yes
 
 [Languages]
 Name: "chinesesimplified"; MessagesFile: ".\Languages\ChineseSimplified.isl"
 
+[CustomMessages]
+chinesesimplified.CreateDesktopShortcut=创建桌面快捷方式
+chinesesimplified.AdditionalShortcuts=附加快捷方式
+chinesesimplified.LaunchECodex=启动 ECodex
+
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopShortcut}"; GroupDescription: "{cm:AdditionalShortcuts}"; Flags: unchecked
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\cli"
@@ -48,7 +55,7 @@ Name: "{group}\ECodex CLI"; Filename: "{app}\cli\{#MyCliExeName}"; WorkingDir: "
 Name: "{autodesktop}\ECodex"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchECodex}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"

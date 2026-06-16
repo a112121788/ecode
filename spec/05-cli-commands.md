@@ -27,6 +27,14 @@
 
 底层 IPC：`NOTIFY title=… body=… subtitle=…`；返回 `{ok:true}`。
 
+#### `hook`
+
+内部 shell integration 使用，不作为普通用户入口。
+
+| 子命令 | 选项 | 行为 |
+|---|---|---|
+| `event` | `--phase start/end`、`--command <text>`、`--exit-code <n>`、`--cwd <path>` | 发送 `HOOK.COMMAND`，用于 PowerShell profile hook 回传命令生命周期；主应用先记录脱敏日志，通知生成由后续规则处理 |
+
 #### `workspace`
 
 | 子命令 | 选项 | 行为 |

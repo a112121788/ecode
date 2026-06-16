@@ -120,6 +120,7 @@ pwsh ./scripts/check-doc-links.ps1            # 仅检查 README/spec/md Markdow
 | Self-contained | `… --self-contained true -o publish/ecodex-win-x64-sc` | `ecodex-app.exe` + 自带运行时 | 较大 | 无 |
 | Single-file | `… /p:PublishSingleFile=true /p:PublishTrimmed=false` | 单个 `ecodex-app.exe` | 较大 | 无（README 提及，但 `publish.ps1` 已规避 WPF + ConPTY 兼容问题） |
 | CLI | `dotnet publish src/ECodex.Cli/ECodex.Cli.csproj -c Release -r win-x64 --self-contained true -o publish/ecodex-cli` | `ecodex.exe` + 自带运行时 | 较大 | 无；放入 `PATH` 即可全局使用 |
+| Inno Setup | 先发布 Self-contained + CLI，再用 Inno Setup Compiler 编译 `installer/ecodex.iss` | `publish/inno/ecodex-setup-<version>.exe` | 较大 | 固定简体中文安装 / 卸载向导；卸载只清理 `{app}`，保留 `%USERPROFILE%\.ecodex` 与用户 skills |
 
 ### 5.1 一键发布脚本
 
@@ -146,8 +147,10 @@ publish/
 ├── ecodex-win-x64-sc/             # Self-contained
 │   ├── ecodex-app.exe
 │   └── *.dll (+ 运行时文件)
-└── ecodex-cli/                    # CLI
-    └── ecodex.exe (+ 运行时文件)
+├── ecodex-cli/                    # CLI
+│   └── ecodex.exe (+ 运行时文件)
+└── inno/                          # Inno Setup fallback installer
+    └── ecodex-setup-<version>.exe
 ```
 
 `%USERPROFILE%/.ecodex/`（运行时生成）：

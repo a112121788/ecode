@@ -56,6 +56,8 @@ pwsh ./scripts/publish.ps1 -Config Release -Rid win-x64 -Flavor Velopack -VpkCom
 
 Inno Setup 脚本位于 `installer/ecodex.iss`。它会安装 app 与 命令行，创建快捷方式，并在卸载时只清理安装目录，不删除 `%USERPROFILE%\.ecodex`。安装与卸载向导固定使用简体中文界面；脚本引用项目内置的 `installer/Languages/ChineseSimplified.isl`，构建机只需安装 Inno Setup Compiler，不依赖本机语言包。该语言文件来源为 `jrsoftware/issrc` 的 `Files/Languages/Unofficial/ChineseSimplified.isl`，更新时应保留原文件头部说明。
 
+发布验收需要覆盖安装向导、覆盖安装向导、卸载确认、卸载进度、开始菜单/桌面快捷方式任务与完成页，确认用户可见文案均为简体中文。静默安装 / 卸载不受中文文案影响；卸载仍只清理安装目录，保留 `%USERPROFILE%\.ecodex` 和 `%USERPROFILE%\.agents\skills`。
+
 发布前先生成 app 与 命令行：
 
 ```powershell
@@ -86,6 +88,15 @@ ecodex status
 ecodex setup status
 ecodex completion powershell
 ```
+
+## 默认 PowerShell shell integration
+
+ECodex App 首次启动会默认尝试安装 PowerShell shell integration 到当前用户 profile，标记块为 `# >>> ecodex shell integration >>>` / `# <<< ecodex shell integration <<<`。该 hook 只回传命令开始、结束和退出码；真正的完成/失败通知规则由后续通知逻辑处理。
+
+- 写入前会备份原 profile 到 `%USERPROFILE%\.ecodex\backups\`。
+- 已安装时幂等跳过；内容漂移时只替换 ECodex 标记块。
+- 发现标记块冲突时跳过并写入 `daemon-debug.log`，不静默覆盖用户内容。
+- 可用 `ecodex setup status` 查看 `PowerShell hook` 状态，用 `ecodex setup uninstall --write true` 移除 ECodex 标记块。
 
 ## 默认 skills 种子安装
 

@@ -51,6 +51,7 @@ CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超
 | 命令 | 参数 | 行为 |
 |---|---|---|
 | `NOTIFY` | `title?` `body?` `subtitle?` | 向当前选中项目 / Surface 添加一条 `NotificationSource.Cli` 通知；返回 `{ok:true}` |
+| `HOOK.COMMAND` | `phase=start/end` `command?` `exitCode?` `cwd?` | PowerShell shell integration 内部事件；主应用只记录脱敏后的生命周期日志，后续通知规则基于该事件扩展；返回 `{ok:true}` |
 | `WORKSPACE.LIST` | — | 返回项目列表 `[ {id, name, selected, surfaces, workingDirectory}, ... ]` |
 | `WORKSPACE.CREATE` | `workingDirectory`/`cwd` + `name?` | 添加项目；`workingDirectory` 必填且同一文件夹只能绑定一个项目；未传 `name` 时使用文件夹名；返回 `{ok, id, name, workingDirectory}` |
 | `WORKSPACE.SELECT` | `index?` `id?` `name?` | 按 index（0/1-based）/ id / 名称匹配；`name` 支持精确与 `Contains`；返回 `{ok:true}` |

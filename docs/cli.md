@@ -229,6 +229,16 @@ ecodex pane write pane:1 "npm test"
 ecodex notify --title "Build" --body "等待输入"
 ```
 
+## 本地 smoke 脚本
+
+维护者可在已启动 ECodex 主应用后手动运行 `scripts/smoke-ecodex-v2.ps1`，用真实 pipe 验证最小自动化闭环：
+
+```powershell
+pwsh ./scripts/smoke-ecodex-v2.ps1
+```
+
+脚本会按 `status -> workspace.create -> pane.write/read -> browser.open -> browser.snapshot` 顺序执行；找不到 CLI、非 Windows 或主应用未运行时会输出 `SKIP`，不会写入用户配置，也不会接入 CI。脚本创建的临时 workspace 目录位于仓库 `tmp/` 下，结束时会尝试关闭临时 workspace 并清理该目录。
+
 ## 常见错误
 
 | 错误/现象 | 处理方式 |

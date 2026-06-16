@@ -750,13 +750,28 @@ public class InnoSetupScriptTests
 
         script.Should().Contain("Name: \"chinesesimplified\"; MessagesFile: \".\\Languages\\ChineseSimplified.isl\"");
         File.Exists(Path.Combine(AppContext.BaseDirectory, "installer", "Languages", "ChineseSimplified.isl")).Should().BeTrue();
-        script.Should().Contain("Description: \"{cm:CreateDesktopIcon}\"");
-        script.Should().Contain("GroupDescription: \"{cm:AdditionalIcons}\"");
-        script.Should().Contain("Description: \"{cm:LaunchProgram,{#MyAppName}}\"");
+        script.Should().Contain("ShowLanguageDialog=no");
+        script.Should().Contain("SetupLogging=yes");
+        script.Should().Contain("chinesesimplified.CreateDesktopShortcut=创建桌面快捷方式");
+        script.Should().Contain("chinesesimplified.AdditionalShortcuts=附加快捷方式");
+        script.Should().Contain("chinesesimplified.LaunchECodex=启动 ECodex");
+        script.Should().Contain("Description: \"{cm:CreateDesktopShortcut}\"");
+        script.Should().Contain("GroupDescription: \"{cm:AdditionalShortcuts}\"");
+        script.Should().Contain("Description: \"{cm:LaunchECodex}\"");
         script.Should().NotContain("MessagesFile: \"compiler:Default.isl\"");
         script.Should().NotContain("Create a &desktop shortcut");
         script.Should().NotContain("Additional icons:");
         script.Should().NotContain("Launch ECodex");
+    }
+
+    [Fact]
+    public void InstallationDocs_CoverInnoChineseWizardAcceptance()
+    {
+        var docs = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "installation.md"));
+
+        docs.Should().Contain("安装向导、覆盖安装向导、卸载确认、卸载进度、开始菜单/桌面快捷方式任务与完成页");
+        docs.Should().Contain("静默安装 / 卸载不受中文文案影响");
+        docs.Should().Contain("卸载仍只清理安装目录");
     }
 }
 
@@ -879,6 +894,26 @@ public class SmokeWorkflowTests
         smoke.Should().Contain("echo OK>");
         smoke.Should().Contain("ECODEX_SMOKE_UNICODE");
     }
+
+    [Fact]
+    public void ECodexV2SmokeScript_CoversManualLiveApiLoopAndSkipsClearly()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "smoke-ecodex-v2.ps1"));
+
+        script.Should().Contain("Write-SmokeSkip");
+        script.Should().Contain("requires Windows");
+        script.Should().Contain("ECodex CLI was not found");
+        script.Should().Contain("ECodex app is not running");
+        script.Should().Contain("ConvertFrom-Json");
+        script.Should().Contain("'--json', 'status'");
+        script.Should().Contain("'workspace', 'create'");
+        script.Should().Contain("'pane', 'write'");
+        script.Should().Contain("'pane', 'read'");
+        script.Should().Contain("'browser', 'open'");
+        script.Should().Contain("'browser', 'snapshot'");
+        script.Should().Contain("smoke-ecodex-v2");
+        script.Should().NotContain("setup install");
+    }
 }
 
 public class TerminalControlSourceTests
@@ -934,6 +969,35 @@ public class PerfBudgetScriptTests
     }
 }
 
+public class ReleaseEvidenceScriptTests
+{
+    [Fact]
+    public void ReleaseEvidenceScript_CoversCommandsArtifactsAndWindowsOnlyGates()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "release-evidence.ps1"));
+
+        script.Should().Contain("build");
+        script.Should().Contain("unit_tests");
+        script.Should().Contain("docs_build");
+        script.Should().Contain("perf_report");
+        script.Should().Contain("doctor");
+        script.Should().Contain("release_workflow");
+        script.Should().Contain("windowsOnly");
+        script.Should().Contain("scripts/ci.ps1 -Config Release");
+        script.Should().Contain("npm run docs:build");
+        script.Should().Contain("scripts/perf/measure.ps1");
+        script.Should().Contain("ecodex doctor");
+        script.Should().Contain(".github/workflows/release.yml");
+        script.Should().Contain("ecodex-win-x64-sc");
+        script.Should().Contain("ecodex-win-x86-sc");
+        script.Should().Contain("ecodex-win-arm64-sc");
+        script.Should().Contain("ecodex-cli-win-x64");
+        script.Should().Contain("ecodex-perf-report");
+        script.Should().Contain("``$command``");
+        script.Should().NotContain("DISCORD_WEBHOOK_URL");
+    }
+}
+
 public class CommunityTemplateTests
 {
     [Fact]
@@ -980,6 +1044,14 @@ public class CommunityTemplateTests
         template.Should().Contain("npm run docs:build");
         template.Should().Contain("CHANGELOG.md");
         template.Should().Contain("风险与回滚");
+        template.Should().Contain("Handoff（可选）");
+        template.Should().Contain("- 目标：");
+        template.Should().Contain("- 已改文件：");
+        template.Should().Contain("- 已验证：");
+        template.Should().Contain("- 未跑验证 / 原因：");
+        template.Should().Contain("- 风险：");
+        template.Should().Contain("- 下一步：");
+        template.Should().Contain("- 回滚点：");
         template.Should().Contain("%USERPROFILE%\\.ecodex\\*.json");
         template.Should().NotContain("%LOCALAPPDATA%/ecodex");
         template.Should().NotContain("%LOCALAPPDATA%\\cmux");
@@ -1055,6 +1127,7 @@ public class DocsSiteTests
         customCommands.Should().Contain("workspace.surfaces");
         customCommands.Should().Contain("selectedSurfaceIndex");
         customCommands.Should().Contain("type\": \"browser\"");
+        customCommands.Should().Contain(".ecodex/ecodex.example.json");
         customCommands.Should().Contain("ecodex config reload");
         customCommands.Should().Contain("ecodex config diagnostics");
         customCommands.Should().Contain("confirm: true");
@@ -1134,6 +1207,7 @@ public class DocsSiteTests
         cli.Should().Contain("ecodex setup install");
         cli.Should().Contain("ecodex update check");
         cli.Should().Contain("ecodex doctor");
+        cli.Should().Contain("scripts/smoke-ecodex-v2.ps1");
         cli.Should().Contain("completion powershell");
     }
 
@@ -1174,6 +1248,9 @@ public class DocsSiteTests
         readiness.Should().Contain("npm run docs:build");
         readiness.Should().Contain("NuGetAudit=false");
         readiness.Should().Contain("scripts\\ci.ps1");
+        readiness.Should().Contain("scripts/release-evidence.ps1");
+        readiness.Should().Contain("Windows-only");
+        readiness.Should().Contain("ecodex-perf-report");
     }
 
     [Fact]
@@ -4092,6 +4169,33 @@ public class SessionPersistenceServiceTests
 /// </summary>
 public class ECodexJsonServiceTests
 {
+    [Fact]
+    public void ExampleConfig_CoversRepoDogfoodCommands()
+    {
+        var examplePath = Path.Combine(AppContext.BaseDirectory, ".ecodex", "ecodex.example.json");
+        File.Exists(examplePath).Should().BeTrue("the repo should ship a dogfood ecodex example config");
+
+        var result = new ECodexJsonService().LoadFromFiles([examplePath]);
+
+        result.Diagnostics.Should().BeEmpty();
+        result.Config.Commands.Select(c => c.Name).Should().Contain([
+            "ECodex: Build app",
+            "ECodex: Unit tests",
+            "ECodex: Docs build",
+            "ECodex: Status",
+            "ECodex: Health",
+        ]);
+
+        var highRiskCommands = result.Config.Commands
+            .Where(c => c.Name is "ECodex: Build app" or "ECodex: Unit tests" or "ECodex: Docs build")
+            .ToList();
+        highRiskCommands.Should().HaveCount(3);
+        highRiskCommands.Should().OnlyContain(c => c.Confirm);
+
+        result.Config.Commands.Single(c => c.Name == "ECodex: Status").Confirm.Should().BeFalse();
+        result.Config.Commands.Single(c => c.Name == "ECodex: Health").Confirm.Should().BeFalse();
+    }
+
     [Fact]
     public void Load_MergesLocalOverGlobal()
     {

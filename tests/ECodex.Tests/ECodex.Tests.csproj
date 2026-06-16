@@ -34,6 +34,8 @@
     <None Include="..\..\scripts\publish.ps1" Link="scripts\publish.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\scripts\completions\ecodex.ps1" Link="scripts\completions\ecodex.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\scripts\discord-notify.ps1" Link="scripts\discord-notify.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\scripts\release-evidence.ps1" Link="scripts\release-evidence.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\scripts\smoke-ecodex-v2.ps1" Link="scripts\smoke-ecodex-v2.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\scripts\perf\measure.ps1" Link="scripts\perf\measure.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\tests\ECodex.Smoke\Program.cs" Link="tests\ECodex.Smoke\Program.cs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\installer\ecodex.iss" Link="installer\ecodex.iss" CopyToOutputDirectory="PreserveNewest" />
@@ -56,6 +58,7 @@
     <None Include="..\..\CHANGELOG.md" Link="CHANGELOG.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\Directory.Build.props" Link="Directory.Build.props" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\package.json" Link="package.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\.ecodex\ecodex.example.json" Link=".ecodex\ecodex.example.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\spec\06-roadmap.md" Link="spec\06-roadmap.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\spec\07-implementation-backlog.md" Link="spec\07-implementation-backlog.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\ECodex.Core\IPC\DaemonClient.cs" Link="src\ECodex.Core\IPC\DaemonClient.cs" CopyToOutputDirectory="PreserveNewest" />
