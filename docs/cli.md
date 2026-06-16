@@ -81,11 +81,11 @@ ecodex completion powershell
 ecodex window list
 ecodex window current
 ecodex window focus window:1
-ecodex window create "Scratch"
+ecodex window create "Scratch" # 兼容命令：单窗口模式下会聚焦现有窗口，不创建第二个主窗口
 ecodex window close window:1
 ```
 
-对应方法：`window.list`、`window.current`、`window.focus`、`window.create`、`window.close`。
+对应方法：`window.list`、`window.current`、`window.focus`、`window.create`、`window.close`。ECodex 主程序使用 `Global\ECodexMainApp` 保证单实例；再次启动应用只激活已有窗口，不转发启动参数。
 
 ### Workspace
 

@@ -17,6 +17,8 @@
 
 ## 2. 主应用 ↔ CLI 协议（`\\.\pipe\ecodex`）
 
+ECodex 主程序通过 `Global\ECodexMainApp` Mutex 保证单实例。第二个 `ecodex-app.exe` 启动时只尝试通过主应用 pipe 发送 `window.focus {"target":"current"}` 激活已有窗口，然后退出；当前不转发启动参数。
+
 ### 2.1 请求行格式
 
 ```

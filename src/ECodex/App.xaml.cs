@@ -1,6 +1,8 @@
 ﻿using System.IO;
+using System.Text.Json;
 using System.Windows;
 using ECodex.Core.IPC;
+using ECodex.Core.IPC.V2;
 using ECodex.Core.Services;
 using ECodex.Services;
 using ECodex.Updater;
@@ -11,6 +13,8 @@ namespace ECodex;
 /// <summary>应用程序入口，初始化全局服务、守护进程连接和命名管道</summary>
 public partial class App : Application
 {
+    private const string MainInstanceMutexName = @"Global\ECodexMainApp";
+    private Mutex? _mainInstanceMutex;
     private NamedPipeServer? _pipeServer;
 
     public static NotificationService NotificationService { get; } = new();
@@ -35,6 +39,16 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        _mainInstanceMutex = new Mutex(true, MainInstanceMutexName, out var createdNew);
+        if (!createdNew)
+        {
+            _mainInstanceMutex.Dispose();
+            _mainInstanceMutex = null;
+            TryActivateExistingInstance();
+            Shutdown(0);
+            return;
+        }
+
         base.OnStartup(e);
 
         // 添加全局异常处理器以便诊断崩溃问题
@@ -121,7 +135,38 @@ public partial class App : Application
     {
         _pipeServer?.Dispose();
         DaemonClient.Dispose();
+        try
+        {
+            _mainInstanceMutex?.ReleaseMutex();
+        }
+        catch
+        {
+            // 退出路径不应因 mutex 状态影响应用关闭。
+        }
+        finally
+        {
+            _mainInstanceMutex?.Dispose();
+            _mainInstanceMutex = null;
+        }
         base.OnExit(e);
+    }
+
+    private static void TryActivateExistingInstance()
+    {
+        try
+        {
+            var request = new V2Request
+            {
+                Id = JsonSerializer.SerializeToElement("activate-existing-window"),
+                Method = "window.focus",
+                Params = JsonSerializer.SerializeToElement(new Dictionary<string, string> { { "target", "current" } }),
+            };
+            _ = NamedPipeClient.SendV2Request(request, timeoutMs: 1000).GetAwaiter().GetResult();
+        }
+        catch
+        {
+            // 如果既有实例还未完成 pipe 初始化，第二实例仍保持只退出不新开窗口。
+        }
     }
 
     internal static void DaemonLog(string message) => DaemonClient.LogDaemon(message);

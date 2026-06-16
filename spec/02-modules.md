@@ -94,7 +94,7 @@
 
 | 文件 | 类型 | 说明 |
 |---|---|---|
-| `src/ECodex/App.xaml.cs` | `App : Application` | 单例服务：`NotificationService / PipeServer / SnippetService / CommandLogService / AgentConversationStore / AgentRuntime / DaemonClient / DaemonConnectTask`；`OnStartup` 启管道 + 异步连守护进程；注册全局异常；非焦点时弹 Toast |
+| `src/ECodex/App.xaml.cs` | `App : Application` | 单例服务：`NotificationService / PipeServer / SnippetService / CommandLogService / DaemonClient / WindowApi / DaemonConnectTask`；`OnStartup` 先用 `Global\ECodexMainApp` 保证主应用单实例，第二实例只通过 pipe 聚焦已有窗口后退出；随后启管道 + 异步连守护进程；注册全局异常；非焦点时弹 Toast |
 | `src/ECodex/Services/ToastNotificationHelper.cs` | `ToastNotificationHelper` | 通过 `Microsoft.Toolkit.Uwp.Notifications` 显示 Windows Toast |
 | `src/ECodex/Services/AgentRuntimeService.cs` | `AgentRuntimeService` | 内置 Agent 运行时（OpenAI 兼容 / Anthropic），流式响应、工具调用（Bash / WebSearch / 自定义 / MCP）、上下文压缩、会话持久化（AgentConversationStoreService）、`TryHandlePaneCommand` 拦截 `/agent` 命令等 |
 | `src/ECodex/Converters/*` | (略) | XAML 值转换器 |

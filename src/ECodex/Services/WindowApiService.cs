@@ -103,6 +103,18 @@ public sealed class WindowApiService<TWindow>
     private V2Response HandleCreate(V2Request request, CliIdFormat idFormat)
     {
         var title = GetStringParam(request.Params, "title", "name");
+        var existing = _windowManager.ListWindows().FirstOrDefault();
+        if (existing != null)
+        {
+            _windowManager.FocusWindow(existing.Id, _focusWindow);
+            var focused = _windowManager.ListWindows().First(item => item.Id == existing.Id);
+            return V2Response.FromResult(request.Id, new
+            {
+                created = false,
+                window = CreateWindowResult(focused, idFormat),
+            });
+        }
+
         var created = _windowManager.CreateWindow(
             () => _windowFactory(title),
             _showWindow,

@@ -908,6 +908,8 @@ public class DocsSiteTests
         cli.Should().Contain("ecodex reload-config");
         cli.Should().Contain("ecodex config reload");
         cli.Should().Contain("ecodex restore-session");
+        cli.Should().Contain("单窗口模式下会聚焦现有窗口");
+        cli.Should().Contain(@"Global\ECodexMainApp");
         cli.Should().Contain("ecodex setup install");
         cli.Should().Contain("ecodex update check");
         cli.Should().Contain("ecodex doctor");
@@ -1963,6 +1965,38 @@ public class WindowApiServiceTests
     }
 
     [Fact]
+    public void WindowCreate_FocusesExistingWindowInsteadOfCreatingSecondWindow()
+    {
+        var manager = new ECodex.Services.WindowManagerService<object>();
+        var existing = new object();
+        var existingInfo = manager.RegisterWindow(existing, "Primary");
+        var factoryCalled = false;
+        var focused = false;
+        var api = new ECodex.Services.WindowApiService<object>(
+            manager,
+            windowFactory: _ =>
+            {
+                factoryCalled = true;
+                return new object();
+            },
+            showWindow: _ => throw new InvalidOperationException("Single-window mode should not show a new window."),
+            focusWindow: window =>
+            {
+                focused = ReferenceEquals(window, existing);
+            });
+
+        var create = api.HandleRequest(CreateV2Request("window.create", """{"title":"Aux","idFormat":"both"}"""));
+
+        create.Error.Should().BeNull();
+        factoryCalled.Should().BeFalse();
+        focused.Should().BeTrue();
+        manager.Count.Should().Be(1);
+        using var result = ParseResult(create);
+        result.RootElement.GetProperty("created").GetBoolean().Should().BeFalse();
+        result.RootElement.GetProperty("window").GetProperty("id").GetString().Should().Be(existingInfo.Id);
+    }
+
+    [Fact]
     public void WindowFocus_ReturnsInvalidRefForNonWindowRef()
     {
         var manager = new ECodex.Services.WindowManagerService<object>();
@@ -1992,6 +2026,29 @@ public class WindowApiServiceTests
         response.Result.Should().NotBeNull();
         return JsonDocument.Parse(JsonSerializer.Serialize(response.Result));
     }
+}
+
+/// <summary>
+/// 主应用单实例策略测试 - 第二次启动只激活现有窗口，不创建第二个主窗口。
+/// </summary>
+public class AppSingleWindowSourceTests
+{
+    [Fact]
+    public void App_UsesMainInstanceMutexAndActivatesExistingInstance()
+    {
+        var source = Normalize(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex", "App.xaml.cs")));
+
+        source.Should().Contain(@"private const string MainInstanceMutexName = @""Global\ECodexMainApp"";");
+        source.Should().Contain("new Mutex(true, MainInstanceMutexName, out var createdNew)");
+        source.Should().Contain("if (!createdNew)");
+        source.Should().Contain("TryActivateExistingInstance()");
+        source.Should().Contain("Shutdown(0);");
+        source.Should().Contain("NamedPipeClient.SendV2Request");
+        source.Should().Contain(@"""window.focus""");
+        source.Should().Contain(@"""target"", ""current""");
+    }
+
+    private static string Normalize(string value) => value.Replace("\r\n", "\n", StringComparison.Ordinal);
 }
 
 public class SurfaceApiServiceTests
