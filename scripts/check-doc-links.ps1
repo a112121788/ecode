@@ -5,19 +5,19 @@
 .DESCRIPTION
   Scans Markdown files under the provided paths and reports relative links whose
   target file or directory does not exist. External URLs, mailto links and pure
-  anchors are ignored. Defaults to README.md, spec/ and md/.
+  anchors are ignored. Defaults to README.md, spec/ and docs/.
 
 .PARAMETER Path
   Files or directories to scan, relative to the repository root unless absolute.
 
 .EXAMPLE
   pwsh ./scripts/check-doc-links.ps1
-  pwsh ./scripts/check-doc-links.ps1 -Path spec,md,README.md
+  pwsh ./scripts/check-doc-links.ps1 -Path spec,docs,README.md
 #>
 
 [CmdletBinding()]
 param(
-    [string[]]$Path = @('README.md', 'spec', 'md')
+    [string[]]$Path = @('README.md', 'spec', 'docs')
 )
 
 $ErrorActionPreference = 'Stop'
