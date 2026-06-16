@@ -40,10 +40,10 @@ AI Agent 启动后按以下顺序选择任务：
 | `SES-01` | done | 用户关闭 ECodex 窗口后，在同一 Windows 登录会话内重新打开，原 Codex / PowerShell 等终端进程仍由 daemon 托管，终端自动 attach 到原会话并可继续输入输出 | 首个切片覆盖“正常关闭主窗口 -> daemon 继续托管终端 -> 重开自动 attach”；涉及 `src/ECodex` 关闭/启动流程、`src/ECodex.Core` daemon session mapping、`session.json` pane/session id 持久化、状态可见性；不覆盖 Windows 重启/关机后的进程存活，不做命令回放 | Windows 手测：在 pane 启动 `pwsh` / Codex，关闭 ECodex，确认后台会话未退出；重开 ECodex 后恢复 workspace/surface/pane 布局并 attach 到同一进程，`pane.write/read` 可继续交互；无重复 shell；daemon 不可达时展示过期/已断开并回退到快照，不静默执行命令 |
 | `SES-01A` | done | 正常关闭 ECodex 时只断开客户端，不把 daemon 托管会话误回退成本地 ConPTY | 区分 `DaemonClient.Dispose()` 主动关闭与 daemon 意外断线；主动关闭不广播 `Disconnected`，运行中意外断线仍保留本地 fallback；同步 session restore 与 IPC spec | `DaemonClientLifecycleSourceTests` 先失败后通过；`dotnet test --filter DaemonClientLifecycleSourceTests` 通过；关闭窗口默认由 `PreserveDaemonSessionsOnClose=true` 保留后台终端 |
 | `SES-02` | done | 主程序崩溃后重开时，已持久化 pane 能继续自动 attach daemon 中仍存活的终端 | 保守恢复：结构变化后实时写 `session.json` checkpoint，但不生成 `session-close` transcript；重开时仅挂载 checkpoint 中已有 paneId，不自动创建 daemon 孤儿 pane | `CrashRecoveryCheckpointSourceTests` 先失败后通过；新建/关闭 Surface、分屏/关闭 pane、移动/调整分屏触发 `SessionCheckpointRequested`；`SaveSession(..., captureTranscripts:false)` 只更新布局与 pane snapshot |
-| `SES-03` | done | 用户可持久化“关闭窗口时保留终端”设置，并通过内部 IPC 退出 ECodex 同时终止 daemon 终端 | 新增 `PreserveDaemonSessionsOnClose`（默认 true）与设置页开关；移除 daemon `SESSION_CLOSE_ALL` 和右键菜单清理入口；新增主应用 `ecodex.v2` 方法 `app.exit {"terminateTerminals":true}`，内部用 `SESSION_LIST` + 逐个 `SESSION_CLOSE` | `DaemonSessionTerminationPolicyTests`、`AppLifecycleApiServiceTests`、`DaemonMessageRoundTripTests` 先失败后通过；md/spec 同步说明设置、内部 IPC 与移除旧协议 |
-| `WIN-02` | done | ECodex 只允许一个主窗口，避免多窗口重复挂载终端 | 取消 S3 多窗口接管方向；主进程用 `Global\ECodexMainApp` Mutex 单实例化；第二次启动只聚焦已有窗口，不转发参数；`window.create` 保留兼容但只聚焦现有窗口 | `WindowCreate_FocusesExistingWindowInsteadOfCreatingSecondWindow` 与 `AppSingleWindowSourceTests` 先失败后通过；CLI/md/spec 说明 `window.create` 不再新建第二主窗口 |
+| `SES-03` | done | 用户可持久化“关闭窗口时保留终端”设置，并通过内部 IPC 退出 ECodex 同时终止 daemon 终端 | 新增 `PreserveDaemonSessionsOnClose`（默认 true）与设置页开关；移除 daemon `SESSION_CLOSE_ALL` 和右键菜单清理入口；新增主应用 `ecodex.v2` 方法 `app.exit {"terminateTerminals":true}`，内部用 `SESSION_LIST` + 逐个 `SESSION_CLOSE` | `DaemonSessionTerminationPolicyTests`、`AppLifecycleApiServiceTests`、`DaemonMessageRoundTripTests` 先失败后通过；`md/` 与 spec 同步说明设置、内部 IPC 与移除旧协议 |
+| `WIN-02` | done | ECodex 只允许一个主窗口，避免多窗口重复挂载终端 | 取消 S3 多窗口接管方向；主进程用 `Global\ECodexMainApp` Mutex 单实例化；第二次启动只聚焦已有窗口，不转发参数；`window.create` 保留兼容但只聚焦现有窗口 | `WindowCreate_FocusesExistingWindowInsteadOfCreatingSecondWindow` 与 `AppSingleWindowSourceTests` 先失败后通过；CLI、`md/` 与 spec 说明 `window.create` 不再新建第二主窗口 |
 | `AGL-01` | done | AI loop 修改文档后能快速发现坏链接或旧文件名，降低文档漂移 | 新增 `scripts/check-doc-links.ps1`；`scripts/ci.ps1` 调用独立脚本；同步 `spec/04-build-deploy.md`；顺手修复 `spec/README.md` 对缺失 `08-dotnet-csharp-handbook.md` 的坏链接引用 | `pwsh ./scripts/check-doc-links.ps1` 通过；临时坏链接用例返回失败；脚本语法检查通过 |
-| `NAM-01` | done | 用户、维护者和发布产物看到的品牌统一为 `ECodex`，代码项目 / namespace / XAML 类型命名也同步使用 `ECodex` | 已统一 README/md/spec/历史文档、安装器显示名、solution/project/folder 名、C# namespace、XAML `x:Class`、资源 key 与测试命名；保留全小写 `ecodex` 命令、配置、管道、数据路径和产物名 | 旧 Pascal 品牌拼写搜索无命中；临时归档副本执行 `.\.dotnet\dotnet.exe build ECodex.sln -c Debug` 通过；`.\.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --no-restore` 通过 284/284；`.\.dotnet\dotnet.exe build tests\ECodex.Smoke\ECodex.Smoke.csproj -c Debug` 通过；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --cached --check` 通过 |
+| `NAM-01` | done | 用户、维护者和发布产物看到的品牌统一为 `ECodex`，代码项目 / namespace / XAML 类型命名也同步使用 `ECodex` | 已统一 README、`md/`、spec 与历史文档、安装器显示名、solution/project/folder 名、C# namespace、XAML `x:Class`、资源 key 与测试命名；保留全小写 `ecodex` 命令、配置、管道、数据路径和产物名 | 旧 Pascal 品牌拼写搜索无命中；临时归档副本执行 `.\.dotnet\dotnet.exe build ECodex.sln -c Debug` 通过；`.\.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --no-restore` 通过 284/284；`.\.dotnet\dotnet.exe build tests\ECodex.Smoke\ECodex.Smoke.csproj -c Debug` 通过；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --cached --check` 通过 |
 
 ### 1.1 上一冲刺归档：S0 - spec 敏捷化与 AI loop
 
@@ -121,7 +121,7 @@ AI Agent 启动后按以下顺序选择任务：
 | Outcome | Release 前能快速汇总测试、docs、perf、doctor 的证据路径 |
 | Scope | `md/release-readiness.md` 或脚本；不改变 release workflow |
 | 关联 | `04-build-deploy.md`、`md/release-readiness.md` |
-| 验收 | 清单覆盖 build/test/md/perf/release workflow；明确哪些是 Windows-only |
+| 验收 | 清单覆盖 build/test/docs/perf/release workflow；明确哪些是 Windows-only |
 | 风险 | 与现有 GitHub artifacts 命名漂移 |
 | 回滚 | 保留人工 release checklist |
 
