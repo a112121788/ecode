@@ -15,12 +15,14 @@ ecodex doctor
 
 ## 2. 创建 Workspace
 
-Workspace 表示一个项目或工作上下文。你可以从 UI 创建，也可以用命令行：
+Workspace 表示一个项目或工作上下文。创建 Workspace 时必须选择项目文件夹，侧边栏会在项目名下方显示该文件夹；同一个文件夹不能重复创建多个 Workspace。你可以从 UI 创建，也可以用命令行：
 
 ```powershell
-ecodex workspace create --name demo
+ecodex workspace create --name demo --cwd C:\repo\demo
 ecodex workspace list
 ```
+
+在该 Workspace 中新建 Terminal Surface 时，默认工作目录会回到项目文件夹；分屏仍继承当前 Pane 的工作目录。
 
 常见操作：
 

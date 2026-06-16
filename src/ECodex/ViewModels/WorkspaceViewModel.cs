@@ -56,6 +56,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         _name = workspace.Name;
         _iconGlyph = workspace.IconGlyph;
         _accentColor = workspace.AccentColor;
+        _workingDirectory = WorkspaceDirectoryService.Normalize(workspace.WorkingDirectory);
+        Workspace.WorkingDirectory = _workingDirectory;
         _notificationService = notificationService;
 
         // 为已有的 Surface 创建 VM
@@ -178,13 +180,13 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     private void OnSurfaceWorkingDirectoryChanged(string directory)
     {
-        WorkingDirectory = directory;
-        Workspace.WorkingDirectory = directory;
+        if (string.IsNullOrWhiteSpace(WorkingDirectory))
+            WorkingDirectory = WorkspaceDirectoryService.Normalize(directory);
     }
 
     private SurfaceViewModel CreateSurfaceViewModel(Surface surface)
     {
-        var surfaceVm = new SurfaceViewModel(surface, Workspace.Id, _notificationService);
+        var surfaceVm = new SurfaceViewModel(surface, Workspace.Id, _notificationService, WorkingDirectory);
         surfaceVm.WorkingDirectoryChanged += OnSurfaceWorkingDirectoryChanged;
         surfaceVm.SessionCheckpointRequested += OnSurfaceSessionCheckpointRequested;
         return surfaceVm;
@@ -243,6 +245,11 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
     partial void OnAccentColorChanged(string value)
     {
         Workspace.AccentColor = value;
+    }
+
+    partial void OnWorkingDirectoryChanged(string? value)
+    {
+        Workspace.WorkingDirectory = WorkspaceDirectoryService.Normalize(value);
     }
 
     private static bool IsPrivateUseGlyph(string? value)

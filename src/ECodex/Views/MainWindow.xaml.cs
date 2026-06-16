@@ -166,6 +166,7 @@ public partial class MainWindow : Window
         SizeChanged += (_, _) => UpdateWindowClip();
         StateChanged += (_, _) => UpdateWindowChrome();
         UpdateWindowClip();
+        ViewModel.EnsureInitialWorkspace();
         QueueFocusTerminal();
         ApplyECodexJsonWorkspaceLayout(LoadECodexJsonConfig());
 

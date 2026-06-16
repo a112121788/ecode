@@ -16,6 +16,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
 {
     public Surface Surface { get; }
     private readonly string _workspaceId;
+    private readonly string? _workspaceWorkingDirectory;
     private readonly NotificationService _notificationService;
     private readonly Dictionary<string, TerminalSession> _sessions = [];
     private readonly Dictionary<string, List<string>> _paneCommandHistory = [];
@@ -100,10 +101,15 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
         }
     }
 
-    public SurfaceViewModel(Surface surface, string workspaceId, NotificationService notificationService)
+    public SurfaceViewModel(
+        Surface surface,
+        string workspaceId,
+        NotificationService notificationService,
+        string? workspaceWorkingDirectory = null)
     {
         Surface = surface;
         _workspaceId = workspaceId;
+        _workspaceWorkingDirectory = WorkspaceDirectoryService.Normalize(workspaceWorkingDirectory);
         _notificationService = notificationService;
         _name = surface.Name;
         _rootNode = surface.RootSplitNode;
@@ -541,6 +547,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     private TerminalSession StartSession(string paneId, string? workingDirectory = null, PaneStateSnapshot? restoredState = null, string? shell = null)
     {
         var effectiveShell = shell ?? GetConfiguredShell();
+        var effectiveWorkingDirectory = ResolveStartupWorkingDirectory(workingDirectory, restoredState);
         // 存储显式覆盖（null 表示使用设置中的默认 Shell）
         _paneShells[paneId] = shell;
 
@@ -567,7 +574,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
         {
             try
             {
-                return StartDaemonSession(paneId, workingDirectory, restoredState, effectiveShell);
+                return StartDaemonSession(paneId, effectiveWorkingDirectory, restoredState, effectiveShell);
             }
             catch (Exception ex)
             {
@@ -576,7 +583,14 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
         }
 
         DaemonLog($"[StartSession:{paneId}] Using LOCAL session");
-        return StartLocalSession(paneId, workingDirectory, restoredState, effectiveShell);
+        return StartLocalSession(paneId, effectiveWorkingDirectory, restoredState, effectiveShell);
+    }
+
+    private string? ResolveStartupWorkingDirectory(string? workingDirectory, PaneStateSnapshot? restoredState)
+    {
+        return WorkspaceDirectoryService.Normalize(workingDirectory)
+            ?? WorkspaceDirectoryService.Normalize(restoredState?.WorkingDirectory)
+            ?? _workspaceWorkingDirectory;
     }
 
     private static void DaemonLog(string message) => App.DaemonLog(message);
@@ -597,7 +611,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
         _sessions[paneId] = session;
         _daemonPanes.Add(paneId);
 
-        var effectiveCwd = workingDirectory ?? restoredState?.WorkingDirectory;
+        var effectiveCwd = workingDirectory;
 
         // 在守护进程上异步创建/挂载会话
         _ = Task.Run(async () =>
@@ -693,7 +707,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
         _sessions[paneId] = session;
         session.Start(
             command: shell,
-            workingDirectory: workingDirectory ?? restoredState?.WorkingDirectory,
+            workingDirectory: workingDirectory,
             environment: TerminalEnvironmentVariables.ForWorkspace(_workspaceId));
 
         if (restoredState?.BufferSnapshot != null)

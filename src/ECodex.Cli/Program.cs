@@ -17,7 +17,7 @@ namespace ECodex.Cli;
 /// 用法：
 ///   ecodex notify --title "Title" --body "Body"
 ///   ecodex workspace list
-///   ecodex workspace create --name "My Project"
+///   ecodex workspace create --name "My Project" --cwd C:\repo
 ///   ecodex workspace select --index 0
 ///   ecodex surface create
 ///   ecodex split right
@@ -785,6 +785,7 @@ public static class Program
         }
 
         CopyAlias(args, "workspace-ref", "target");
+        CopyAlias(args, "cwd", "workingDirectory");
     }
 
     private static void NormalizeNotificationArgs(string subcommand, Dictionary<string, string> args)
@@ -1003,6 +1004,7 @@ public static class Program
                 list                List all projects
                 create              Create a new project
                   --name <text>     Project name
+                  --cwd <path>      Required project folder
                 select              Select a project
                   <ref|id|name>     Project ref, ID, or name
                 close [ref|id|name] Close selected or target project

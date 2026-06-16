@@ -14,6 +14,8 @@ public sealed record WorkspaceApiWorkspace<TWorkspace>(
     int SurfaceCount,
     string? WorkingDirectory);
 
+public sealed record WorkspaceCreateRequest(string? Name, string WorkingDirectory);
+
 public sealed class WorkspaceApiService<TWorkspace>
     where TWorkspace : class
 {
@@ -28,7 +30,7 @@ public sealed class WorkspaceApiService<TWorkspace>
     };
 
     private readonly Func<IEnumerable<WorkspaceApiWorkspace<TWorkspace>>> _workspaceProvider;
-    private readonly Func<string?, TWorkspace> _createWorkspace;
+    private readonly Func<WorkspaceCreateRequest, TWorkspace> _createWorkspace;
     private readonly Action<TWorkspace> _selectWorkspace;
     private readonly Func<TWorkspace, bool> _closeWorkspace;
     private readonly Func<TWorkspace, string, bool> _renameWorkspace;
@@ -36,7 +38,7 @@ public sealed class WorkspaceApiService<TWorkspace>
 
     public WorkspaceApiService(
         Func<IEnumerable<WorkspaceApiWorkspace<TWorkspace>>> workspaceProvider,
-        Func<string?, TWorkspace> createWorkspace,
+        Func<WorkspaceCreateRequest, TWorkspace> createWorkspace,
         Action<TWorkspace> selectWorkspace,
         Func<TWorkspace, bool> closeWorkspace,
         Func<TWorkspace, string, bool> renameWorkspace,
@@ -87,7 +89,29 @@ public sealed class WorkspaceApiService<TWorkspace>
     private V2Response HandleCreate(V2Request request, CliIdFormat idFormat)
     {
         var name = GetStringParam(request.Params, "name", "title");
-        var created = _createWorkspace(name);
+        var rawDirectory = GetStringParam(request.Params, "workingDirectory", "cwd", "folder", "path");
+        var workingDirectory = WorkspaceDirectoryService.Normalize(rawDirectory);
+        if (string.IsNullOrWhiteSpace(workingDirectory))
+        {
+            return V2Response.FromStableError(
+                request.Id,
+                V2ErrorCodes.InvalidRef,
+                "Missing required workspace workingDirectory.");
+        }
+
+        if (WorkspaceDirectoryService.IsDuplicate(GetWorkspaces().Select(workspace => workspace.WorkingDirectory), workingDirectory))
+        {
+            return V2Response.FromStableError(
+                request.Id,
+                V2ErrorCodes.InvalidRef,
+                $"Workspace folder is already in use: {workingDirectory}");
+        }
+
+        var createName = string.IsNullOrWhiteSpace(name)
+            ? WorkspaceDirectoryService.GetDefaultWorkspaceName(workingDirectory, $"Project {GetWorkspaces().Count + 1}")
+            : name.Trim();
+
+        var created = _createWorkspace(new WorkspaceCreateRequest(createName, workingDirectory));
         var workspace = FindWorkspaceByInstance(created)
             ?? GetWorkspaces().FirstOrDefault(item => item.IsCurrent);
 

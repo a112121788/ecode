@@ -32,7 +32,7 @@
 | 子命令 | 选项 | 行为 |
 |---|---|---|
 | `list` / `ls` | — | 列出项目 → `WORKSPACE.LIST` |
-| `create` / `new` | `--name <text>` | 新建项目 → `WORKSPACE.CREATE` |
+| `create` / `new` | `--cwd <path>` / `--workingDirectory <path>` + `--name <text>` | 新建项目；目录必填且不能与已有项目重复 → `WORKSPACE.CREATE` |
 | `select` | `--index <n>` / `--id <id>` / `--name <name>` | 切换 → `WORKSPACE.SELECT` |
 | `next` | — | `WORKSPACE.NEXT` |
 | `previous` / `prev` | — | `WORKSPACE.PREVIOUS` |
@@ -116,8 +116,8 @@ COMMAND [k=v [k=v ...]]
 | 命令 | 关键参数 | 默认 | 说明 |
 |---|---|---|---|
 | `NOTIFY` | `title` `body` `subtitle` | `title="Terminal"` | 写入当前项目 / Surface 的通知 |
-| `WORKSPACE.LIST` | — | — | 返回 `[ {id,name,selected,surfaces} ]` |
-| `WORKSPACE.CREATE` | `name` | — | 新建项目，返回 `{id,name}` |
+| `WORKSPACE.LIST` | — | — | 返回 `[ {id,name,selected,surfaces,workingDirectory} ]` |
+| `WORKSPACE.CREATE` | `workingDirectory/cwd` + `name` | `name=文件夹名` | 新建项目；目录必填且不能重复，返回 `{ok,id,name,workingDirectory}` |
 | `WORKSPACE.SELECT` | `index`(0/1-based) / `id` / `name` | — | 切换项目（`name` 支持包含匹配） |
 | `WORKSPACE.NEXT` | — | — | 下一个项目 |
 | `WORKSPACE.PREVIOUS` | — | — | 上一个项目 |
@@ -254,7 +254,7 @@ ecodex surface resume clear --id <binding-id>
 
 ```powershell
 # 创建项目
-ecodex workspace create --name "My Project"
+ecodex workspace create --name "My Project" --cwd C:\repo
 
 # 新建 Surface
 ecodex surface create

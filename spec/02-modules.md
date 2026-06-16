@@ -25,7 +25,7 @@
 | 文件 | 类型 | 说明 |
 |---|---|---|
 | `Models/SplitNode.cs` | `SplitNode / SplitDirection` | 树形分屏；工厂方法 `CreateLeaf / CreateColumns / CreateRows / CreateGrid / CreateMainStack`；操作 `Split / FindNode / FindParent / GetLeaves / Remove / GetNextLeaf / GetPreviousLeaf / ResizePane / SwapPanes / Equalize` |
-| `Models/Workspace.cs` | `Workspace` | UI 层 Model：`Id / Name / IconGlyph / AccentColor / Surfaces / SelectedSurface / GitBranch / WorkingDirectory / ListeningPorts / LatestNotificationText / UnreadNotificationCount` |
+| `Models/Workspace.cs` | `Workspace` | UI 层 Model：`Id / Name / IconGlyph / AccentColor / Surfaces / SelectedSurface / GitBranch / WorkingDirectory / ListeningPorts / LatestNotificationText / UnreadNotificationCount`；`WorkingDirectory` 是稳定项目文件夹，同一目录只能绑定一个 Workspace |
 | `Models/Surface.cs` | `Surface / SurfaceKind` | 标签页 Model：`Kind(Terminal/Browser) / BrowserUrl / BrowserTitle / BrowserHistory / RootSplitNode / FocusedPaneId / PaneCustomNames / PaneSnapshots` |
 | `Models/SessionState.cs` | `SessionState / WorkspaceState / SurfaceState / SplitNodeState / WindowState` | 持久化 DTO，`[JsonPropertyName]` 全部小写；缺少 `SurfaceState.kind` 的旧文件默认 Terminal |
 | `Models/PaneStateSnapshot.cs` | `PaneStateSnapshot` | 单面板快照：cwd + shell + 命令历史 + `TerminalBufferSnapshot` |
@@ -108,7 +108,7 @@
 | 文件 | 类型 | 说明 |
 |---|---|---|
 | `src/ECodex/ViewModels/MainViewModel.cs` | `MainViewModel : ObservableObject` | 顶层：管理项目集合 + 侧边栏（Visible/Width/CompactSidebar）；命令 `CreateNewWorkspace / DuplicateWorkspace / CloseWorkspace / SelectWorkspace / NextWorkspace / PreviousWorkspace / ToggleSidebar / ToggleCompactSidebar / ToggleNotificationPanel / JumpToLatestUnread / MarkAllNotificationsRead`；`HandlePipeCommand` 集中分派 CLI 命令，含 `CONFIG.RELOAD` 事件桥接；`SaveSession / RestoreSession / CloneSplitNode` |
-| `src/ECodex/ViewModels/WorkspaceViewModel.cs` | `WorkspaceViewModel : ObservableObject, IDisposable` | `Workspace` 包装；定时器 5s 刷新 `GitBranch / DetectedAgent`（WMI）；`CreateNewSurface / CloseSurface / NextSurface / PreviousSurface / RefreshInfo`；图标字形自动判断字体（Segoe MDL2 Assets vs Segoe UI Emoji） |
+| `src/ECodex/ViewModels/WorkspaceViewModel.cs` | `WorkspaceViewModel : ObservableObject, IDisposable` | `Workspace` 包装；保持项目文件夹稳定显示，并作为新 Terminal Surface 的默认 cwd；定时器 5s 刷新 `GitBranch / DetectedAgent`（WMI）；`CreateNewSurface / CloseSurface / NextSurface / PreviousSurface / RefreshInfo`；图标字形自动判断字体（Segoe MDL2 Assets vs Segoe UI Emoji） |
 | `src/ECodex/ViewModels/SurfaceViewModel.cs` | `SurfaceViewModel : ObservableObject, IDisposable` | **关键**：Terminal surface 中 `SplitNode` ↔ `TerminalSession` 双向绑定；Browser surface 不启动终端进程，由 `BrowserControl` 托管；`StartSession` → 守护进程优先（异步 attach + 拉快照 + 300ms 后 CR 触发重绘）+ 失败回退本地；`OnDaemonDisconnected` 自动回退；`SplitFocused / ClosePane / FocusPane / FocusNextPane / FocusPreviousPane / ToggleZoom / EqualizePanes / OpenPaneWithShell`；`CapturePaneTranscript / CaptureAllPaneTranscripts / CapturePaneSnapshotsForPersistence`；`RegisterCommandSubmission / TryHandlePaneCommand`（Agent 拦截） |
 | `src/ECodex/ViewModels/BrowserPaneViewModel.cs` | `BrowserPaneViewModel : ObservableObject` | Browser pane 状态：`Url / Title / DisplayTitle / IsLoading / CanGoBack / CanGoForward / IsWebViewAvailable / ErrorMessage / NavigationVersion / History`；`BeginNavigation / CompleteNavigation / UpdateNavigationState / SetWebViewUnavailable / NormalizeUrl` |
 

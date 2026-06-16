@@ -95,7 +95,7 @@ ecodex window close window:1
 
 ```powershell
 ecodex workspace list
-ecodex workspace create --name demo
+ecodex workspace create --name demo --cwd C:\repo\demo
 ecodex workspace select workspace:1
 ecodex workspace rename workspace:1 demo-app
 ecodex workspace reorder "workspace:2,workspace:1"
@@ -103,6 +103,8 @@ ecodex workspace close workspace:1
 ```
 
 对应方法：`workspace.list`、`workspace.create`、`workspace.select`、`workspace.close`、`workspace.rename`、`workspace.reorder`。
+
+`workspace.create` 必须传 `--cwd`/`--workingDirectory` 指定项目文件夹；同一文件夹只能创建一个 Workspace。未传 `--name` 时默认使用文件夹名。
 
 ### Surface
 
@@ -217,7 +219,7 @@ $workspaces = ecodex --json workspace list | ConvertFrom-Json
 $workspaces
 
 # 创建项目、分屏、写入命令
-ecodex workspace create --name demo
+ecodex workspace create --name demo --cwd C:\repo\demo
 ecodex pane split right
 ecodex pane write pane:1 "npm test"
 

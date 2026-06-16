@@ -22,6 +22,8 @@ using NotificationV2ApiService = ECodex.Services.NotificationApiService;
 using ConfigV2ApiService = ECodex.Services.ConfigApiService;
 using StatusV2ApiService = ECodex.Services.StatusApiService;
 using AppLifecycleV2ApiService = ECodex.Services.AppLifecycleApiService;
+using WorkspaceCreateRequest = ECodex.Services.WorkspaceCreateRequest;
+using Microsoft.Win32;
 
 namespace ECodex.ViewModels;
 
@@ -141,36 +143,93 @@ public partial class MainViewModel : ObservableObject
             App.PipeServer.OnV2Request = HandleV2PipeRequest;
         }
 
-        // 恢复会话或创建默认项目
+        // 恢复会话；首次启动由主窗口加载后引导用户选择项目文件夹。
         var session = SessionPersistenceService.Load();
         if (session != null && session.Workspaces.Count > 0)
         {
             RestoreSession(session);
-        }
-        else
-        {
-            CreateNewWorkspace();
         }
     }
 
     [RelayCommand]
     public void CreateNewWorkspace()
     {
-        CreateWorkspace();
+        var directory = SelectWorkspaceDirectory("选择项目文件夹");
+        if (directory == null)
+            return;
+
+        if (!TryCreateWorkspace(null, directory, out _, out var error))
+        {
+            MessageBox.Show(error, "无法创建项目", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
-    private WorkspaceViewModel CreateWorkspace(string? name = null)
+    public void EnsureInitialWorkspace()
     {
-        var workspace = new Workspace { Name = string.IsNullOrWhiteSpace(name) ? $"项目 {Workspaces.Count + 1}" : name.Trim() };
+        if (Workspaces.Count == 0)
+            CreateNewWorkspace();
+    }
+
+    private bool TryCreateWorkspace(
+        string? name,
+        string? workingDirectory,
+        out WorkspaceViewModel? workspaceVm,
+        out string error)
+    {
+        workspaceVm = null;
+        error = "";
+
+        var normalizedDirectory = WorkspaceDirectoryService.Normalize(workingDirectory);
+        if (string.IsNullOrWhiteSpace(normalizedDirectory))
+        {
+            error = "创建项目必须选择项目文件夹。";
+            return false;
+        }
+
+        if (WorkspaceDirectoryService.IsDuplicate(Workspaces.Select(workspace => workspace.WorkingDirectory), normalizedDirectory))
+        {
+            error = $"该文件夹已经绑定到其他项目：{normalizedDirectory}";
+            return false;
+        }
+
+        var fallbackName = $"项目 {Workspaces.Count + 1}";
+        var workspaceName = string.IsNullOrWhiteSpace(name)
+            ? WorkspaceDirectoryService.GetDefaultWorkspaceName(normalizedDirectory, fallbackName)
+            : name.Trim();
+
+        var workspace = new Workspace
+        {
+            Name = workspaceName,
+            WorkingDirectory = normalizedDirectory,
+        };
         var surface = new Surface { Name = "Terminal 1" };
         workspace.Surfaces.Add(surface);
         workspace.SelectedSurface = surface;
 
-        var vm = CreateWorkspaceViewModel(workspace);
-        Workspaces.Add(vm);
-        SelectedWorkspace = vm;
+        workspaceVm = CreateWorkspaceViewModel(workspace);
+        Workspaces.Add(workspaceVm);
+        SelectedWorkspace = workspaceVm;
         RequestSessionCheckpoint();
-        return vm;
+        return true;
+    }
+
+    private WorkspaceViewModel CreateWorkspaceOrThrow(WorkspaceCreateRequest request)
+    {
+        if (TryCreateWorkspace(request.Name, request.WorkingDirectory, out var workspace, out var error) && workspace != null)
+            return workspace;
+
+        throw new InvalidOperationException(error);
+    }
+
+    private string? SelectWorkspaceDirectory(string title)
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = title,
+            Multiselect = false,
+        };
+
+        return dialog.ShowDialog() == true ? dialog.FolderName : null;
     }
 
     private WorkspaceViewModel CreateWorkspaceViewModel(Workspace workspace)
@@ -191,12 +250,26 @@ public partial class MainViewModel : ObservableObject
 
     public void DuplicateWorkspace(WorkspaceViewModel source)
     {
+        var duplicateDirectory = SelectWorkspaceDirectory("为复制项目选择新的项目文件夹");
+        if (duplicateDirectory == null)
+            return;
+
+        var normalizedDirectory = WorkspaceDirectoryService.Normalize(duplicateDirectory);
+        if (string.IsNullOrWhiteSpace(normalizedDirectory))
+            return;
+
+        if (WorkspaceDirectoryService.IsDuplicate(Workspaces.Select(workspace => workspace.WorkingDirectory), normalizedDirectory))
+        {
+            MessageBox.Show($"该文件夹已经绑定到其他项目：{normalizedDirectory}", "无法复制项目", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         var clone = new Workspace
         {
             Name = source.Name + " (copy)",
             IconGlyph = source.IconGlyph,
             AccentColor = source.AccentColor,
-            WorkingDirectory = source.WorkingDirectory,
+            WorkingDirectory = normalizedDirectory,
         };
 
         var surfaceMap = new Dictionary<string, Surface>();
@@ -234,7 +307,7 @@ public partial class MainViewModel : ObservableObject
                 clonedSurface.PaneSnapshots[newPaneId] = new PaneStateSnapshot
                 {
                     CapturedAt = snapshot.CapturedAt,
-                    WorkingDirectory = snapshot.WorkingDirectory,
+                    WorkingDirectory = clone.WorkingDirectory,
                     Shell = snapshot.Shell,
                     CommandHistory = snapshot.CommandHistory.ToList(),
                     BufferSnapshot = snapshot.BufferSnapshot == null
@@ -446,15 +519,26 @@ public partial class MainViewModel : ObservableObject
 
     private void RestoreSession(SessionState session)
     {
+        var seenDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var selectedWorkspaceId = session.SelectedWorkspaceIndex is int selectedIndex &&
+                                  selectedIndex >= 0 &&
+                                  selectedIndex < session.Workspaces.Count
+            ? session.Workspaces[selectedIndex].Id
+            : null;
+
         foreach (var wsState in session.Workspaces)
         {
+            var normalizedDirectory = WorkspaceDirectoryService.Normalize(wsState.WorkingDirectory);
+            if (!string.IsNullOrWhiteSpace(normalizedDirectory) && !seenDirectories.Add(normalizedDirectory))
+                continue;
+
             var workspace = new Workspace
             {
                 Id = wsState.Id,
                 Name = wsState.Name,
                 IconGlyph = string.IsNullOrWhiteSpace(wsState.IconGlyph) ? "\uE8A5" : wsState.IconGlyph,
                 AccentColor = string.IsNullOrWhiteSpace(wsState.AccentColor) ? "#FF818CF8" : wsState.AccentColor,
-                WorkingDirectory = wsState.WorkingDirectory,
+                WorkingDirectory = normalizedDirectory,
             };
 
             foreach (var surfState in wsState.Surfaces)
@@ -514,16 +598,10 @@ public partial class MainViewModel : ObservableObject
             Workspaces.Add(vm);
         }
 
-        if (session.SelectedWorkspaceIndex.HasValue &&
-            session.SelectedWorkspaceIndex.Value >= 0 &&
-            session.SelectedWorkspaceIndex.Value < Workspaces.Count)
-        {
-            SelectedWorkspace = Workspaces[session.SelectedWorkspaceIndex.Value];
-        }
-        else if (Workspaces.Count > 0)
-        {
-            SelectedWorkspace = Workspaces[0];
-        }
+        SelectedWorkspace = !string.IsNullOrWhiteSpace(selectedWorkspaceId)
+            ? Workspaces.FirstOrDefault(workspace => string.Equals(workspace.Workspace.Id, selectedWorkspaceId, StringComparison.Ordinal))
+            : null;
+        SelectedWorkspace ??= Workspaces.FirstOrDefault();
 
         if (session.Window != null)
         {
@@ -914,17 +992,27 @@ public partial class MainViewModel : ObservableObject
             name = w.Workspace.Name,
             selected = w == SelectedWorkspace,
             surfaces = w.Surfaces.Count,
+            workingDirectory = w.WorkingDirectory,
         });
         return JsonSerializer.Serialize(list);
     }
 
     private string HandleWorkspaceCreate(Dictionary<string, string> args)
     {
-        CreateNewWorkspace();
-        var ws = Workspaces[^1];
-        if (args.TryGetValue("name", out var name))
-            ws.Name = name;
-        return JsonSerializer.Serialize(new { id = ws.Workspace.Id, name = ws.Name });
+        var name = args.GetValueOrDefault("name");
+        var workingDirectory = GetArg(args, "workingDirectory", "cwd", "folder", "path");
+        if (!TryCreateWorkspace(name, workingDirectory, out var ws, out var error) || ws == null)
+        {
+            return JsonSerializer.Serialize(new { ok = false, error });
+        }
+
+        return JsonSerializer.Serialize(new
+        {
+            ok = true,
+            id = ws.Workspace.Id,
+            name = ws.Name,
+            workingDirectory = ws.WorkingDirectory,
+        });
     }
 
     private string HandleWorkspaceSelect(Dictionary<string, string> args)
@@ -1347,9 +1435,9 @@ public partial class MainViewModel : ObservableObject
                 WorkingDirectory: workspace.WorkingDirectory));
     }
 
-    private WorkspaceViewModel CreateWorkspaceForV2Api(string? name)
+    private WorkspaceViewModel CreateWorkspaceForV2Api(WorkspaceCreateRequest request)
     {
-        var workspace = CreateWorkspace(name);
+        var workspace = CreateWorkspaceOrThrow(request);
         WorkspaceOrderChanged?.Invoke();
         return workspace;
     }

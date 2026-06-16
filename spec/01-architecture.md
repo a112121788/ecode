@@ -129,7 +129,7 @@ ECodex.Smoke ──▶  ECodex.Core
   │   ├─ 接管 PipeServer.OnCommand
   │   └─ SessionPersistenceService.Load()
   │        ├─ 有 → RestoreSession()
-  │        └─ 无 → CreateNewWorkspace()
+  │        └─ 无 → 窗口加载后提示选择项目文件夹 → CreateNewWorkspace()
   │
   ├─ WorkspaceViewModel → SurfaceViewModel → Surface 叶子节点
   │   └─ 每个叶子 StartSession(paneId, …)
@@ -384,7 +384,7 @@ SosPmApc
 
 | 类别 | 快捷键 | 动作 |
 |---|---|---|
-| 项目 | `Ctrl+N` | 新建项目 |
+| 项目 | `Ctrl+N` | 选择项目文件夹并新建项目 |
 |  | `Ctrl+1..8` | 跳转到第 1..8 个项目 |
 |  | `Ctrl+9` | 跳转到最后一个 |
 |  | `Ctrl+Shift+W` | 关闭项目 |

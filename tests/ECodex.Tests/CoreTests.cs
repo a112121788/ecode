@@ -2325,14 +2325,17 @@ public class WorkspaceApiServiceTests
         };
         var api = CreateWorkspaceApi(workspaces);
 
-        var create = api.HandleRequest(CreateV2Request("workspace.create", """{"name":"Beta","idFormat":"both"}"""));
+        var create = api.HandleRequest(CreateV2Request("workspace.create", """{"name":"Beta","cwd":"C:\\Repos\\Beta","idFormat":"both"}"""));
 
         create.Error.Should().BeNull();
         workspaces.Should().HaveCount(2);
         workspaces[1].Name.Should().Be("Beta");
+        workspaces[1].WorkingDirectory.Should().Be(@"C:\Repos\Beta");
         workspaces[1].IsCurrent.Should().BeTrue();
         using var createResult = ParseResult(create);
         var createdId = createResult.RootElement.GetProperty("workspace").GetProperty("id").GetString();
+        createResult.RootElement.GetProperty("workspace").GetProperty("workingDirectory").GetString()
+            .Should().Be(@"C:\Repos\Beta");
 
         var select = api.HandleRequest(CreateV2Request("workspace.select", """{"target":"workspace:1","idFormat":"both"}"""));
 
@@ -2353,6 +2356,29 @@ public class WorkspaceApiServiceTests
         using var closeResult = ParseResult(close);
         closeResult.RootElement.GetProperty("closed").GetBoolean().Should().BeTrue();
         closeResult.RootElement.GetProperty("workspace").GetProperty("id").GetString().Should().Be(createdId);
+    }
+
+    [Fact]
+    public void WorkspaceCreate_RequiresUniqueWorkingDirectory()
+    {
+        var workspaces = new List<TestWorkspace>
+        {
+            new("workspace-a", "Alpha", 1)
+            {
+                IsCurrent = true,
+                WorkingDirectory = @"C:\Repos\Alpha",
+            },
+        };
+        var api = CreateWorkspaceApi(workspaces);
+
+        var missing = api.HandleRequest(CreateV2Request("workspace.create", """{"name":"No Folder"}"""));
+        var duplicate = api.HandleRequest(CreateV2Request("workspace.create", """{"name":"Duplicate","workingDirectory":"C:\\Repos\\Alpha\\"}"""));
+
+        missing.Error.Should().NotBeNull();
+        missing.Error!.Code.Should().Be(V2ErrorCodes.InvalidRef);
+        duplicate.Error.Should().NotBeNull();
+        duplicate.Error!.Code.Should().Be(V2ErrorCodes.InvalidRef);
+        workspaces.Should().HaveCount(1);
     }
 
     [Fact]
@@ -2407,14 +2433,15 @@ public class WorkspaceApiServiceTests
                     IsCurrent: workspace.IsCurrent,
                     SurfaceCount: workspace.SurfaceCount,
                     WorkingDirectory: workspace.WorkingDirectory)),
-            createWorkspace: name =>
+            createWorkspace: request =>
             {
                 foreach (var workspace in workspaces)
                     workspace.IsCurrent = false;
 
-                var created = new TestWorkspace($"workspace-{workspaces.Count + 1}", name ?? $"Project {workspaces.Count + 1}", 1)
+                var created = new TestWorkspace($"workspace-{workspaces.Count + 1}", request.Name ?? $"Project {workspaces.Count + 1}", 1)
                 {
                     IsCurrent = true,
+                    WorkingDirectory = request.WorkingDirectory,
                 };
                 workspaces.Add(created);
                 return created;
