@@ -53,7 +53,7 @@ pwsh ./scripts/publish.ps1 -Config Release -Rid win-x64 -Flavor Velopack -VpkCom
 
 ## Inno Setup 备用安装器
 
-Inno Setup 脚本位于 `installer/ecodex.iss`。它会安装 app 与 命令行，创建快捷方式，并在卸载时只清理安装目录，不删除 `%USERPROFILE%\.ecodex`。安装与卸载向导固定使用简体中文界面；构建机的 Inno Setup 需要可访问 `compiler:Languages\ChineseSimplified.isl`。
+Inno Setup 脚本位于 `installer/ecodex.iss`。它会安装 app 与 命令行，创建快捷方式，并在卸载时只清理安装目录，不删除 `%USERPROFILE%\.ecodex`。安装与卸载向导固定使用简体中文界面；脚本引用项目内置的 `installer/Languages/ChineseSimplified.isl`，构建机只需安装 Inno Setup Compiler，不依赖本机语言包。该语言文件来源为 `jrsoftware/issrc` 的 `Files/Languages/Unofficial/ChineseSimplified.isl`，更新时应保留原文件头部说明。
 
 发布前先生成 app 与 命令行：
 
