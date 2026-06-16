@@ -23,7 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Project Pages are served from /<repository>/ by default.
-      VITEPRESS_BASE: ${{ vars.VITEPRESS_BASE || format('/{0}/', github.event.repository.name) }}
+      EXPECTED_VITEPRESS_BASE: ${{ format('/{0}/', github.event.repository.name) }}
+      VITEPRESS_BASE: ${{ format('/{0}/', github.event.repository.name) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -41,6 +42,11 @@ jobs:
 
       - name: Build docs
         run: npm run docs:build
+
+      - name: Verify built docs base path
+        run: |
+          set -euo pipefail
+          grep -F "\"base\":\"${EXPECTED_VITEPRESS_BASE}\"" docs/.vitepress/dist/index.html
 
       - name: Publish compiled docs to docs branch
         env:
