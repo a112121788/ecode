@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `NOT-02D-1` Codex 等待输入信号纯检测器；`NOT-02C-1/2/3` 已完成 payload、parser、窗口恢复、应用内跳转处理与 Windows-only live smoke/checklist，`NOT-02D-R` 已补齐等待输入提醒契约和子队列。
+下个可领切片优先进入 `NOT-02D-2` 等待输入信号接入低噪声通知；`NOT-02D-1` 已完成纯 Core 检测器和保守匹配测试。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -198,12 +198,12 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | Core 层有可单测的 Codex attention 信号检测器，能从短文本尾部识别等待输入、确认授权和错误决策语义，但不产生通知 |
-| Scope | 新增纯 Core 检测器（建议 `AgentAttentionSignalDetector` + 小 DTO），输入为已脱敏 / 可脱敏的 pane text tail、最近命令和可选 agent hint；首版只覆盖 Codex 常见短语与结构化提示；不接 UI、不读 raw bytes、不显示 Toast、不做配置化规则 |
-| 关联 | `src/ECodex.Core/Terminal/TerminalSession.cs` 输出 buffer、`CommandLogService.SanitizeCommandForStorage` / transcript 脱敏思路、`03-data-and-ipc.md` §6.2 |
-| 验收 | 单测覆盖：Codex 等待用户输入 / approval / confirm / error decision 命中；普通日志、build 输出、流式回答不命中；长文本只返回脱敏短摘要；空输入 no-op；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~AgentAttention" --no-restore` 与 `git diff --check` 通过 |
+| Scope | 新增纯 Core 检测器 `AgentAttentionSignalDetector` + 小 DTO，输入为已脱敏 / 可脱敏的 pane text tail、最近命令和可选 agent hint；首版只覆盖 Codex 常见短语与结构化提示；不接 UI、不读 raw bytes、不显示 Toast、不做配置化规则 |
+| 关联 | `src/ECodex.Core/Services/AgentAttentionSignalDetector.cs`、`src/ECodex.Core/Terminal/TerminalSession.cs` 输出 buffer、`CommandLogService.SanitizeCommandForStorage` / transcript 脱敏思路、`03-data-and-ipc.md` §6.2 |
+| 验收 | `AgentAttentionSignalDetectorTests` 覆盖 Codex 等待用户输入 / approval / confirm / error decision 命中；普通日志、build 输出、流式回答不命中；长文本只返回脱敏短摘要；空输入 no-op；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~AgentAttention" --no-restore` 与 `git diff --check` 通过 |
 | 风险 | Codex 文案版本会变；检测规则必须保守，避免因为 “error” / “input” 单词出现在普通日志里就提醒 |
 | 回滚 | 删除检测器与测试；后续通知接入不受影响 |
 

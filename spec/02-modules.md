@@ -46,6 +46,7 @@
 | `Services/SessionPersistenceService.cs` | `SessionPersistenceService` | `Load/Save` 会话 JSON；`BuildState` 把内存模型序列化为 DTO；`SerializeSplitNode / DeserializeSplitNode` 桥接 `SplitNode ↔ SplitNodeState` |
 | `Services/NotificationService.cs` | `NotificationService` | 内存通知集合（≤500），线程安全（lock），事件 `NotificationAdded / UnreadCountChanged`；`GetLatestUnread / GetLatestText / MarkAsRead / MarkWorkspaceAsRead / MarkAllAsRead` |
 | `Services/CommandLifecycleNotificationService.cs` | `CommandLifecycleNotificationService` | 把 `HOOK.COMMAND` 生命周期事件转换成低噪声完成 / 失败通知：缺 `workspaceId` no-op，前台活跃 no-op，后台 `phase=end` 按退出码写入未读中心；缺 `paneId` 时只生成 surface 级通知；同 scope / command / exitCode 30 秒内去重 |
+| `Services/AgentAttentionSignalDetector.cs` | `AgentAttentionSignalDetector / AgentAttentionSignal` | 纯 Core 检测器；从 Codex pane 的短文本尾部识别 `WaitingInput / ConfirmationRequired / ErrorNeedsDecision` 信号，返回脱敏短摘要，不访问 UI、不创建通知、不扫描 raw bytes |
 | `Services/ToastActivationParser.cs` | `ToastActivationParser / ToastActivationRequest` | 统一构建 Windows Toast `action/notificationId/workspaceId/surfaceId/paneId` arguments，并把激活 query string 解析为可跳转请求 |
 | `Services/CommandLogService.cs` | `CommandLogService` | **OSC 133 提示符标记处理**（A/B/C/D）、命令提交、手动注入；按日 JSONL 持久化；脱敏（`SanitizeCommandForStorage / SanitizeTranscriptText`）；终端脚本捕获 `SaveTerminalTranscript / GetTerminalTranscripts / LoadTerminalTranscriptContent`；保留策略 `CommandLogRetentionDays / TranscriptRetentionDays`（0 = 永久，默认 90） |
 | `Services/SnippetService.cs` | `SnippetService` | 增删改查 + 搜索（按 name / content / category / tags / description，收藏优先）+ 首次启动播种 10 条默认 |

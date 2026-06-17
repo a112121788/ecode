@@ -354,6 +354,65 @@ public class CommandLifecycleNotificationServiceTests
         => new(phase, command, exitCode, workingDirectory, workspaceId, surfaceId, paneId);
 }
 
+public class AgentAttentionSignalDetectorTests
+{
+    [Theory]
+    [InlineData("Codex is waiting for user input.\nPlease respond in the terminal.", AgentAttentionSignalKind.WaitingInput)]
+    [InlineData("Do you want to allow this command?\n1. Yes\n2. No", AgentAttentionSignalKind.ConfirmationRequired)]
+    [InlineData("Codex cannot continue without a decision. Choose how to proceed.", AgentAttentionSignalKind.ErrorNeedsDecision)]
+    public void Detect_CodexAttentionSignals_ReturnsKind(string textTail, AgentAttentionSignalKind expectedKind)
+    {
+        var signal = AgentAttentionSignalDetector.Detect(new AgentAttentionDetectionInput(
+            TextTail: textTail,
+            RecentCommand: "codex --model gpt-5"));
+
+        signal.Should().NotBeNull();
+        signal!.Kind.Should().Be(expectedKind);
+        signal.Title.Should().StartWith("Codex");
+        signal.Summary.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Build succeeded.\n0 Warning(s)\n0 Error(s)")]
+    [InlineData("npm ERR! input.css not found")]
+    [InlineData("Streaming answer: next I will edit the file and run tests.")]
+    public void Detect_OrdinaryOutput_DoesNotNotify(string textTail)
+    {
+        var signal = AgentAttentionSignalDetector.Detect(new AgentAttentionDetectionInput(
+            TextTail: textTail,
+            RecentCommand: "codex"));
+
+        signal.Should().BeNull();
+    }
+
+    [Fact]
+    public void Detect_ConfirmationWithoutCodexContext_DoesNotNotify()
+    {
+        var signal = AgentAttentionSignalDetector.Detect(new AgentAttentionDetectionInput(
+            TextTail: "Do you want to allow this command?",
+            RecentCommand: "npm test",
+            AgentHint: "powershell"));
+
+        signal.Should().BeNull();
+    }
+
+    [Fact]
+    public void Detect_RedactsAndTruncatesSummary()
+    {
+        var textTail = "Do you want to allow this command? --api-key sk-test " + new string('x', 260);
+
+        var signal = AgentAttentionSignalDetector.Detect(new AgentAttentionDetectionInput(
+            TextTail: textTail,
+            AgentHint: "codex"));
+
+        signal.Should().NotBeNull();
+        signal!.Summary.Should().Contain("--api-key [REDACTED]");
+        signal.Summary.Should().NotContain("sk-test");
+        signal.Summary.Length.Should().BeLessThanOrEqualTo(180);
+    }
+}
+
 public class ToastActivationParserTests
 {
     [Fact]
@@ -1442,7 +1501,6 @@ public class SmokeWorkflowTests
         backlog.Should().Contain("### `NOT-02C-3` - Windows Toast live smoke 与安装策略校验");
         backlog.Should().Contain("| 状态 | done |");
         backlog.Should().Contain("ToastActivationSmokeScript_CoversWindowsPrereqsManualEvidenceAndSkipsClearly");
-        backlog.Should().Contain("下个可领切片优先进入 `NOT-02D-1`");
     }
 }
 
@@ -1477,9 +1535,12 @@ public class NotificationBacklogRefinementTests
     [Fact]
     public void Not02DRefinement_DefinesCodexAttentionContractAndReadySlices()
     {
+        var modules = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "02-modules.md"));
         var contract = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "03-data-and-ipc.md"));
         var backlog = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "07-implementation-backlog.md"));
 
+        modules.Should().Contain("Services/AgentAttentionSignalDetector.cs");
+        modules.Should().Contain("AgentAttentionSignalDetector / AgentAttentionSignal");
         contract.Should().Contain("### 6.2 Codex 等待输入提醒契约");
         contract.Should().Contain("TerminalSession.OutputReceived");
         contract.Should().Contain("AgentAttentionSignalDetector");
@@ -1492,7 +1553,7 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
         backlog.Should().Contain("| 状态 | ready |");
-        backlog.Should().Contain("下个可领切片优先进入 `NOT-02D-1`");
+        backlog.Should().Contain("下个可领切片优先进入");
     }
 }
 

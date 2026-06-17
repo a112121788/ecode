@@ -61,6 +61,7 @@
     <None Include="..\..\Directory.Build.props" Link="Directory.Build.props" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\package.json" Link="package.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\.ecodex\ecodex.example.json" Link=".ecodex\ecodex.example.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\spec\02-modules.md" Link="spec\02-modules.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\spec\03-data-and-ipc.md" Link="spec\03-data-and-ipc.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\spec\06-roadmap.md" Link="spec\06-roadmap.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\spec\07-implementation-backlog.md" Link="spec\07-implementation-backlog.md" CopyToOutputDirectory="PreserveNewest" />
