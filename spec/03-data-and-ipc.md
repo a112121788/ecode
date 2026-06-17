@@ -495,6 +495,7 @@ public sealed record FailureLoopEvidencePackage(
 | `FailureLoopTranscriptInput` | 包装 `TerminalTranscriptEntry` 与已脱敏 transcript 摘要 | 装配器只截断，不重新读取 `FilePath` |
 | `FailureLoopDaemonLogInput` | 包装调用方提供的 daemon log 时间戳、行文本与可选 paneId | 装配器只做时间窗和 paneId 过滤，不读取 `%USERPROFILE%` |
 | `FailureLoopEvidenceAssembler` | 把非零退出码命令、时间窗内 transcript 与 daemon log 片段装配成 `FailureLoopEvidencePackage` | Agent message 来源保持空集合；不做 UI、不写磁盘 |
+| `FailureLoopEvidenceCollector` | 通过 `IFailureLoopEvidenceSourceProvider` 获取指定日期命令、transcript 元数据 / 内容和 daemon log 片段，再调用装配器 | 只为失败时间窗内 transcript 调用内容加载；`CommandLogFailureLoopEvidenceSourceProvider` 包装调用方传入的 `CommandLogService`，不自行构造或扫描真实 profile |
 
 | 来源 | 当前数据入口 | 证据用途 | 约束 |
 |---|---|---|---|

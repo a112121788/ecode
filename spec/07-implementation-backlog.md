@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `OBS-01-2` 失败 loop 证据源加载适配器；`OBS-01-1` 已完成纯 Core DTO 与装配器。
+下个可领切片优先进入 `OBS-01-3` daemon log 行解析与有限 tail provider；`OBS-01-2` 已完成可替换 provider seam。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -263,7 +263,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | Core 层能通过可替换 provider 从命令日志、transcript 元数据 / 内容和 daemon log 行集合生成 `FailureLoopEvidencePackage`，为后续 Session Vault UI 提供单一入口 |
 | Scope | 新增纯 Core provider / adapter seam，调用 `FailureLoopEvidenceAssembler`；测试用 fixture provider，不读取真实 `%USERPROFILE%` 日志、不接 WPF UI、不写磁盘、不接 planned Agent 存储 |
@@ -271,6 +271,19 @@ AI Agent 启动后按以下顺序选择任务：
 | 验收 | 单测覆盖 provider 按日期加载命令、只为时间窗内 transcript 调用内容加载、daemon log provider 输出被 paneId / time window 过滤、空 Agent provider 保持空集合；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~FailureLoopEvidence" --no-restore` 与 `git diff --check` 通过 |
 | 风险 | 如果 adapter 直接 new `CommandLogService` 或读取真实 profile，会触发保留策略 / 脱敏扫描副作用；首版必须依赖注入 provider，真实接线留到后续 UI/应用层切片 |
 | 回滚 | 删除 adapter / provider seam 与对应测试；保留 DTO / 装配器 |
+
+### `OBS-01-3` - daemon log 行解析与有限 tail provider
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | Core 层能把 `DaemonClient.FormatDaemonLogLine(...)` 兼容的 daemon-debug 行解析为 `FailureLoopDaemonLogInput`，并从调用方显式提供的日志路径读取有限 tail，供 `OBS-01-2` provider seam 使用 |
+| Scope | 新增纯 Core daemon log parser / bounded tail helper；测试使用 fixture 文本或临时文件；不默认读取 `%USERPROFILE%\.ecodex\daemon-debug.log`、不接 UI、不读取 secrets、不做真实日志扫描 |
+| 关联 | `src/ECodex.Core/IPC/DaemonClient.cs` 的 `FormatDaemonLogLine(...)`、`FailureLoopEvidenceCollector`、`03-data-and-ipc.md` §8.1 |
+| 验收 | 单测覆盖安全 key=value、带引号 / 转义 message、paneId 提取、时间窗过滤、malformed line 跳过、最大 tail 行数限制；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~FailureLoopEvidence" --no-restore` 与 `git diff --check` 通过 |
+| 风险 | daemon log 格式若漂移会导致证据缺失；解析器必须和 `FormatDaemonLogLine` 的转义规则保持一致，且不能因为 malformed 行抛异常中断证据包 |
+| 回滚 | 删除 daemon log parser / tail helper 与测试；保留 provider seam |
 
 ### `PKG-02` - Inno 安装与卸载向导中文化
 
@@ -345,7 +358,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | ID | 状态 | Outcome | 缺口 | 下一步 |
 |---|---|---|---|---|
-| `OBS-01` | draft | Agent 会话、命令日志、terminal transcript 可串成一次失败 loop 的复盘视图 | 已完成 `OBS-01-1` Core DTO / 装配器；AgentConversation 相关源码当前未落地 | 先完成 `OBS-01-2` provider seam，再决定是否接 Session Vault UI |
+| `OBS-01` | draft | Agent 会话、命令日志、terminal transcript 可串成一次失败 loop 的复盘视图 | 已完成 `OBS-01-1` Core DTO / 装配器和 `OBS-01-2` provider seam；AgentConversation 相关源码当前未落地 | 先完成 `OBS-01-3` daemon log parser，再决定是否接 Session Vault UI |
 | `BRS-01` | draft | Browser scripting API 增加更多真实页面回归样例 | 需要本地测试页和 WebView2 环境策略 | 先列 P0 API 现有覆盖矩阵 |
 | `PKG-01` | draft | 安装 / 更新 / 卸载 rollback 证据更清晰 | 需要 Windows 测试环境和 artifact 命名 | 先整理 release workflow 产物清单 |
 | `DX-01` | draft | 新贡献者按 `spec/` 能 30 分钟跑通第一个小 PR | 需要观测真实 onboarding 缺口 | 先用一次 fresh clone 记录摩擦点 |

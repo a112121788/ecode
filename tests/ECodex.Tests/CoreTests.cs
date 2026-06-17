@@ -1737,7 +1737,7 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
         backlog.Should().Contain("| `NOT-02D` | done |");
-        backlog.Should().Contain("`OBS-01-2` 失败 loop 证据源加载适配器");
+        backlog.Should().Contain("`OBS-01-3` daemon log 行解析与有限 tail provider");
     }
 }
 
@@ -1761,8 +1761,9 @@ public class Obs01RefinementTests
         backlog.Should().Contain("### `OBS-01-R` - 拆分失败 loop 证据包契约");
         backlog.Should().Contain("### `OBS-01-1` - 失败 loop 证据包 Core DTO 与装配器");
         backlog.Should().Contain("### `OBS-01-2` - 失败 loop 证据源加载适配器");
+        backlog.Should().Contain("### `OBS-01-3` - daemon log 行解析与有限 tail provider");
         backlog.Should().Contain("FailureLoopEvidencePackage");
-        backlog.Should().Contain("`OBS-01-1` 已完成纯 Core DTO 与装配器");
+        backlog.Should().Contain("`OBS-01-2` 已完成可替换 provider seam");
     }
 
     [Fact]
@@ -1979,6 +1980,154 @@ public class FailureLoopEvidenceTests
         package.Sources.Should().Contain(source =>
             source.Kind == FailureLoopEvidenceSourceKind.AgentConversation &&
             source.Count == 0);
+    }
+
+    [Fact]
+    public void Collector_LoadsProviderDataAndOnlyReadsTranscriptContentInsideFailureWindow()
+    {
+        var started = new DateTime(2026, 6, 17, 10, 0, 0, DateTimeKind.Utc);
+        var completed = started.AddMinutes(1);
+        var provider = new RecordingFailureLoopEvidenceProvider
+        {
+            Commands =
+            [
+                new CommandLogEntry
+                {
+                    Id = "fail",
+                    WorkspaceId = "workspace-a",
+                    SurfaceId = "surface-a",
+                    PaneId = "pane-a",
+                    Command = "dotnet test",
+                    StartedAt = started,
+                    CompletedAt = completed,
+                    ExitCode = 1,
+                },
+            ],
+            Transcripts =
+            [
+                new TerminalTranscriptEntry
+                {
+                    FilePath = @"C:\transcripts\inside.log",
+                    FileName = "inside.log",
+                    WorkspaceId = "workspace-a",
+                    SurfaceId = "surface-a",
+                    PaneId = "pane-a",
+                    CapturedAt = completed.AddSeconds(30),
+                    Reason = "close",
+                },
+                new TerminalTranscriptEntry
+                {
+                    FilePath = @"C:\transcripts\outside.log",
+                    FileName = "outside.log",
+                    WorkspaceId = "workspace-a",
+                    SurfaceId = "surface-a",
+                    PaneId = "pane-a",
+                    CapturedAt = completed.AddMinutes(10),
+                    Reason = "close",
+                },
+            ],
+            TranscriptContent =
+            {
+                [@"C:\transcripts\inside.log"] = "inside sanitized output",
+                [@"C:\transcripts\outside.log"] = "outside output should not load",
+            },
+            DaemonLogs =
+            [
+                new FailureLoopDaemonLogInput(new DateTimeOffset(started.AddSeconds(15), TimeSpan.Zero), "pane-a session error", "pane-a"),
+            ],
+        };
+        var collector = new FailureLoopEvidenceCollector();
+
+        var package = collector.Collect(
+            new FailureLoopEvidenceCollectionRequest(
+                new FailureLoopEvidenceRequest("workspace-a", "surface-a", "pane-a")
+                {
+                    CapturedAtUtc = new DateTimeOffset(2026, 6, 17, 10, 3, 0, TimeSpan.Zero),
+                    WindowBefore = TimeSpan.FromMinutes(1),
+                    WindowAfter = TimeSpan.FromMinutes(2),
+                },
+                new DateOnly(2026, 6, 17))
+            {
+                MaxTranscriptEntries = 20,
+            },
+            provider);
+
+        provider.RequestedDate.Should().Be(new DateOnly(2026, 6, 17));
+        provider.RequestedMaxTranscriptEntries.Should().Be(20);
+        provider.LoadedTranscriptPaths.Should().Equal(@"C:\transcripts\inside.log");
+        provider.DaemonLogFromUtc.Should().Be(new DateTimeOffset(started.AddMinutes(-1), TimeSpan.Zero));
+        provider.DaemonLogToUtc.Should().Be(new DateTimeOffset(completed.AddMinutes(2), TimeSpan.Zero));
+        provider.DaemonLogPaneId.Should().Be("pane-a");
+        package.Transcripts.Should().ContainSingle()
+            .Which.Summary.Should().Be("inside sanitized output");
+        package.DaemonLogs.Should().ContainSingle()
+            .Which.Line.Should().Be("pane-a session error");
+        package.AgentMessages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void CommandLogProviderWrapsExistingServiceWithoutOwningLogConstruction()
+    {
+        var source = File.ReadAllText(FindRepoFile("src", "ECodex.Core", "Services", "FailureLoopEvidenceCollector.cs"));
+
+        source.Should().Contain("CommandLogFailureLoopEvidenceSourceProvider");
+        source.Should().Contain("CommandLogService commandLogService");
+        source.Should().NotContain("new CommandLogService(");
+    }
+
+    private sealed class RecordingFailureLoopEvidenceProvider : IFailureLoopEvidenceSourceProvider
+    {
+        public IReadOnlyList<CommandLogEntry> Commands { get; init; } = [];
+        public IReadOnlyList<TerminalTranscriptEntry> Transcripts { get; init; } = [];
+        public Dictionary<string, string> TranscriptContent { get; } = new(StringComparer.Ordinal);
+        public IReadOnlyList<FailureLoopDaemonLogInput> DaemonLogs { get; init; } = [];
+        public DateOnly? RequestedDate { get; private set; }
+        public int? RequestedMaxTranscriptEntries { get; private set; }
+        public List<string> LoadedTranscriptPaths { get; } = [];
+        public DateTimeOffset? DaemonLogFromUtc { get; private set; }
+        public DateTimeOffset? DaemonLogToUtc { get; private set; }
+        public string? DaemonLogPaneId { get; private set; }
+
+        public IReadOnlyList<CommandLogEntry> GetCommands(DateOnly date)
+        {
+            RequestedDate = date;
+            return Commands;
+        }
+
+        public IReadOnlyList<TerminalTranscriptEntry> GetTerminalTranscripts(int maxEntries)
+        {
+            RequestedMaxTranscriptEntries = maxEntries;
+            return Transcripts;
+        }
+
+        public string LoadTerminalTranscriptContent(string filePath)
+        {
+            LoadedTranscriptPaths.Add(filePath);
+            return TranscriptContent[filePath];
+        }
+
+        public IReadOnlyList<FailureLoopDaemonLogInput> GetDaemonLogs(DateTimeOffset? fromUtc, DateTimeOffset? toUtc, string? paneId)
+        {
+            DaemonLogFromUtc = fromUtc;
+            DaemonLogToUtc = toUtc;
+            DaemonLogPaneId = paneId;
+            return DaemonLogs;
+        }
+    }
+
+    private static string FindRepoFile(params string[] relativeParts)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null)
+        {
+            var candidate = Path.Combine(new[] { directory.FullName }.Concat(relativeParts).ToArray());
+            if (File.Exists(candidate))
+                return candidate;
+
+            directory = directory.Parent;
+        }
+
+        throw new FileNotFoundException($"Could not find repo file: {Path.Combine(relativeParts)}");
     }
 }
 
