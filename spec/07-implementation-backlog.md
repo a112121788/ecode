@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `NOT-02C-R` Toast 点击跳转 refinement；`NOT-02B-1` hook 定位、`NOT-02B-2` 通知生成和 `NOT-02B-3` 去重节流已完成，S2 低噪声命令生命周期通知闭环进入 Toast 激活契约拆分。
+下个可领切片优先进入 `NOT-02C-1` Toast payload 与激活解析；`NOT-02C-R` 已明确 Toast 点击跳转契约，后续按 payload / 运行时跳转 / Windows live smoke 三步收口。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -133,7 +133,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P2 |
 | Outcome | Windows Toast 点击后恢复托盘窗口并跳转到目标 workspace / surface / pane 的实现边界清晰，后续可分为可单测的激活参数解析和 Windows-only live smoke |
 | Scope | 只做 spec/backlog refinement；阅读 `ToastNotificationHelper`、`App.xaml.cs`、`NotificationApiService`、`MainViewModel.JumpToLatestUnread` 相关入口；明确 AppUserModelID、未打包 WPF activation、目标 pane 丢失 fallback；不实现 live activation |
@@ -141,6 +141,45 @@ AI Agent 启动后按以下顺序选择任务：
 | 验收 | 后续 `NOT-02C-*` 子项补齐 Ready 字段；明确 Toast argument 必须包含 `notificationId/workspaceId/surfaceId/paneId`；目标 pane 不存在时恢复窗口并显示可见 fallback；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
 | 风险 | 非打包 WPF 的 Toast activation 与 AppUserModelID 受 Windows 环境影响，不能用纯单测证明 live 点击链路 |
 | 回滚 | 仅回退 spec/backlog refinement；现有 Toast 展示不受影响 |
+
+### `NOT-02C-1` - Toast payload 与激活参数解析
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P2 |
+| Outcome | 每条 Windows Toast 都带完整通知定位参数，激活 payload 可被稳定解析为 `notificationId/workspaceId/surfaceId/paneId`，为后续跳转处理提供可单测输入 |
+| Scope | 更新 `ToastNotificationHelper.ShowToast` 的 arguments，补 `paneId`（无 pane 时传空字符串）；新增小型 parser / request DTO（可放 WPF 服务层或 Core 纯模型，按最小依赖选择）；补 source/unit tests；同步 `spec/03-data-and-ipc.md` 如有偏差；不注册 Windows activation handler、不做 live Toast 点击 |
+| 关联 | `src/ECodex/Services/ToastNotificationHelper.cs`、`src/ECodex.Core/Models/TerminalNotification.cs`、`tests/ECodex.Tests/CoreTests.cs`、`spec/03-data-and-ipc.md` §6.1 |
+| 验收 | 测试覆盖 Toast source 包含 `action=jumpToNotification`、`notificationId`、`workspaceId`、`surfaceId`、`paneId`；parser 覆盖缺字段 / 空 `paneId` / 非 jump action；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~Toast" --no-restore` 与 `git diff --check` 通过 |
+| 风险 | `ToastContentBuilder` fluent API 不易直接断言运行时 XML，可用 source test 或将参数构建抽成纯函数降低脆弱性 |
+| 回滚 | 移除新增 parser 和 `paneId` argument，恢复只带 notification/workspace/surface 的 Toast payload |
+
+### `NOT-02C-2` - Toast 激活恢复窗口并跳转
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P2 |
+| Outcome | 用户点击 Toast 后，隐藏到托盘或非激活的 ECodex 会恢复窗口，并按通知定位跳到目标 workspace / surface / pane；缺目标时给出可见 fallback，不跳错 pane |
+| Scope | 注册 `ToastNotificationManagerCompat.OnActivated` 或等价 Windows activation 入口；在 UI Dispatcher 中恢复 `MainWindow.RestoreFromTray`，按 `notificationId` 找通知并复用 / 扩展 `MainViewModel.JumpToNotification`；缺 workspace / surface / pane 时打开通知面板并显示 fallback；成功跳转后标记已读；不处理 Codex 等待输入、不改变通知生成策略 |
+| 关联 | `src/ECodex/App.xaml.cs`、`src/ECodex/Views/MainWindow.xaml.cs`、`src/ECodex/ViewModels/MainViewModel.cs`、`src/ECodex/Services/ToastNotificationHelper.cs`、`src/ECodex.Core/Services/NotificationService.cs` |
+| 验收 | source/unit tests 覆盖 activation handler 注册、Dispatcher 派发、托盘恢复调用、成功跳转标记已读、缺 pane 不调用其他 pane 且打开 fallback；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~Toast|FullyQualifiedName~Notification" --no-restore` 与 Debug build 通过 |
+| 风险 | WPF UI 与 Toast activation 回调线程边界易引入竞态；非打包应用的 AUMID / shortcut 注册失败时必须降级为 in-app 通知可用 |
+| 回滚 | 取消 activation 注册与 handler，保留 Toast 展示和 in-app 通知中心 |
+
+### `NOT-02C-3` - Windows Toast live smoke 与安装策略校验
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P2 |
+| Outcome | 真实 Windows 通知中心点击链路被验证：Toast 出现、点击后恢复 ECodex、定位目标 pane、失败时 fallback 可见；不可用环境有清晰诊断 |
+| Scope | 增加或更新 Windows-only smoke/checklist，覆盖 unpackaged WPF AppUserModelID、开始菜单快捷方式 / 安装器注册、Toast 展示和点击激活；同步 `docs/installation.md` 或 troubleshooting；不扩大到 MSIX/Velopack 发布重构 |
+| 关联 | `installer/ecodex.iss`、`docs/installation.md`、`docs/troubleshooting.md`、`scripts/smoke-ecodex-v2.ps1`、`spec/04-build-deploy.md` Windows Toast requirement |
+| 验收 | Windows 手测记录包含 Toast payload、点击恢复、pane 聚焦、缺 pane fallback；脚本 / checklist 能在无 Toast 权限或缺快捷方式时给出可读跳过 / 失败原因；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| 风险 | 系统通知权限、专注助手、安装方式和 AUMID 注册都会影响 live smoke；CI 无法稳定证明系统 Toast 点击 |
+| 回滚 | 移除新增 smoke/checklist 文档或脚本，不影响运行时 Toast 展示能力 |
 
 ### `PKG-02` - Inno 安装与卸载向导中文化
 
