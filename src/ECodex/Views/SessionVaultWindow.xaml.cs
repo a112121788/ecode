@@ -13,9 +13,16 @@ public partial class SessionVaultWindow : Window
     private readonly Dictionary<string, string> _workspaceNames = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _surfaceNames = new(StringComparer.Ordinal);
     private readonly List<TerminalTranscriptEntry> _entries = [];
+    private readonly FailureLoopEvidenceCollector _failureLoopEvidenceCollector;
+    private readonly FailureLoopEvidencePreviewFormatter _failureLoopEvidencePreviewFormatter;
+    private readonly IFailureLoopEvidenceSourceProvider _failureLoopEvidenceSourceProvider;
 
     public SessionVaultWindow()
     {
+        _failureLoopEvidenceCollector = new FailureLoopEvidenceCollector();
+        _failureLoopEvidencePreviewFormatter = new FailureLoopEvidencePreviewFormatter();
+        _failureLoopEvidenceSourceProvider = new CommandLogFailureLoopEvidenceSourceProvider(App.CommandLogService);
+
         InitializeComponent();
         WindowAppearance.Apply(this);
         RefreshEntries();
@@ -195,6 +202,56 @@ public partial class SessionVaultWindow : Window
     {
         if (Selected is { } selected)
             ShowEntry(selected);
+    }
+
+    private void GenerateFailureLoopPreview_Click(object sender, RoutedEventArgs e)
+    {
+        if (Selected is not { } selected)
+        {
+            ShowFailureLoopPreviewText("No failure loop evidence available.", "请选择一条记录后再生成预览。");
+            return;
+        }
+
+        try
+        {
+            var entry = selected.Entry;
+            var package = _failureLoopEvidenceCollector.Collect(
+                new FailureLoopEvidenceCollectionRequest(
+                    new FailureLoopEvidenceRequest(entry.WorkspaceId, entry.SurfaceId, entry.PaneId)
+                    {
+                        CapturedAtUtc = DateTimeOffset.UtcNow,
+                        WindowBefore = TimeSpan.FromMinutes(10),
+                        WindowAfter = TimeSpan.FromMinutes(10),
+                    },
+                    DateOnly.FromDateTime(entry.CapturedAt.ToLocalTime())),
+                _failureLoopEvidenceSourceProvider);
+
+            var hasEvidence =
+                package.Commands.Count > 0 ||
+                package.Transcripts.Count > 0 ||
+                package.AgentMessages.Count > 0 ||
+                package.DaemonLogs.Count > 0;
+            var preview = hasEvidence
+                ? _failureLoopEvidencePreviewFormatter.Format(package)
+                : "No failure loop evidence available.";
+            var info = hasEvidence
+                ? "已生成失败 loop 预览，可用“全部复制”复制。"
+                : "未找到匹配的失败命令或证据。";
+
+            ShowFailureLoopPreviewText(preview, info);
+        }
+        catch
+        {
+            ShowFailureLoopPreviewText("No failure loop evidence available.", "生成失败 loop 预览失败。");
+        }
+    }
+
+    private void ShowFailureLoopPreviewText(string preview, string info)
+    {
+        MetaTitleText.Text = "失败 loop 预览";
+        MetaInfoText.Text = info;
+        TranscriptText.Text = preview;
+        TranscriptText.ScrollToHome();
     }
 
     private void CopyAll_Click(object sender, RoutedEventArgs e)

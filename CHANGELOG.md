@@ -22,6 +22,7 @@ ECodex 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 - Windows Toast 激活现在会经 UI Dispatcher 恢复 ECodex 窗口，并按通知定位跳转；目标缺失时打开通知面板 fallback 且保持未读。
 - 新增 `scripts/smoke-toast-activation.ps1` Windows-only 手动 smoke/checklist，用真实通知 payload 校验 Toast 展示、点击恢复、pane 聚焦和缺 pane fallback 证据。
 - `scripts/smoke-toast-activation.ps1` 新增 `-Scenario CodexAttention`，记录 Codex 等待输入提醒的 `AgentAttention` payload 与普通输出负控证据。
+- Session Vault 新增“生成失败 loop 预览”入口，可从已选 terminal transcript 生成可复制的失败命令 / transcript / 诊断证据预览。
 - 新增 `.ecodex/ecodex.example.json` dogfood 示例，预置本仓 build、unit test、docs build、status 和 health 命令。
 - 新增 `scripts/smoke-ecodex-v2.ps1` 手动 smoke 脚本，用真实 ECodex pipe 验证 status、workspace、pane 与 browser 最小闭环，并在缺环境时清晰跳过。
 - 新增 `scripts/release-evidence.ps1` 只读发布证据清单脚本，汇总 build、test、docs、perf、doctor 和 release workflow 证据路径及 Windows-only 标记。

@@ -132,3 +132,11 @@ ecodex restore-session
 - 自动恢复未执行：确认 binding 是 `trusted: true`，且 `AutoResumeTrustedBindings` 已启用。
 - 恢复命令不正确：先用 `trusted: false` 手动确认，再切换可信。
 - 数据异常：备份后删除 `resume.json` 可重建绑定。
+
+## Session Vault 失败 loop 预览
+
+`Ctrl+Shift+V` 打开 Session Vault 后，选择一条 terminal transcript，再点击“生成失败 loop 预览”可把同一 Workspace / Surface / Pane 附近的失败命令、相关 transcript 摘要和已接入的诊断片段格式化为可复制文本。
+
+该入口复用 Core 层 `FailureLoopEvidenceCollector` 和 `FailureLoopEvidencePreviewFormatter`，UI 层只展示结果，不重新拼接证据，也不直接扫描 `%USERPROFILE%` 下的 `daemon-debug.log`。如果没有找到匹配的失败命令或证据，会显示 `No failure loop evidence available.`。
+
+首版 Agent 会话来源仍是 planned/empty；`AgentConversationStoreService` 落地前，预览不会读取或假设 Agent 消息存储。

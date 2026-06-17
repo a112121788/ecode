@@ -1737,7 +1737,7 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
         backlog.Should().Contain("| `NOT-02D` | done |");
-        backlog.Should().Contain("`OBS-01-5` Session Vault 失败 loop 预览入口");
+        backlog.Should().Contain("`OBS-01-6` Session Vault 失败 loop GUI smoke checklist");
     }
 }
 
@@ -1764,8 +1764,9 @@ public class Obs01RefinementTests
         backlog.Should().Contain("### `OBS-01-3` - daemon log 行解析与有限 tail provider");
         backlog.Should().Contain("### `OBS-01-4` - 失败 loop 证据包预览格式化器");
         backlog.Should().Contain("### `OBS-01-5` - Session Vault 失败 loop 预览入口");
+        backlog.Should().Contain("### `OBS-01-6` - Session Vault 失败 loop GUI smoke checklist");
         backlog.Should().Contain("FailureLoopEvidencePackage");
-        backlog.Should().Contain("`OBS-01-4` 已完成 evidence package 预览格式化器");
+        backlog.Should().Contain("`OBS-01-5` 已完成 source-level 预览入口接线");
     }
 
     [Fact]
@@ -1837,6 +1838,65 @@ public class PerfBudgetScriptTests
         workflow.Should().Contain("./scripts/perf/measure.ps1");
         workflow.Should().Contain("ecodex-perf-report");
         ci.Should().Contain("Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'scripts') -Filter '*.ps1' -File -Recurse");
+    }
+}
+
+public class SessionVaultFailureLoopPreviewTests
+{
+    [Fact]
+    public void SessionVault_DefinesFailureLoopPreviewEntryAndUsesCoreFormatter()
+    {
+        var xaml = File.ReadAllText(FindRepoFile("src", "ECodex", "Views", "SessionVaultWindow.xaml"));
+        var source = File.ReadAllText(FindRepoFile("src", "ECodex", "Views", "SessionVaultWindow.xaml.cs"));
+        var clickBody = ExtractMethodBody(source, "GenerateFailureLoopPreview_Click");
+
+        xaml.Should().Contain("Content=\"生成失败 loop 预览\"");
+        xaml.Should().Contain("Click=\"GenerateFailureLoopPreview_Click\"");
+        source.Should().Contain("FailureLoopEvidenceCollector");
+        source.Should().Contain("FailureLoopEvidencePreviewFormatter");
+        source.Should().Contain("CommandLogFailureLoopEvidenceSourceProvider(App.CommandLogService");
+        source.Should().NotContain("FailureLoopDaemonLogProvider");
+        source.Should().NotContain("CompatibilityOptions.GetAppDataDir");
+        source.Should().NotContain("daemon-debug.log");
+        clickBody.Should().NotContain("LoadTerminalTranscriptContent(");
+        clickBody.Should().Contain("No failure loop evidence available.");
+    }
+
+    private static string FindRepoFile(params string[] relativeParts)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null)
+        {
+            var candidate = Path.Combine(new[] { directory.FullName }.Concat(relativeParts).ToArray());
+            if (File.Exists(candidate))
+                return candidate;
+
+            directory = directory.Parent;
+        }
+
+        throw new FileNotFoundException($"Could not find repo file: {Path.Combine(relativeParts)}");
+    }
+
+    private static string ExtractMethodBody(string source, string methodName)
+    {
+        var markerIndex = source.IndexOf(methodName, StringComparison.Ordinal);
+        markerIndex.Should().BeGreaterThanOrEqualTo(0);
+        var openBrace = source.IndexOf('{', markerIndex);
+        openBrace.Should().BeGreaterThanOrEqualTo(0);
+
+        var depth = 0;
+        for (var i = openBrace; i < source.Length; i++)
+        {
+            if (source[i] == '{')
+                depth++;
+            else if (source[i] == '}')
+                depth--;
+
+            if (depth == 0)
+                return source[openBrace..(i + 1)];
+        }
+
+        throw new InvalidOperationException($"Could not extract method body: {methodName}");
     }
 }
 
@@ -2508,6 +2568,9 @@ public class DocsSiteTests
         sessionRestore.Should().Contain("关闭按钮和最小化默认只把 ECodex 隐藏到系统托盘");
         sessionRestore.Should().Contain("显式退出 ECodex 时，只断开主程序与 daemon 的客户端连接");
         sessionRestore.Should().Contain("重开时仅自动挂载 `session.json` 中已有 paneId 对应的 daemon 会话");
+        sessionRestore.Should().Contain("生成失败 loop 预览");
+        sessionRestore.Should().Contain("FailureLoopEvidenceCollector");
+        sessionRestore.Should().Contain("No failure loop evidence available.");
     }
 
     [Fact]
