@@ -354,6 +354,121 @@ public class CommandLifecycleNotificationServiceTests
         => new(phase, command, exitCode, workingDirectory, workspaceId, surfaceId, paneId);
 }
 
+public class ToastActivationParserTests
+{
+    [Fact]
+    public void BuildArguments_IncludesNotificationLocation()
+    {
+        var notification = CreateNotification(paneId: "pane-1");
+
+        var arguments = ToastActivationParser.BuildArguments(notification);
+
+        arguments.Should().Contain(new KeyValuePair<string, string>("action", ToastActivationParser.JumpToNotificationAction));
+        arguments.Should().Contain(new KeyValuePair<string, string>("notificationId", "notification-1"));
+        arguments.Should().Contain(new KeyValuePair<string, string>("workspaceId", "workspace-1"));
+        arguments.Should().Contain(new KeyValuePair<string, string>("surfaceId", "surface-1"));
+        arguments.Should().Contain(new KeyValuePair<string, string>("paneId", "pane-1"));
+    }
+
+    [Fact]
+    public void BuildArguments_MissingPane_UsesEmptyPaneArgument()
+    {
+        var notification = CreateNotification(paneId: null);
+
+        var arguments = ToastActivationParser.BuildArguments(notification);
+
+        arguments.Should().ContainKey("paneId").WhoseValue.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void TryParse_ValidQueryString_ReturnsActivationRequest()
+    {
+        var parsed = ToastActivationParser.TryParse(
+            "action=jumpToNotification&notificationId=notification-1&workspaceId=workspace-1&surfaceId=surface-1&paneId=pane-1",
+            out var request);
+
+        parsed.Should().BeTrue();
+        request.Should().Be(new ToastActivationRequest("notification-1", "workspace-1", "surface-1", "pane-1"));
+    }
+
+    [Fact]
+    public void TryParse_EmptyPaneId_ReturnsNullPane()
+    {
+        var parsed = ToastActivationParser.TryParse(
+            new Dictionary<string, string>
+            {
+                ["action"] = ToastActivationParser.JumpToNotificationAction,
+                ["notificationId"] = "notification-1",
+                ["workspaceId"] = "workspace-1",
+                ["surfaceId"] = "surface-1",
+                ["paneId"] = "",
+            },
+            out var request);
+
+        parsed.Should().BeTrue();
+        request!.PaneId.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryParse_MissingRequiredField_ReturnsFalse()
+    {
+        var parsed = ToastActivationParser.TryParse(
+            "action=jumpToNotification&workspaceId=workspace-1&surfaceId=surface-1&paneId=pane-1",
+            out var request);
+
+        parsed.Should().BeFalse();
+        request.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryParse_NonJumpAction_ReturnsFalse()
+    {
+        var parsed = ToastActivationParser.TryParse(
+            "action=openSettings&notificationId=notification-1&workspaceId=workspace-1&surfaceId=surface-1&paneId=pane-1",
+            out var request);
+
+        parsed.Should().BeFalse();
+        request.Should().BeNull();
+    }
+
+    [Fact]
+    public void ToastNotificationHelper_UsesActivationArgumentBuilder()
+    {
+        var source = File.ReadAllText(FindRepoFile("src", "ECodex", "Services", "ToastNotificationHelper.cs"));
+
+        source.Should().Contain("ToastActivationParser.BuildArguments(notification)");
+        source.Should().Contain("builder.AddArgument(argument.Key, argument.Value)");
+    }
+
+    private static TerminalNotification CreateNotification(string? paneId)
+        => new()
+        {
+            Id = "notification-1",
+            WorkspaceId = "workspace-1",
+            SurfaceId = "surface-1",
+            PaneId = paneId,
+            IsRead = false,
+            Title = "命令已完成",
+            Body = "dotnet test",
+            Source = NotificationSource.Cli,
+        };
+
+    private static string FindRepoFile(params string[] relativeParts)
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current != null)
+        {
+            var candidate = Path.Combine(new[] { current.FullName }.Concat(relativeParts).ToArray());
+            if (File.Exists(candidate))
+                return candidate;
+
+            current = current.Parent;
+        }
+
+        throw new FileNotFoundException($"Unable to find repo file: {Path.Combine(relativeParts)}");
+    }
+}
+
 public class NotificationApiServiceTests
 {
     [Fact]

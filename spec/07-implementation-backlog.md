@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `NOT-02C-1` Toast payload 与激活解析；`NOT-02C-R` 已明确 Toast 点击跳转契约，后续按 payload / 运行时跳转 / Windows live smoke 三步收口。
+下个可领切片优先进入 `NOT-02C-2` Toast 激活恢复窗口并跳转；`NOT-02C-1` 已完成 payload 与 parser，后续再用 Windows live smoke 验证真实系统通知链路。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -146,7 +146,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P2 |
 | Outcome | 每条 Windows Toast 都带完整通知定位参数，激活 payload 可被稳定解析为 `notificationId/workspaceId/surfaceId/paneId`，为后续跳转处理提供可单测输入 |
 | Scope | 更新 `ToastNotificationHelper.ShowToast` 的 arguments，补 `paneId`（无 pane 时传空字符串）；新增小型 parser / request DTO（可放 WPF 服务层或 Core 纯模型，按最小依赖选择）；补 source/unit tests；同步 `spec/03-data-and-ipc.md` 如有偏差；不注册 Windows activation handler、不做 live Toast 点击 |

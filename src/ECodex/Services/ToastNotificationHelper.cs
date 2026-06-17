@@ -1,5 +1,6 @@
 using Microsoft.Toolkit.Uwp.Notifications;
 using ECodex.Core.Models;
+using ECodex.Core.Services;
 
 namespace ECodex.Services;
 
@@ -16,15 +17,15 @@ public static class ToastNotificationHelper
     {
         try
         {
-            new ToastContentBuilder()
+            var builder = new ToastContentBuilder()
                 .AddText(notification.Title)
                 .AddText(notification.Body)
-                .AddAttributionText($"项目：{workspaceName}")
-                .AddArgument("action", "jumpToNotification")
-                .AddArgument("notificationId", notification.Id)
-                .AddArgument("workspaceId", notification.WorkspaceId)
-                .AddArgument("surfaceId", notification.SurfaceId)
-                .Show();
+                .AddAttributionText($"项目：{workspaceName}");
+
+            foreach (var argument in ToastActivationParser.BuildArguments(notification))
+                builder.AddArgument(argument.Key, argument.Value);
+
+            builder.Show();
         }
         catch
         {

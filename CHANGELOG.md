@@ -17,6 +17,7 @@ ECodex 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 - PowerShell shell integration 现在会随命令生命周期事件回传 `workspaceId`、`surfaceId` 与 `paneId`，为后台完成 / 失败通知提供精确 pane 定位。
 - 后台 / 非激活状态下，带 ECodex 上下文的命令结束事件会按退出码进入未读中心：`0` 生成完成通知，非 `0` 生成失败通知。
 - 命令生命周期通知新增 30 秒低噪声冷却：同 workspace / surface / pane、同命令、同退出码的重复事件不会短时间刷屏。
+- Windows Toast payload 现在携带完整 `notificationId/workspaceId/surfaceId/paneId`，并具备可复用的激活参数解析能力，为后续点击跳转铺路。
 - 新增 `.ecodex/ecodex.example.json` dogfood 示例，预置本仓 build、unit test、docs build、status 和 health 命令。
 - 新增 `scripts/smoke-ecodex-v2.ps1` 手动 smoke 脚本，用真实 ECodex pipe 验证 status、workspace、pane 与 browser 最小闭环，并在缺环境时清晰跳过。
 - 新增 `scripts/release-evidence.ps1` 只读发布证据清单脚本，汇总 build、test、docs、perf、doctor 和 release workflow 证据路径及 Windows-only 标记。
