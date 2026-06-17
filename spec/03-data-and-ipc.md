@@ -467,6 +467,41 @@ agent/
   - `ReadMessagesFromFile` 兼容 BOM + 多值 JSON + 退化的单行 JSONL
 - 线程聚合统计：`MessageCount / TotalInputTokens / TotalOutputTokens / TotalTokens / CompactionCount / LastMessagePreview`（前 160 字符，多行折叠成空格）
 
+### 8.1 OBS-01 失败 loop 证据包契约
+
+`OBS-01` 的第一阶段只定义可装配、可脱敏、可测试的证据包，不直接做 UI，也不假设不存在的 Agent 存储已经可用。当前源码未包含 `AgentConversationStoreService`、`AgentConversationThread` 或 `AgentRuntimeService`；这些只能作为 planned 来源，必须等后续切片落地后再接入。
+
+```csharp
+public sealed record FailureLoopEvidencePackage(
+    string PackageId,
+    string WorkspaceId,
+    string? SurfaceId,
+    string? PaneId,
+    DateTimeOffset CapturedAtUtc,
+    DateTimeOffset? FromUtc,
+    DateTimeOffset? ToUtc,
+    IReadOnlyList<FailureLoopEvidenceSource> Sources,
+    IReadOnlyList<FailureLoopCommandEvidence> Commands,
+    IReadOnlyList<FailureLoopTranscriptEvidence> Transcripts,
+    IReadOnlyList<FailureLoopAgentEvidence> AgentMessages,
+    IReadOnlyList<FailureLoopDaemonLogEvidence> DaemonLogs);
+```
+
+| 来源 | 当前数据入口 | 证据用途 | 约束 |
+|---|---|---|---|
+| 命令日志 | `CommandLogService.GetForDate(...)` / `CommandLogEntry` | 找到失败命令、退出码、cwd、workspace / surface / pane、时间窗口 | 只使用已脱敏命令；不补采 shell 历史 |
+| Terminal transcript | `TerminalTranscriptEntry` + `CommandLogService.LoadTerminalTranscriptContent(...)` | 提取失败前后可读输出、关闭 / 清屏原因、pane 上下文 | 只通过 `LoadTerminalTranscriptContent` 读取，保留脱敏结果；首版截断摘要，不整段塞进通知 |
+| daemon 诊断 | `%USERPROFILE%\.ecodex\daemon-debug.log` | 串联 attach / fallback / pipe / session 生命周期异常 | 只按时间窗和 paneId 读取有限 tail；不得读取 `secrets.json`、`.env*` 或 credentials |
+| Agent 会话 | planned `AgentConversationStoreService` | 未来串联 Agent 消息、压缩、工具调用与 token 统计 | 当前 no-op；不得把 spec 中 planned 类型当作现有源码 |
+
+| 规则 | 契约 |
+|---|---|
+| 关联键 | 优先用 `workspaceId / surfaceId / paneId`，再用命令 `StartedAt / CompletedAt` 扩展前后时间窗 |
+| 失败判定 | 首版只把非零 `exitCode`、daemon fallback / session error、用户手动选择的 transcript 作为候选失败 loop |
+| 脱敏 | 命令日志与 transcript 继续复用 `CommandLogService` 的脱敏结果；证据包不得读取 `secrets.json`、`.env*`、`config/credentials*` 或 `secrets/**` |
+| 输出边界 | `FailureLoopEvidencePackage` 是 Core DTO / 装配结果；UI 只消费 package，不在 UI 层重新扫描日志文件 |
+| 验证边界 | 先用 fixture 单测覆盖命令日志 + transcript + daemon log 的时间窗关联；Agent 会话来源在 planned 类型落地前必须保持空集合 |
+
 ---
 
 ## 9. 加密存储（`%USERPROFILE%/.ecodex/secrets.json`）

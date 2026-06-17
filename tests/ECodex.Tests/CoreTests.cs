@@ -1736,9 +1736,76 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-1` - Codex 等待输入信号纯检测器");
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
-        backlog.Should().Contain("`NOT-02D-3` 已完成 Codex 等待输入 smoke/checklist");
         backlog.Should().Contain("| `NOT-02D` | done |");
-        backlog.Should().Contain("Ready 队列当前已清空");
+        backlog.Should().Contain("`OBS-01-1` 失败 loop 证据包 Core DTO 与装配器");
+    }
+}
+
+public class Obs01RefinementTests
+{
+    [Fact]
+    public void Obs01Refinement_DefinesFailureLoopEvidenceContractAndReadySlice()
+    {
+        var modules = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "02-modules.md"));
+        var contract = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "03-data-and-ipc.md"));
+        var backlog = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "07-implementation-backlog.md"));
+
+        modules.Should().Contain("AgentConversationStoreService.cs`（planned）");
+        contract.Should().Contain("### 8.1 OBS-01 失败 loop 证据包契约");
+        contract.Should().Contain("FailureLoopEvidencePackage");
+        contract.Should().Contain("CommandLogService.GetForDate");
+        contract.Should().Contain("TerminalTranscriptEntry");
+        contract.Should().Contain("daemon-debug.log");
+        contract.Should().Contain("当前源码未包含 `AgentConversationStoreService`");
+        contract.Should().Contain("不得读取 `secrets.json`");
+        backlog.Should().Contain("### `OBS-01-R` - 拆分失败 loop 证据包契约");
+        backlog.Should().Contain("### `OBS-01-1` - 失败 loop 证据包 Core DTO 与装配器");
+        backlog.Should().Contain("FailureLoopEvidencePackage");
+        backlog.Should().Contain("| 状态 | ready |");
+    }
+
+    [Fact]
+    public void Obs01Refinement_GroundsSessionVaultInCurrentTranscriptImplementation()
+    {
+        var sessionVault = File.ReadAllText(FindRepoFile("src", "ECodex", "Views", "SessionVaultWindow.xaml.cs"));
+        var sourceFiles = Directory.EnumerateFiles(FindRepoDirectory("src"), "*.cs", SearchOption.AllDirectories)
+            .Select(Path.GetFileName)
+            .ToList();
+
+        sessionVault.Should().Contain("App.CommandLogService.GetTerminalTranscripts()");
+        sessionVault.Should().Contain("App.CommandLogService.LoadTerminalTranscriptContent(e.FilePath)");
+        sourceFiles.Should().NotContain("AgentConversationStoreService.cs");
+        sourceFiles.Should().NotContain("AgentConversationThread.cs");
+    }
+
+    private static string FindRepoFile(params string[] relativeParts)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null)
+        {
+            var candidate = Path.Combine(new[] { directory.FullName }.Concat(relativeParts).ToArray());
+            if (File.Exists(candidate))
+                return candidate;
+
+            directory = directory.Parent;
+        }
+
+        throw new FileNotFoundException($"Could not find repo file: {Path.Combine(relativeParts)}");
+    }
+
+    private static string FindRepoDirectory(params string[] relativeParts)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null)
+        {
+            var candidate = Path.Combine(new[] { directory.FullName }.Concat(relativeParts).ToArray());
+            if (Directory.Exists(candidate))
+                return candidate;
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException($"Could not find repo directory: {Path.Combine(relativeParts)}");
     }
 }
 

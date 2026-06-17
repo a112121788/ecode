@@ -35,8 +35,8 @@
 | `Models/TerminalTranscriptEntry.cs` | `TerminalTranscriptEntry` | 脚本文件元数据：`FilePath / CapturedAt / Reason / SizeBytes` |
 | `Models/Snippet.cs` | `Snippet` | 代码片段：`{{key}}` 占位符解析（`Resolve`）+ `GetPlaceholders` |
 | `Models/ECodexJsonConfig.cs` | `ECodexJsonConfig / ECodexCommand / ECodexAction` | 项目级 `ecodex.json` DTO；M1 支持 `commands` 与 `actions` 的 `command` 子集，目标为 `currentTerminal` / `newTabInCurrentPane` |
-| `Models/AgentConversationThread.cs` | `AgentConversationThread` | Agent 会话线程索引：`MessageCount / TotalTokens / LastMessagePreview` |
-| `Models/AgentConversationMessage.cs` | `AgentConversationMessage` | Agent 单条消息：role / content / tokens / `IsCompactionSummary` |
+| `Models/AgentConversationThread.cs`（planned） | `AgentConversationThread` | OBS-01 规划中的 Agent 会话线程索引；当前源码未落地，不作为现有事实源 |
+| `Models/AgentConversationMessage.cs`（planned） | `AgentConversationMessage` | OBS-01 规划中的 Agent 单条消息；当前源码未落地，不作为现有事实源 |
 | `Models/GhosttyTheme.cs` | `GhosttyTheme` | Ghostty 风格主题：背景/前景/16 色调色板/光标/选区颜色/字体 |
 
 ## 3. ECodex.Core · Services
@@ -55,7 +55,7 @@
 | `Services/ResumeBindingService.cs` | `ResumeBindingService` | 读写 `%USERPROFILE%/.ecodex/resume.json`；支持 `Load / Save / Add / Remove / FindForSurface / TrustPrefix`；保存前剔除 TOKEN / PASSWORD / SECRET / API_KEY 等敏感环境变量 |
 | `Services/DaemonSessionTerminator.cs` | `DaemonSessionTerminator` | 通过 `SESSION_LIST` 获取 daemon 会话，再逐个发送 `SESSION_CLOSE`；用于退出 ECodex 并终止托管终端，不再暴露 daemon `SESSION_CLOSE_ALL` |
 | `Services/PowerShellHookSetupService.cs` | `PowerShellHookSetupService` | 规划 / 安装 PowerShell shell integration 标记块；hook 通过 `ecodex hook event` 回传命令开始、结束、退出码和 ECodex workspace / surface / pane 上下文；写入前备份 profile 到 `%USERPROFILE%\.ecodex\backups\`；冲突标记块跳过 |
-| `Services/AgentConversationStoreService.cs` | `AgentConversationStoreService` | Agent 会话线程索引（`agent/threads.json`）+ 单线程消息追加文件（`agent/threads/<id>.jsonl`），容忍 BOM/多值 JSON/单行回退解析 |
+| `Services/AgentConversationStoreService.cs`（planned） | `AgentConversationStoreService` | OBS-01 规划中的 Agent 会话线程存储；当前源码未落地，失败 loop 证据包首个切片必须先定义 DTO / 装配契约 |
 | `Services/SecretStoreService.cs` | `SecretStoreService` (static) | DPAPI `ProtectedData.Protect/Unprotect` 存取 `secrets.json`；`GetSecret/SetSecret/RemoveSecret` |
 | `Services/GitService.cs` | `GitService` (static) | 快速读 `.git/HEAD`；`git rev-parse --abbrev-ref HEAD` 回退；`GetRemoteUrl` |
 | `Services/PortScanner.cs` | `PortScanner` (static) | `netstat -ano -p TCP` + WMI 进程树 → 监听端口列表 |
@@ -105,7 +105,7 @@
 | `src/ECodex/Services/ToastActivationService.cs` | `ToastActivationService` | 处理 Toast activation：解析参数后派发到 UI 线程，恢复窗口，按 `notificationId` 跳转通知；跳转失败时打开通知面板 fallback |
 | `src/ECodex/Services/TrayIconService.cs` | `TrayIconService` | WinForms `NotifyIcon` 适配层；提供系统托盘图标、双击恢复和菜单“打开 ECodex / 退出并保留终端 / 退出并终止终端”；释放时隐藏并 Dispose 托盘资源 |
 | `src/ECodex/Services/AppLifecycleApiService.cs` | `AppLifecycleApiService` | 主应用 `ecodex.v2` 生命周期入口；`app.exit {"terminateTerminals":true}` 先终止 daemon 会话再请求应用退出 |
-| `src/ECodex/Services/AgentRuntimeService.cs` | `AgentRuntimeService` | 内置 Agent 运行时（OpenAI 兼容 / Anthropic），流式响应、工具调用（Bash / WebSearch / 自定义 / MCP）、上下文压缩、会话持久化（AgentConversationStoreService）、`TryHandlePaneCommand` 拦截 `/agent` 命令等 |
+| `src/ECodex/Services/AgentRuntimeService.cs`（planned） | `AgentRuntimeService` | OBS-01 之后的内置 Agent 运行时扩展点；当前源码未落地，现有 Session Vault 只读取 terminal transcript |
 | `src/ECodex/Converters/*` | (略) | XAML 值转换器 |
 | `src/ECodex/Themes/*` | (略) | 资源字典与样式 |
 | `src/ECodex/Assets/*` | `app-icon.ico` 等 | 应用图标 |

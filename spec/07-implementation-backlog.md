@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-Ready 队列当前已清空；`NOT-02D-3` 已完成 Codex 等待输入 smoke/checklist，下一步需先从 Draft / Refinement 队列拆出新的 ready 切片。
+下个可领切片优先进入 `OBS-01-1` 失败 loop 证据包 Core DTO 与装配器；`OBS-01-R` 已完成现有事实源审计与证据包契约拆分。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -233,6 +233,32 @@ Ready 队列当前已清空；`NOT-02D-3` 已完成 Codex 等待输入 smoke/che
 | 风险 | 真实 Codex CLI 文案和 approval 模式会随版本变化；脚本应能记录环境与原始触发样例，避免把 CI 静态测试当 live 证据 |
 | 回滚 | 删除 smoke/checklist 文档，不影响检测器与通知接线 |
 
+### `OBS-01-R` - 拆分失败 loop 证据包契约
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P1 |
+| Outcome | 维护者明确 Session Vault / 命令日志 / terminal transcript / daemon log 如何组成失败 loop 证据包，并确认 AgentConversation 相关类型当前只是 planned，不作为现有事实源 |
+| Scope | 只做 spec/backlog refinement；阅读 `SessionVaultWindow`、`CommandLogService`、`TerminalTranscriptEntry`、`02-modules.md` 与 `03-data-and-ipc.md`；不读取真实日志内容、不实现 UI、不新增存储 |
+| 关联 | `spec/03-data-and-ipc.md` §8.1、`spec/02-modules.md`、`src/ECodex/Views/SessionVaultWindow.xaml.cs`、`src/ECodex.Core/Services/CommandLogService.cs` |
+| 验收 | `Obs01RefinementTests` 覆盖 `FailureLoopEvidencePackage` 契约、当前源码缺少 `AgentConversationStoreService` 的显式边界、`OBS-01-1` ready 字段；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| 风险 | 如果把 planned Agent 存储当作已存在，会导致后续实现直接失败；如果从 UI 扫日志，会绕过脱敏和时间窗约束 |
+| 回滚 | 仅回退 OBS-01 契约和 backlog 拆分，不影响现有 Session Vault |
+
+### `OBS-01-1` - 失败 loop 证据包 Core DTO 与装配器
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | Core 层能用 fixture 数据装配一个 `FailureLoopEvidencePackage`，把失败命令、相关 transcript 摘要和 daemon log 片段按 workspace / surface / pane / time window 串起来 |
+| Scope | 新增纯 Core DTO 与装配器；输入为已脱敏的 `CommandLogEntry`、`TerminalTranscriptEntry` 元数据 / transcript 摘要、daemon log 行集合；Agent message 来源首版为空集合；不读取真实用户日志、不做 WPF UI、不写磁盘、不接 Session Vault 窗口 |
+| 关联 | `CommandLogService.GetForDate(...)`、`CommandLogService.LoadTerminalTranscriptContent(...)`、`TerminalTranscriptEntry`、`03-data-and-ipc.md` §8.1 |
+| 验收 | 单测覆盖非零 exit code 选为失败 loop、时间窗关联 transcript、paneId 过滤 daemon log、transcript 摘要截断 / 脱敏输入保持、AgentMessages 为空集合；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~FailureLoopEvidence" --no-restore` 与 `git diff --check` 通过 |
+| 风险 | 证据包过大或包含敏感内容；首版必须只处理调用方传入的已脱敏内容并限制摘要长度 |
+| 回滚 | 删除 DTO / 装配器和测试；保留 OBS-01 契约文档 |
+
 ### `PKG-02` - Inno 安装与卸载向导中文化
 
 | 字段 | 内容 |
@@ -306,7 +332,7 @@ Ready 队列当前已清空；`NOT-02D-3` 已完成 Codex 等待输入 smoke/che
 
 | ID | 状态 | Outcome | 缺口 | 下一步 |
 |---|---|---|---|---|
-| `OBS-01` | draft | Agent 会话、命令日志、terminal transcript 可串成一次失败 loop 的复盘视图 | 需要确认 UI 入口与用户故事 | 先读 `02-modules.md` 中 Agent / Session Vault 模块，写行为 spec |
+| `OBS-01` | draft | Agent 会话、命令日志、terminal transcript 可串成一次失败 loop 的复盘视图 | 已拆出 `OBS-01-1` Core DTO / 装配器；AgentConversation 相关源码当前未落地 | 先完成 `OBS-01-1`，再决定是否接 Session Vault UI |
 | `BRS-01` | draft | Browser scripting API 增加更多真实页面回归样例 | 需要本地测试页和 WebView2 环境策略 | 先列 P0 API 现有覆盖矩阵 |
 | `PKG-01` | draft | 安装 / 更新 / 卸载 rollback 证据更清晰 | 需要 Windows 测试环境和 artifact 命名 | 先整理 release workflow 产物清单 |
 | `DX-01` | draft | 新贡献者按 `spec/` 能 30 分钟跑通第一个小 PR | 需要观测真实 onboarding 缺口 | 先用一次 fresh clone 记录摩擦点 |
