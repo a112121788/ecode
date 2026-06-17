@@ -527,6 +527,20 @@ public sealed record FailureLoopEvidencePackage(
 - 当 agent root 不存在或 runtime 尚未写入时，Session Vault 显示空 AgentMessages / 无匹配消息，不把当前预览当作 AgentConversation live 证据。
 - AgentMessages provider 不得读取 `secrets.json`、`.env*`、`config/credentials*`、`secrets/**`，也不得直接打开 daemon 原始日志。
 
+### 8.3 AgentConversation runtime 写入契约
+
+Agent runtime 写入尚未实现。后续 runtime / recorder 必须先遵守以下契约，再把消息交给 `AgentConversationStoreService`：
+
+| 主题 | 契约 |
+|---|---|
+| 线程创建 | 每个 Agent run 在首次写入前 `CreateThread`；必须带 `workspaceId`，可选带 `surfaceId / paneId`；标题来自用户可见任务摘要或首条非敏感命令摘要 |
+| 消息追加 | 每次用户输入、assistant 输出、工具结果或系统摘要调用 `AppendMessage`；role 允许值：`user / assistant / tool / system`，写入前归一化小写 |
+| token 统计 | `InputTokens / OutputTokens / TotalTokens` 只来自 runtime / provider 返回的 usage metadata；缺失时写 `0`，不得从文本长度猜测 |
+| 压缩记录 | 当 runtime 写入上下文压缩摘要时，追加一条 `role=system` 或 `role=assistant` 的 summary message，并设置 `IsCompaction=true`；原始长上下文是否保留由后续 retention 策略决定 |
+| 脱敏边界 | runtime recorder 只接收已经准备写入 UI / evidence 的摘要；不得读取 `secrets.json`、`.env*`、`config/credentials*`、`secrets/**`，不得把完整密钥、完整 prompt dump 或 daemon 原始日志写入 AgentConversation |
+| 失败 fallback | runtime 异常时允许追加简短 `assistant` 或 `tool` 错误摘要，便于 failure-loop 复盘；写入失败不得影响 terminal / UI 主流程 |
+| 证据读取 | failure-loop 只按 `workspaceId / surfaceId / paneId` 与失败命令时间窗读取 AgentMessages；无消息时保持空集合 |
+
 ---
 
 ## 9. 加密存储（`%USERPROFILE%/.ecodex/secrets.json`）
