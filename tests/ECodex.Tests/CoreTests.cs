@@ -1737,7 +1737,7 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
         backlog.Should().Contain("| `NOT-02D` | done |");
-        backlog.Should().Contain("`OBS-01-10` Session Vault AgentMessages root 语义 refinement");
+        backlog.Should().Contain("`OBS-01-11` Session Vault AgentMessages provider UI 接线");
     }
 }
 
@@ -1758,6 +1758,9 @@ public class Obs01RefinementTests
         contract.Should().Contain("daemon-debug.log");
         contract.Should().Contain("当前源码包含纯 Core 的 `AgentConversationStoreService`");
         contract.Should().Contain("## 8. Agent 会话（Core 存储：显式 agent 根目录）");
+        contract.Should().Contain("### 8.2 Session Vault AgentMessages root 语义");
+        contract.Should().Contain("Session Vault 不自行 new `AgentConversationStoreService`");
+        contract.Should().Contain("`CompatibilityOptions.GetAppDataDir()` 下的 `agent` 子目录");
         contract.Should().Contain("不得读取 `secrets.json`");
         backlog.Should().Contain("### `OBS-01-R` - 拆分失败 loop 证据包契约");
         backlog.Should().Contain("### `OBS-01-1` - 失败 loop 证据包 Core DTO 与装配器");
@@ -1770,8 +1773,9 @@ public class Obs01RefinementTests
         backlog.Should().Contain("### `OBS-01-8` - AgentConversation Core DTO 与存储契约");
         backlog.Should().Contain("### `OBS-01-9` - 失败 loop AgentMessages provider 接入");
         backlog.Should().Contain("### `OBS-01-10` - Session Vault AgentMessages root 语义 refinement");
+        backlog.Should().Contain("### `OBS-01-11` - Session Vault AgentMessages provider UI 接线");
         backlog.Should().Contain("FailureLoopEvidencePackage");
-        backlog.Should().Contain("`OBS-01-9` 已完成失败 loop AgentMessages provider 接入");
+        backlog.Should().Contain("`OBS-01-10` 已完成 Session Vault AgentMessages root 语义 refinement");
     }
 
     [Fact]

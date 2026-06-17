@@ -519,6 +519,14 @@ public sealed record FailureLoopEvidencePackage(
 | 输出边界 | `FailureLoopEvidencePackage` 是 Core DTO / 装配结果；UI 只消费 package，不在 UI 层重新扫描日志文件 |
 | 验证边界 | `AgentConversationStoreServiceTests` 覆盖 Core 存储契约；`FailureLoopEvidenceTests` 覆盖命令日志 + transcript + daemon log + 可选 AgentMessages 的时间窗关联；UI 接线前 Session Vault 仍不直接读取 Agent store |
 
+### 8.2 Session Vault AgentMessages root 语义
+
+- Session Vault 不自行 new `AgentConversationStoreService`，也不从 UI 层推断或扫描 agent 根目录。
+- 后续 UI 接线只能由 App 层显式传入 `IFailureLoopAgentMessageProvider`；测试可继续使用临时 agent 根目录。
+- 默认产品根目录若启用，必须是 `CompatibilityOptions.GetAppDataDir()` 下的 `agent` 子目录，并且只能读取 `AgentConversationStoreService` 维护的 `threads.json` 与 `messages/*.jsonl`。
+- 当 agent root 不存在、runtime 尚未写入或 provider 未接入时，Session Vault 显示空 AgentMessages / 未接入来源，不把当前预览当作 AgentConversation live 证据。
+- AgentMessages provider 不得读取 `secrets.json`、`.env*`、`config/credentials*`、`secrets/**`，也不得直接打开 daemon 原始日志。
+
 ---
 
 ## 9. 加密存储（`%USERPROFILE%/.ecodex/secrets.json`）

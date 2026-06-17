@@ -141,6 +141,8 @@ ecodex restore-session
 
 AgentConversation Core 存储与 failure-loop `AgentMessages` provider 已经落地，但该入口尚未传入 provider；预览不会自行实例化 `AgentConversationStoreService`，也不会默认读取真实 `%USERPROFILE%` profile。
 
+Root 语义：Session Vault 不自行 new `AgentConversationStoreService`；后续 UI 接线必须由 App 层显式传入 `AgentMessages` provider。默认产品根目录若启用，只能是 `CompatibilityOptions.GetAppDataDir()` 下的 `agent` 子目录；目录不存在、runtime 尚未写入或 provider 未接入时，Agent 消息区保持空集合 / 未接入来源。
+
 ### 手动 smoke checklist
 
 在 Windows GUI 环境验证 Session Vault 失败 loop 预览时，按以下步骤记录证据：
