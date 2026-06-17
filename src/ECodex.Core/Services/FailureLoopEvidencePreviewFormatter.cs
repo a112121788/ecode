@@ -102,7 +102,9 @@ public sealed class FailureLoopEvidencePreviewFormatter
     private static void AppendAgentMessages(StringBuilder builder, IReadOnlyList<FailureLoopAgentEvidence> agentMessages)
     {
         builder.AppendLine();
-        builder.AppendLine("Agent Messages: planned source not connected");
+        builder.AppendLine(agentMessages.Count == 0
+            ? "Agent Messages: source not connected or no matching messages"
+            : "Agent Messages");
         if (agentMessages.Count == 0)
         {
             builder.AppendLine("- none");

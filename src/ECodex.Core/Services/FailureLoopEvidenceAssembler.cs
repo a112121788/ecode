@@ -13,6 +13,7 @@ public sealed record FailureLoopEvidenceRequest(
     public TimeSpan WindowAfter { get; init; } = TimeSpan.FromMinutes(5);
     public int MaxTranscriptSummaryChars { get; init; } = 1_200;
     public int MaxDaemonLogLineChars { get; init; } = 1_200;
+    public int MaxAgentMessageSummaryChars { get; init; } = 800;
 }
 
 public sealed record FailureLoopTranscriptInput(
@@ -24,6 +25,14 @@ public sealed record FailureLoopDaemonLogInput(
     string Line,
     string? PaneId = null);
 
+public sealed record FailureLoopAgentMessageInput(
+    string WorkspaceId,
+    string? SurfaceId,
+    string? PaneId,
+    DateTimeOffset CapturedAtUtc,
+    string Role,
+    string Summary);
+
 /// <summary>
 /// Builds a failure-loop evidence package from already-sanitized, caller-provided inputs.
 /// </summary>
@@ -33,7 +42,8 @@ public sealed class FailureLoopEvidenceAssembler
         FailureLoopEvidenceRequest request,
         IEnumerable<CommandLogEntry> commands,
         IEnumerable<FailureLoopTranscriptInput> transcripts,
-        IEnumerable<FailureLoopDaemonLogInput> daemonLogs)
+        IEnumerable<FailureLoopDaemonLogInput> daemonLogs,
+        IEnumerable<FailureLoopAgentMessageInput>? agentMessages = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(commands);
@@ -106,12 +116,20 @@ public sealed class FailureLoopEvidenceAssembler
             })
             .ToArray();
 
-        var agentMessages = Array.Empty<FailureLoopAgentEvidence>();
+        var agentEvidence = (agentMessages ?? [])
+            .Where(input => MatchesScope(request, input.WorkspaceId, input.SurfaceId, input.PaneId))
+            .Where(input => IsWithinWindow(input.CapturedAtUtc.ToUniversalTime(), fromUtc, toUtc))
+            .OrderBy(input => input.CapturedAtUtc)
+            .Select(input => new FailureLoopAgentEvidence(
+                input.CapturedAtUtc.ToUniversalTime(),
+                NormalizeRole(input.Role),
+                Truncate(input.Summary, request.MaxAgentMessageSummaryChars, out _)))
+            .ToArray();
         var sources = new[]
         {
             new FailureLoopEvidenceSource(FailureLoopEvidenceSourceKind.CommandLog, "Command log", commandEvidence.Length),
             new FailureLoopEvidenceSource(FailureLoopEvidenceSourceKind.TerminalTranscript, "Terminal transcript", transcriptEvidence.Length),
-            new FailureLoopEvidenceSource(FailureLoopEvidenceSourceKind.AgentConversation, "Agent conversation", agentMessages.Length),
+            new FailureLoopEvidenceSource(FailureLoopEvidenceSourceKind.AgentConversation, "Agent conversation", agentEvidence.Length),
             new FailureLoopEvidenceSource(FailureLoopEvidenceSourceKind.DaemonLog, "Daemon log", daemonLogEvidence.Length),
         };
 
@@ -126,7 +144,7 @@ public sealed class FailureLoopEvidenceAssembler
             sources,
             commandEvidence,
             transcriptEvidence,
-            agentMessages,
+            agentEvidence,
             daemonLogEvidence);
     }
 
@@ -171,4 +189,7 @@ public sealed class FailureLoopEvidenceAssembler
 
     private static string? NormalizeBlank(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    private static string NormalizeRole(string? role)
+        => string.IsNullOrWhiteSpace(role) ? "unknown" : role.Trim().ToLowerInvariant();
 }

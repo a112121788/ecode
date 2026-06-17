@@ -10,6 +10,14 @@ public interface IFailureLoopEvidenceSourceProvider
     IReadOnlyList<FailureLoopDaemonLogInput> GetDaemonLogs(DateTimeOffset? fromUtc, DateTimeOffset? toUtc, string? paneId);
 }
 
+public interface IFailureLoopAgentMessageProvider
+{
+    IReadOnlyList<FailureLoopAgentMessageInput> GetAgentMessages(
+        FailureLoopEvidenceRequest request,
+        DateTimeOffset? fromUtc,
+        DateTimeOffset? toUtc);
+}
+
 public sealed record FailureLoopEvidenceCollectionRequest(
     FailureLoopEvidenceRequest EvidenceRequest,
     DateOnly CommandDate)
@@ -28,7 +36,8 @@ public sealed class FailureLoopEvidenceCollector
 
     public FailureLoopEvidencePackage Collect(
         FailureLoopEvidenceCollectionRequest request,
-        IFailureLoopEvidenceSourceProvider provider)
+        IFailureLoopEvidenceSourceProvider provider,
+        IFailureLoopAgentMessageProvider? agentMessageProvider = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(provider);
@@ -47,8 +56,9 @@ public sealed class FailureLoopEvidenceCollector
             .ToArray();
 
         var daemonLogs = provider.GetDaemonLogs(fromUtc, toUtc, evidenceRequest.PaneId);
+        var agentMessages = agentMessageProvider?.GetAgentMessages(evidenceRequest, fromUtc, toUtc) ?? [];
 
-        return _assembler.Assemble(evidenceRequest, commands, transcriptInputs, daemonLogs);
+        return _assembler.Assemble(evidenceRequest, commands, transcriptInputs, daemonLogs, agentMessages);
     }
 
     private static (DateTimeOffset? FromUtc, DateTimeOffset? ToUtc) GetFailureWindow(
@@ -120,4 +130,55 @@ public sealed class CommandLogFailureLoopEvidenceSourceProvider : IFailureLoopEv
 
     public IReadOnlyList<FailureLoopDaemonLogInput> GetDaemonLogs(DateTimeOffset? fromUtc, DateTimeOffset? toUtc, string? paneId)
         => _daemonLogProvider(fromUtc, toUtc, paneId);
+}
+
+public sealed class AgentConversationFailureLoopEvidenceProvider : IFailureLoopAgentMessageProvider
+{
+    private readonly AgentConversationStoreService _store;
+
+    public AgentConversationFailureLoopEvidenceProvider(AgentConversationStoreService store)
+    {
+        _store = store ?? throw new ArgumentNullException(nameof(store));
+    }
+
+    public IReadOnlyList<FailureLoopAgentMessageInput> GetAgentMessages(
+        FailureLoopEvidenceRequest request,
+        DateTimeOffset? fromUtc,
+        DateTimeOffset? toUtc)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (fromUtc is null || toUtc is null)
+            return [];
+
+        return _store.GetThreads()
+            .Where(thread => MatchesScope(request, thread.WorkspaceId, thread.SurfaceId, thread.PaneId))
+            .SelectMany(thread => _store.GetMessages(thread.Id).Select(message => new { thread, message }))
+            .Where(item => IsWithinWindow(item.message.CreatedAtUtc.ToUniversalTime(), fromUtc, toUtc))
+            .OrderBy(item => item.message.CreatedAtUtc)
+            .Select(item => new FailureLoopAgentMessageInput(
+                item.thread.WorkspaceId,
+                item.thread.SurfaceId,
+                item.thread.PaneId,
+                item.message.CreatedAtUtc.ToUniversalTime(),
+                item.message.Role,
+                item.message.Content))
+            .ToList();
+    }
+
+    private static bool MatchesScope(FailureLoopEvidenceRequest request, string workspaceId, string? surfaceId, string? paneId)
+        => string.Equals(workspaceId, request.WorkspaceId, StringComparison.Ordinal) &&
+           MatchesOptional(request.SurfaceId, surfaceId) &&
+           MatchesOptional(request.PaneId, paneId);
+
+    private static bool MatchesOptional(string? expected, string? actual)
+        => string.IsNullOrWhiteSpace(expected) ||
+           string.Equals(expected, actual, StringComparison.Ordinal);
+
+    private static bool IsWithinWindow(DateTimeOffset timestampUtc, DateTimeOffset? fromUtc, DateTimeOffset? toUtc)
+    {
+        if (fromUtc is null || toUtc is null)
+            return false;
+
+        return timestampUtc >= fromUtc.Value && timestampUtc <= toUtc.Value;
+    }
 }

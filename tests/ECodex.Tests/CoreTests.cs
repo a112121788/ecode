@@ -1737,7 +1737,7 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
         backlog.Should().Contain("| `NOT-02D` | done |");
-        backlog.Should().Contain("`OBS-01-9` 失败 loop AgentMessages provider 接入");
+        backlog.Should().Contain("`OBS-01-10` Session Vault AgentMessages root 语义 refinement");
     }
 }
 
@@ -1769,8 +1769,9 @@ public class Obs01RefinementTests
         backlog.Should().Contain("### `OBS-01-7` - AgentConversation planned 存储接入前 refinement");
         backlog.Should().Contain("### `OBS-01-8` - AgentConversation Core DTO 与存储契约");
         backlog.Should().Contain("### `OBS-01-9` - 失败 loop AgentMessages provider 接入");
+        backlog.Should().Contain("### `OBS-01-10` - Session Vault AgentMessages root 语义 refinement");
         backlog.Should().Contain("FailureLoopEvidencePackage");
-        backlog.Should().Contain("`OBS-01-8` 已完成 AgentConversation Core DTO 与存储契约");
+        backlog.Should().Contain("`OBS-01-9` 已完成失败 loop AgentMessages provider 接入");
     }
 
     [Fact]
@@ -2049,6 +2050,69 @@ public class FailureLoopEvidenceTests
     }
 
     [Fact]
+    public void Assemble_FiltersAgentMessagesByScopeWindowAndTruncatesSummary()
+    {
+        var started = new DateTime(2026, 6, 17, 9, 30, 0, DateTimeKind.Utc);
+        var completed = started.AddMinutes(1);
+        var assembler = new FailureLoopEvidenceAssembler();
+
+        var package = assembler.Assemble(
+            new FailureLoopEvidenceRequest("workspace-a", "surface-a", "pane-a")
+            {
+                WindowBefore = TimeSpan.FromMinutes(1),
+                WindowAfter = TimeSpan.FromMinutes(2),
+                MaxAgentMessageSummaryChars = 18,
+            },
+            [
+                new CommandLogEntry
+                {
+                    Id = "fail",
+                    WorkspaceId = "workspace-a",
+                    SurfaceId = "surface-a",
+                    PaneId = "pane-a",
+                    Command = "codex exec",
+                    StartedAt = started,
+                    CompletedAt = completed,
+                    ExitCode = 1,
+                },
+            ],
+            [],
+            [],
+            [
+                new FailureLoopAgentMessageInput(
+                    "workspace-a",
+                    "surface-a",
+                    "pane-a",
+                    new DateTimeOffset(completed.AddSeconds(30), TimeSpan.Zero),
+                    "assistant",
+                    "assistant diagnostic summary that should be truncated"),
+                new FailureLoopAgentMessageInput(
+                    "workspace-a",
+                    "surface-a",
+                    "pane-b",
+                    new DateTimeOffset(completed.AddSeconds(30), TimeSpan.Zero),
+                    "assistant",
+                    "wrong pane"),
+                new FailureLoopAgentMessageInput(
+                    "workspace-a",
+                    "surface-a",
+                    "pane-a",
+                    new DateTimeOffset(completed.AddMinutes(10), TimeSpan.Zero),
+                    "user",
+                    "outside window"),
+            ]);
+
+        package.AgentMessages.Should().ContainSingle()
+            .Which.Should().Match<FailureLoopAgentEvidence>(e =>
+                e.Role == "assistant" &&
+                e.Summary == "assistant diagnost" &&
+                e.CapturedAtUtc == new DateTimeOffset(completed.AddSeconds(30), TimeSpan.Zero));
+        package.Sources.Should().Contain(source =>
+            source.Kind == FailureLoopEvidenceSourceKind.AgentConversation &&
+            source.Count == 1);
+    }
+
+    [Fact]
     public void Collector_LoadsProviderDataAndOnlyReadsTranscriptContentInsideFailureWindow()
     {
         var started = new DateTime(2026, 6, 17, 10, 0, 0, DateTimeKind.Utc);
@@ -2129,6 +2193,98 @@ public class FailureLoopEvidenceTests
         package.DaemonLogs.Should().ContainSingle()
             .Which.Line.Should().Be("pane-a session error");
         package.AgentMessages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Collector_LoadsAgentMessagesOnlyFromInjectedConversationProvider()
+    {
+        var root = Path.Combine(
+            Path.GetTempPath(),
+            "ecodex-failure-loop-agent-provider-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var started = new DateTime(2026, 6, 17, 10, 30, 0, DateTimeKind.Utc);
+            var completed = started.AddMinutes(1);
+            var store = new AgentConversationStoreService(Path.Combine(root, "agent"));
+            store.CreateThread(
+                "workspace-a",
+                surfaceId: "surface-a",
+                paneId: "pane-a",
+                title: "Failure loop",
+                threadId: "thread-a",
+                createdAtUtc: new DateTimeOffset(started.AddMinutes(-1), TimeSpan.Zero));
+            store.AppendMessage(
+                "thread-a",
+                new AgentConversationMessage
+                {
+                    Role = "ASSISTANT",
+                    Content = "assistant saw failing command and summarized it",
+                    CreatedAtUtc = new DateTimeOffset(completed.AddSeconds(20), TimeSpan.Zero),
+                });
+            store.AppendMessage(
+                "thread-a",
+                new AgentConversationMessage
+                {
+                    Role = "user",
+                    Content = "outside the failure window",
+                    CreatedAtUtc = new DateTimeOffset(completed.AddMinutes(10), TimeSpan.Zero),
+                });
+            store.CreateThread(
+                "workspace-a",
+                surfaceId: "surface-a",
+                paneId: "pane-b",
+                title: "Other pane",
+                threadId: "thread-b",
+                createdAtUtc: new DateTimeOffset(started, TimeSpan.Zero));
+            store.AppendMessage(
+                "thread-b",
+                new AgentConversationMessage
+                {
+                    Role = "assistant",
+                    Content = "wrong pane summary",
+                    CreatedAtUtc = new DateTimeOffset(completed.AddSeconds(20), TimeSpan.Zero),
+                });
+            var provider = new RecordingFailureLoopEvidenceProvider
+            {
+                Commands =
+                [
+                    new CommandLogEntry
+                    {
+                        Id = "fail",
+                        WorkspaceId = "workspace-a",
+                        SurfaceId = "surface-a",
+                        PaneId = "pane-a",
+                        Command = "codex exec",
+                        StartedAt = started,
+                        CompletedAt = completed,
+                        ExitCode = 1,
+                    },
+                ],
+            };
+            var collector = new FailureLoopEvidenceCollector();
+
+            var package = collector.Collect(
+                new FailureLoopEvidenceCollectionRequest(
+                    new FailureLoopEvidenceRequest("workspace-a", "surface-a", "pane-a")
+                    {
+                        WindowBefore = TimeSpan.FromMinutes(1),
+                        WindowAfter = TimeSpan.FromMinutes(2),
+                        MaxAgentMessageSummaryChars = 24,
+                    },
+                    new DateOnly(2026, 6, 17)),
+                provider,
+                new AgentConversationFailureLoopEvidenceProvider(store));
+
+            package.AgentMessages.Should().ContainSingle()
+                .Which.Should().Match<FailureLoopAgentEvidence>(e =>
+                    e.Role == "assistant" &&
+                    e.Summary == "assistant saw failing co");
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]
@@ -2254,7 +2410,12 @@ public class FailureLoopEvidenceTests
                     "build failed after sanitized output",
                     SummaryWasTruncated: true),
             ],
-            [],
+            [
+                new FailureLoopAgentEvidence(
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 12, TimeSpan.Zero),
+                    "assistant",
+                    "agent summarized the failure"),
+            ],
             [
                 new FailureLoopDaemonLogEvidence(
                     new DateTimeOffset(2026, 6, 17, 12, 0, 15, TimeSpan.Zero),
@@ -2277,7 +2438,9 @@ public class FailureLoopEvidenceTests
         preview.Should().Contain("[truncated]");
         preview.Should().Contain("Daemon Logs");
         preview.Should().Contain("session.error pane-a");
-        preview.Should().Contain("Agent Messages: planned source not connected");
+        preview.Should().Contain("Agent Messages");
+        preview.Should().Contain("assistant: agent summarized the failure");
+        preview.Should().NotContain("planned source not connected");
     }
 
     [Fact]

@@ -139,6 +139,19 @@ public sealed class AgentConversationStoreService
         }
     }
 
+    public IReadOnlyList<AgentConversationMessage> GetMessages(string threadId)
+    {
+        if (string.IsNullOrWhiteSpace(threadId))
+            return [];
+
+        lock (_lock)
+        {
+            return ReadMessagesFromFile(GetMessageFilePath(threadId))
+                .Select(message => message with { })
+                .ToList();
+        }
+    }
+
     public IReadOnlyList<AgentConversationMessage> ReadMessagesFromFile(string filePath)
     {
         if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
