@@ -1400,6 +1400,50 @@ public class SmokeWorkflowTests
         script.Should().Contain("smoke-ecodex-v2");
         script.Should().NotContain("setup install");
     }
+
+    [Fact]
+    public void ToastActivationSmokeScript_CoversWindowsPrereqsManualEvidenceAndSkipsClearly()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "smoke-toast-activation.ps1"));
+
+        script.Should().Contain("Toast activation live smoke requires Windows");
+        script.Should().Contain("ECodex CLI was not found");
+        script.Should().Contain("ECodex app is not running");
+        script.Should().Contain("PushNotifications");
+        script.Should().Contain("Focus assist");
+        script.Should().Contain("System.AppUserModel.ID");
+        script.Should().Contain("installer\\ecodex.iss");
+        script.Should().Contain("'hook', 'event'");
+        script.Should().Contain("'notification', 'list'");
+        script.Should().Contain("evidence.toastPayload");
+        script.Should().Contain("manualEvidenceTemplate");
+        script.Should().Contain("clickRestoredWindow");
+        script.Should().Contain("paneFocused");
+        script.Should().Contain("fallbackVisible");
+        script.Should().Contain("cleanup.command");
+    }
+
+    [Fact]
+    public void ToastActivationSmokeDocs_CoverInstallTroubleshootingAndBacklog()
+    {
+        var installation = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "installation.md"));
+        var troubleshooting = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "troubleshooting.md"));
+        var backlog = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "07-implementation-backlog.md"));
+
+        installation.Should().Contain("scripts/smoke-toast-activation.ps1");
+        installation.Should().Contain("AppUserModelID");
+        installation.Should().Contain("开始菜单快捷方式");
+        installation.Should().Contain("专注助手");
+        troubleshooting.Should().Contain("Windows Toast 不出现或点击无反应");
+        troubleshooting.Should().Contain("windows-toast-permission");
+        troubleshooting.Should().Contain("installed-shortcut");
+        troubleshooting.Should().Contain("fallback");
+        backlog.Should().Contain("| `NOT-02C` | done |");
+        backlog.Should().Contain("### `NOT-02C-3` - Windows Toast live smoke 与安装策略校验");
+        backlog.Should().Contain("| 状态 | done |");
+        backlog.Should().Contain("ToastActivationSmokeScript_CoversWindowsPrereqsManualEvidenceAndSkipsClearly");
+        backlog.Should().Contain("下个可领切片优先进入 `NOT-02D`");
+    }
 }
 
 public class TerminalControlSourceTests

@@ -43,7 +43,7 @@ AI Agent 启动后按以下顺序选择任务：
 | `TRAY-01B` | done | 托盘菜单提供“退出并保留终端”和“退出并终止终端”，退出语义与现有设置一致 | 复用现有 daemon session termination；菜单包含打开、退出并保留终端、退出并终止终端；同步 session restore / troubleshooting 文档 | `TrayResidencySourceTests` 覆盖托盘菜单文案、保留退出、终止退出、失败日志与文档；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~TrayResidencySourceTests" --no-restore` 通过；Windows GUI 手测待人工确认 |
 | `NOT-02A` | done | PowerShell shell integration hook 默认随 App 首次启动安装，可回传命令开始、结束和退出码 | 扩展现有 setup/profile 机制：ECodex 专属标记块、写入前备份到 `%USERPROFILE%\.ecodex\backups\`、`setup status` 可检查、`setup uninstall --write true` 可移除；默认仅 PowerShell，cmd/Git Bash 后续再做；冲突时跳过并提示，不静默覆盖 | `PowerShellHookSetupServiceTests` 覆盖缺失安装、幂等、冲突跳过、写前备份与 App/CLI 接入；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~PowerShellHookSetupServiceTests" --no-restore` 通过；真实 profile 写入手测待人工确认 |
 | `NOT-02B` | draft | 后台/非激活时，基于命令生命周期发送完成、失败、等待输入通知，并进入未读中心 | 依赖 `NOT-02A` 的 hook 事件；定义 pane/session/command id 数据流、退出码映射、通知去重与节流；没有 hook 时降级到 OSC / `ecodex notify` / 关键输出规则 | 后台执行命令成功结束只产生完成通知；非 0 退出码产生失败通知；前台活跃时不刷 Toast；通知能定位 workspace/surface/pane；普通流式输出不逐条通知 |
-| `NOT-02C` | draft | 点击 Windows Toast 精准打开 ECodex 并跳转到对应 workspace / surface / pane | 明确 Toast activation/AppUserModelID/非打包应用策略；复用通知 ID、workspaceId、surfaceId、paneId；窗口隐藏到托盘时也能恢复并跳转 | Toast 点击后窗口显示并聚焦对应 pane；通知标记为已读；目标 pane 不存在时给出可见 fallback；Windows Toast 不可用时不影响应用主流程 |
+| `NOT-02C` | done | 点击 Windows Toast 精准打开 ECodex 并跳转到对应 workspace / surface / pane | 明确 Toast activation/AppUserModelID/非打包应用策略；复用通知 ID、workspaceId、surfaceId、paneId；窗口隐藏到托盘时也能恢复并跳转 | Toast 点击后窗口显示并聚焦对应 pane；通知标记为已读；目标 pane 不存在时给出可见 fallback；Windows Toast 不可用时不影响应用主流程；Windows-only live smoke/checklist 已覆盖诊断与人工证据 |
 | `NOT-02D` | draft | Codex 等待输入、关键确认、错误决策等交互状态能触发低噪声提醒 | 在生命周期通知之外补充状态识别；优先识别 Codex 常见等待输入/确认语义，再扩展可配置规则；仅窗口隐藏/非激活且匹配关键状态时提醒 | Codex 等待用户输入时后台收到通知；普通日志不通知；同一状态有去重/冷却；规则可在后续版本扩展 |
 
 ### 1.1 上一冲刺归档：S1 - 会话恢复与 AI loop 稳定化
@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `NOT-02C-3` Windows Toast live smoke 与安装策略校验；`NOT-02C-1/2` 已完成 payload、parser、窗口恢复与应用内跳转处理。
+下个可领切片优先进入 `NOT-02D` Codex 等待输入提醒的契约拆分与 ready 化；`NOT-02C-1/2/3` 已完成 payload、parser、窗口恢复、应用内跳转处理与 Windows-only live smoke/checklist。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -172,12 +172,12 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P2 |
 | Outcome | 真实 Windows 通知中心点击链路被验证：Toast 出现、点击后恢复 ECodex、定位目标 pane、失败时 fallback 可见；不可用环境有清晰诊断 |
-| Scope | 增加或更新 Windows-only smoke/checklist，覆盖 unpackaged WPF AppUserModelID、开始菜单快捷方式 / 安装器注册、Toast 展示和点击激活；同步 `docs/installation.md` 或 troubleshooting；不扩大到 MSIX/Velopack 发布重构 |
-| 关联 | `installer/ecodex.iss`、`docs/installation.md`、`docs/troubleshooting.md`、`scripts/smoke-ecodex-v2.ps1`、`spec/04-build-deploy.md` Windows Toast requirement |
-| 验收 | Windows 手测记录包含 Toast payload、点击恢复、pane 聚焦、缺 pane fallback；脚本 / checklist 能在无 Toast 权限或缺快捷方式时给出可读跳过 / 失败原因；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| Scope | 增加 `scripts/smoke-toast-activation.ps1` Windows-only smoke/checklist，覆盖 unpackaged WPF AppUserModelID、开始菜单快捷方式 / 安装器注册、Toast 展示和点击激活；同步 `docs/installation.md`、`docs/troubleshooting.md` 与 `spec/04-build-deploy.md`；不扩大到 MSIX/Velopack 发布重构 |
+| 关联 | `installer/ecodex.iss`、`docs/installation.md`、`docs/troubleshooting.md`、`scripts/smoke-toast-activation.ps1`、`scripts/smoke-ecodex-v2.ps1`、`spec/04-build-deploy.md` Windows Toast requirement |
+| 验收 | Windows 手测记录包含 Toast payload、点击恢复、pane 聚焦、缺 pane fallback；脚本 / checklist 能在无 Toast 权限或缺快捷方式时给出可读跳过 / 失败原因；`ToastActivationSmokeScript_CoversWindowsPrereqsManualEvidenceAndSkipsClearly` 固化脚本诊断字段；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
 | 风险 | 系统通知权限、专注助手、安装方式和 AUMID 注册都会影响 live smoke；CI 无法稳定证明系统 Toast 点击 |
 | 回滚 | 移除新增 smoke/checklist 文档或脚本，不影响运行时 Toast 展示能力 |
 

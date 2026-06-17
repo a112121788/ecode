@@ -112,6 +112,17 @@ pwsh ./scripts/check-doc-links.ps1            # 仅检查 README/spec/md Markdow
 默认不执行耗时或强 Windows 依赖的 smoke/publish 实际步骤，只验证脚本语法与门禁提示；发布前应在 Windows 上显式加入 `-IncludeSmoke` 和 `-IncludePublish`。
 `scripts/ci.ps1` 会调用 `scripts/check-doc-links.ps1` 做文档链接 gate；需要单独排查文档漂移时可直接运行该脚本，也可传入 `-Path` 扫描指定文件或目录。
 
+### 4.4 Windows Toast live smoke
+
+真实 Windows Toast 点击激活不能由 CI 稳定证明，必须在 Windows 图形会话中手测。发布签收前运行：
+
+```powershell
+pwsh ./scripts/smoke-toast-activation.ps1
+pwsh ./scripts/smoke-toast-activation.ps1 -Interactive -Cleanup
+```
+
+脚本负责检查 Windows-only 前置条件（系统 Toast 权限、专注助手人工提示、开始菜单 / 桌面快捷方式、AppUserModelID 线索、主应用 pipe、CLI 可用性），并用 `ecodex hook event` 生成带 `notificationId/workspaceId/surfaceId/paneId` 的真实通知。默认输出 `manual` JSON，等待维护者点击 Toast 并记录 `toastShown/clickRestoredWindow/paneFocused/fallbackVisible`；缺少权限、快捷方式或主应用时输出清晰 `skipped` / `failed` 原因。
+
 ## 5. 发布形态
 
 | 模式 | 命令 | 产物 | 大小 | 依赖 |

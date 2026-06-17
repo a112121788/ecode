@@ -37,6 +37,7 @@
     <None Include="..\..\scripts\discord-notify.ps1" Link="scripts\discord-notify.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\scripts\release-evidence.ps1" Link="scripts\release-evidence.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\scripts\smoke-ecodex-v2.ps1" Link="scripts\smoke-ecodex-v2.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\scripts\smoke-toast-activation.ps1" Link="scripts\smoke-toast-activation.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\scripts\perf\measure.ps1" Link="scripts\perf\measure.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\tests\ECodex.Smoke\Program.cs" Link="tests\ECodex.Smoke\Program.cs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\installer\ecodex.iss" Link="installer\ecodex.iss" CopyToOutputDirectory="PreserveNewest" />
