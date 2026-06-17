@@ -375,7 +375,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
                 session.Start(
                     command: _paneShells.GetValueOrDefault(paneId) ?? GetConfiguredShell(),
                     workingDirectory: cwd,
-                    environment: TerminalEnvironmentVariables.ForWorkspace(_workspaceId));
+                    environment: TerminalEnvironmentVariables.ForPane(_workspaceId, Surface.Id, paneId));
                 DaemonLog($"[DaemonDisconnected] {paneId} → local session started");
             }
             catch (Exception ex)
@@ -620,7 +620,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
             {
                 DaemonLog($"[DaemonSession:{paneId}] Calling CreateSessionAsync ({initCols}x{initRows})...");
                 var result = await daemon.CreateSessionAsync(
-                    paneId, initCols, initRows, effectiveCwd, workspaceId: _workspaceId);
+                    paneId, initCols, initRows, effectiveCwd, workspaceId: _workspaceId, surfaceId: Surface.Id);
 
                 if (result == null)
                 {
@@ -631,7 +631,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
                     session.Start(
                         command: shell,
                         workingDirectory: effectiveCwd,
-                        environment: TerminalEnvironmentVariables.ForWorkspace(_workspaceId));
+                        environment: TerminalEnvironmentVariables.ForPane(_workspaceId, Surface.Id, paneId));
                     return;
                 }
 
@@ -683,7 +683,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
                 session.Start(
                     command: shell,
                     workingDirectory: effectiveCwd,
-                    environment: TerminalEnvironmentVariables.ForWorkspace(_workspaceId));
+                    environment: TerminalEnvironmentVariables.ForPane(_workspaceId, Surface.Id, paneId));
             }
         });
 
@@ -708,7 +708,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
         session.Start(
             command: shell,
             workingDirectory: workingDirectory,
-            environment: TerminalEnvironmentVariables.ForWorkspace(_workspaceId));
+            environment: TerminalEnvironmentVariables.ForPane(_workspaceId, Surface.Id, paneId));
 
         if (restoredState?.BufferSnapshot != null)
             session.RestoreBufferSnapshot(restoredState.BufferSnapshot);

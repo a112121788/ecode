@@ -94,7 +94,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | PowerShell hook 生命周期事件能带上 ECodex 启动终端的 workspace / surface / pane 上下文，后续通知可以定位到触发命令的 pane，外部 PowerShell 不会被误当作 ECodex pane |
 | Scope | 扩展 `TerminalEnvironmentVariables` 与终端启动调用，新增 `ECODEX_SURFACE_ID`、`ECODEX_PANE_ID`；更新 `PowerShellHookSetupService` 的 hook block 读取环境变量并透传到 `ecodex hook event`；更新 CLI hook 参数解析和 `MainViewModel.HandleHookCommand` 日志字段；同步 `spec/03-data-and-ipc.md`；不生成通知、不写真实 profile |

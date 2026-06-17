@@ -51,7 +51,7 @@ CLI 5 秒超时（`NamedPipeClient.SendCommand` 默认 `timeoutMs=5000`）；超
 | 命令 | 参数 | 行为 |
 |---|---|---|
 | `NOTIFY` | `title?` `body?` `subtitle?` | 向当前选中项目 / Surface 添加一条 `NotificationSource.Cli` 通知；返回 `{ok:true}` |
-| `HOOK.COMMAND` | `phase=start/end` `command?` `exitCode?` `cwd?` | PowerShell shell integration 内部事件；主应用只记录脱敏后的生命周期日志，后续通知规则基于该事件扩展；返回 `{ok:true}` |
+| `HOOK.COMMAND` | `phase=start/end` `command?` `exitCode?` `cwd?` `workspaceId?` `surfaceId?` `paneId?` | PowerShell shell integration 内部事件；主应用只记录脱敏后的生命周期日志，后续通知规则基于该事件扩展；返回 `{ok:true}` |
 | `WORKSPACE.LIST` | — | 返回项目列表 `[ {id, name, selected, surfaces, workingDirectory}, ... ]` |
 | `WORKSPACE.CREATE` | `workingDirectory`/`cwd` + `name?` | 添加项目；`workingDirectory` 必填且同一文件夹只能绑定一个项目；未传 `name` 时使用文件夹名；返回 `{ok, id, name, workingDirectory}` |
 | `WORKSPACE.SELECT` | `index?` `id?` `name?` | 按 index（0/1-based）/ id / 名称匹配；`name` 支持精确与 `Contains`；返回 `{ok:true}` |
@@ -136,10 +136,11 @@ public static class DaemonMessageTypes {
 ```jsonc
 {
   "type":   "SESSION_CREATE",      // 见上表
-  "paneId": "pane-uuid",
+  "paneId": "pane-uuid",           // CREATE 时注入为 ECODEX_PANE_ID
   "cols":   120,                   // CREATE / RESIZE
   "rows":   30,
   "workspaceId": "workspace-uuid", // 可选，CREATE；注入为 ECODEX_WORKSPACE_ID
+  "surfaceId": "surface-uuid",     // 可选，CREATE；注入为 ECODEX_SURFACE_ID
   "workingDirectory": "C:\\repo",  // 可选，CREATE
   "command": "pwsh.exe",           // 可选，CREATE（覆盖默认 shell）
   "data":   "SGVsbG8="             // Base64 字节；WRITE
@@ -360,7 +361,7 @@ Shell 写入 `\e]133;A` / `\e]133;B;<command>` / `\e]133;C` / `\e]133;D;<exitcod
 
 ### 5.4 S2 hook 生命周期通知目标契约（待 `NOT-02B-*` 实现）
 
-`NOT-02A` 已安装的 PowerShell profile hook 当前只保证把 `phase / command / exitCode / cwd` 送到 `HOOK.COMMAND` 并写诊断日志；S2 后续切片必须按下列目标契约扩展，避免全局 profile hook 对外部 PowerShell 会话造成误通知：
+`NOT-02A` 已安装的 PowerShell profile hook 已把 `phase / command / exitCode / cwd / workspaceId / surfaceId / paneId` 送到 `HOOK.COMMAND` 并写诊断日志；S2 后续通知生成切片必须按下列目标契约使用这些字段，避免全局 profile hook 对外部 PowerShell 会话造成误通知：
 
 | 字段 / 规则 | 目标契约 |
 |---|---|

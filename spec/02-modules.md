@@ -9,7 +9,7 @@
 |---|---|---|
 | `src/ECodex.Core/Terminal/ConPtyInterop.cs` | `ConPtyInterop` (internal static) | `kernel32!CreatePseudoConsole / ResizePseudoConsole / ClosePseudoConsole / CreateProcess / CreatePipe` 等 P/Invoke 绑定；`STARTUPINFOEX / COORD / SECURITY_ATTRIBUTES / PROCESS_INFORMATION` 结构 |
 | `src/ECodex.Core/Terminal/PseudoConsole.cs` | `PseudoConsole` | 封装 HPCON 句柄 + 输入/输出 `SafeFileHandle`。`Create(cols, rows)` 创建立即返回两根调用方持有的管道；`Resize(cols, rows)`；`Dispose()` 关闭 HPCON 与管道 |
-| `src/ECodex.Core/Terminal/TerminalEnvironmentVariables.cs` | `TerminalEnvironmentVariables` | 构建 shell 启动环境；当前注入 `ECODEX_WORKSPACE_ID`，并与父进程环境合并 |
+| `src/ECodex.Core/Terminal/TerminalEnvironmentVariables.cs` | `TerminalEnvironmentVariables` | 构建 shell 启动环境；当前注入 `ECODEX_WORKSPACE_ID / ECODEX_SURFACE_ID / ECODEX_PANE_ID`，并与父进程环境合并 |
 | `src/ECodex.Core/Terminal/TerminalProcess.cs` | `TerminalProcess` | 包装 Shell 进程：`CreateProcess` + ConPTY 线程属性 + 可选 Unicode 环境块；后台线程 `WaitForSingleObject` 触发 `Exited`；`DetectShell()` 选择 pwsh → powershell → cmd |
 | `src/ECodex.Core/Terminal/TerminalSession.cs` | `TerminalSession` | **核心**：VT 解析、缓冲区写入、C0/C1 控制、CSI 分派、OSC 路由；事件：`OutputReceived / ProcessExited / TitleChanged / WorkingDirectoryChanged / NotificationReceived / ShellPromptMarker / Redraw / BellReceived / RawOutputReceived`。提供 `Start / Write / Resize / FeedOutput / CreateBufferSnapshot / RestoreBufferSnapshot / Dispose`。`DaemonWrite/DaemonResize` 两个 Func 委托用于在守护进程模式下把写入/调整转发到 IPC |
 | `src/ECodex.Core/Terminal/VtParser.cs` | `VtParser` | 14 个状态的状态机（Ground / Escape / CsiEntry / CsiParam / CsiIgnore / OscString / Dcs* / SosPmApc），含 UTF-8 多字节续字符跨包边界处理；`Feed(ReadOnlySpan<byte>)` / `Feed(string)` |

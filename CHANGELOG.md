@@ -14,6 +14,7 @@ ECodex 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 - App 启动时新增默认 skills 种子安装：从安装目录 `default-skills` 复制到 `%USERPROFILE%\.agents\skills`，同名 skill 跳过且不覆盖。
 - 新增系统托盘常驻入口：关闭按钮或最小化会隐藏 ECodex 到托盘，双击托盘图标或菜单“打开 ECodex”可恢复窗口，托盘菜单也提供“退出并保留终端”和“退出并终止终端”。
 - 新增默认 PowerShell shell integration：App 启动时幂等安装 ECodex 标记块，写入前备份 profile，并通过 `ecodex hook event` 回传命令开始、结束和退出码。
+- PowerShell shell integration 现在会随命令生命周期事件回传 `workspaceId`、`surfaceId` 与 `paneId`，为后台完成 / 失败通知提供精确 pane 定位。
 - 新增 `.ecodex/ecodex.example.json` dogfood 示例，预置本仓 build、unit test、docs build、status 和 health 命令。
 - 新增 `scripts/smoke-ecodex-v2.ps1` 手动 smoke 脚本，用真实 ECodex pipe 验证 status、workspace、pane 与 browser 最小闭环，并在缺环境时清晰跳过。
 - 新增 `scripts/release-evidence.ps1` 只读发布证据清单脚本，汇总 build、test、docs、perf、doctor 和 release workflow 证据路径及 Windows-only 标记。

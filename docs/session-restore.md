@@ -116,9 +116,15 @@ ecodex restore-session
 
 `ecodex restore-session` 会刷新恢复绑定并定位第一个可恢复 Pane。快捷键：`Ctrl+Shift+O`。
 
-## `ECODEX_WORKSPACE_ID`
+## ECodex 终端上下文环境变量
 
-启动 shell 时，ECodex 会注入 `ECODEX_WORKSPACE_ID`。本地 ConPTY 与 daemon 托管会话都可读取该变量，用于脚本判断当前 Workspace。
+启动 shell 时，ECodex 会注入以下环境变量。本地 ConPTY 与 daemon 托管会话都可读取这些变量，用于脚本判断当前终端所属的 Workspace / Surface / Pane，也用于 PowerShell shell integration 回传命令生命周期上下文。
+
+| 变量 | 含义 |
+|---|---|
+| `ECODEX_WORKSPACE_ID` | 当前 Workspace ID |
+| `ECODEX_SURFACE_ID` | 当前 Surface ID |
+| `ECODEX_PANE_ID` | 当前 Pane ID |
 
 ## 排查
 

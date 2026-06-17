@@ -146,7 +146,7 @@ public static class Program
     {
         if (args.Length == 0 || !string.Equals(args[0], "event", StringComparison.OrdinalIgnoreCase))
         {
-            Console.Error.WriteLine("Usage: ecodex hook event --phase <start|end> --command <text> [--exit-code <code>] [--cwd <path>]");
+            Console.Error.WriteLine("Usage: ecodex hook event --phase <start|end> --command <text> [--exit-code <code>] [--cwd <path>] [--workspace-id <id>] [--surface-id <id>] [--pane-id <id>]");
             return 1;
         }
 
@@ -158,6 +158,9 @@ public static class Program
         var command = GetFirstOption(parsed, "command") ?? "";
         var exitCode = GetFirstOption(parsed, "exit-code", "exitCode") ?? "";
         var cwd = GetFirstOption(parsed, "cwd", "workingDirectory") ?? "";
+        var workspaceId = GetFirstOption(parsed, "workspace-id", "workspaceId", "workspace") ?? "";
+        var surfaceId = GetFirstOption(parsed, "surface-id", "surfaceId", "surface") ?? "";
+        var paneId = GetFirstOption(parsed, "pane-id", "paneId", "pane") ?? "";
         var eventArgs = new Dictionary<string, string>
         {
             ["phase"] = phase,
@@ -165,6 +168,9 @@ public static class Program
         };
         if (!string.IsNullOrWhiteSpace(exitCode)) eventArgs["exitCode"] = exitCode;
         if (!string.IsNullOrWhiteSpace(cwd)) eventArgs["cwd"] = cwd;
+        if (!string.IsNullOrWhiteSpace(workspaceId)) eventArgs["workspaceId"] = workspaceId;
+        if (!string.IsNullOrWhiteSpace(surfaceId)) eventArgs["surfaceId"] = surfaceId;
+        if (!string.IsNullOrWhiteSpace(paneId)) eventArgs["paneId"] = paneId;
 
         var response = await NamedPipeClient.SendCommand("HOOK.COMMAND", eventArgs);
         if (_globalOptions.Json)
@@ -1052,6 +1058,10 @@ public static class Program
                   --phase <value>   start | end
                   --command <text>  Command text
                   --exit-code <n>   Exit code for end events
+                  --cwd <path>      Working directory
+                  --workspace-id <id> Workspace context
+                  --surface-id <id> Surface context
+                  --pane-id <id>    Pane context
 
               window                Manage app windows through ecodex.v2
                 list                List all open windows

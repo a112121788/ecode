@@ -27,7 +27,8 @@ public sealed class DaemonSessionManager : IDisposable
         int rows,
         string? workingDirectory,
         string? command,
-        string? workspaceId)
+        string? workspaceId,
+        string? surfaceId)
     {
         // 如果会话已存在，则返回其信息（attach/重连语义）
         if (_sessions.TryGetValue(paneId, out var existing))
@@ -55,6 +56,7 @@ public sealed class DaemonSessionManager : IDisposable
             ["command"] = command,
             ["cwd"] = workingDirectory,
             ["rows"] = rows,
+            ["surfaceId"] = surfaceId,
             ["workspaceId"] = workspaceId,
         });
         var session = new TerminalSession(paneId, cols, rows);
@@ -89,7 +91,7 @@ public sealed class DaemonSessionManager : IDisposable
         session.Start(
             command: command,
             workingDirectory: workingDirectory,
-            environment: TerminalEnvironmentVariables.ForWorkspace(workspaceId));
+            environment: TerminalEnvironmentVariables.ForPane(workspaceId, surfaceId, paneId));
 
         SessionCreated?.Invoke(paneId);
 

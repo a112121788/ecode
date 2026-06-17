@@ -6,16 +6,27 @@ namespace ECodex.Core.Terminal;
 public static class TerminalEnvironmentVariables
 {
     public const string WorkspaceId = "ECODEX_WORKSPACE_ID";
+    public const string SurfaceId = "ECODEX_SURFACE_ID";
+    public const string PaneId = "ECODEX_PANE_ID";
 
     public static Dictionary<string, string> ForWorkspace(string? workspaceId)
+        => ForPane(workspaceId, surfaceId: null, paneId: null);
+
+    public static Dictionary<string, string> ForPane(string? workspaceId, string? surfaceId, string? paneId)
     {
-        if (string.IsNullOrWhiteSpace(workspaceId))
+        var environment = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrWhiteSpace(workspaceId))
+            environment[WorkspaceId] = workspaceId;
+        if (!string.IsNullOrWhiteSpace(surfaceId))
+            environment[SurfaceId] = surfaceId;
+        if (!string.IsNullOrWhiteSpace(paneId))
+            environment[PaneId] = paneId;
+
+        if (environment.Count == 0)
             return [];
 
-        return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            [WorkspaceId] = workspaceId,
-        };
+        return environment;
     }
 
     public static SortedDictionary<string, string> MergeWithCurrent(IReadOnlyDictionary<string, string>? overrides)

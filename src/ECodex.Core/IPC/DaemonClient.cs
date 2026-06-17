@@ -501,7 +501,8 @@ public sealed class DaemonClient : IDisposable
         int rows,
         string? workingDirectory = null,
         string? command = null,
-        string? workspaceId = null)
+        string? workspaceId = null,
+        string? surfaceId = null)
     {
         var response = await SendRequestAsync(new DaemonRequest
         {
@@ -510,6 +511,7 @@ public sealed class DaemonClient : IDisposable
             Cols = cols,
             Rows = rows,
             WorkspaceId = workspaceId,
+            SurfaceId = surfaceId,
             WorkingDirectory = workingDirectory,
             Command = command,
         });

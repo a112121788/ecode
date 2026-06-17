@@ -554,6 +554,12 @@ public class PowerShellHookSetupServiceTests
         plan.ProfileText.Should().Contain("--phase start");
         plan.ProfileText.Should().Contain("--phase end");
         plan.ProfileText.Should().Contain("--exit-code");
+        plan.ProfileText.Should().Contain("ECODEX_WORKSPACE_ID");
+        plan.ProfileText.Should().Contain("ECODEX_SURFACE_ID");
+        plan.ProfileText.Should().Contain("ECODEX_PANE_ID");
+        plan.ProfileText.Should().Contain("--workspace-id");
+        plan.ProfileText.Should().Contain("--surface-id");
+        plan.ProfileText.Should().Contain("--pane-id");
         installedAgain.Changed.Should().BeFalse();
         CountOccurrences(installedAgain.ProfileText, PowerShellHookSetupService.BeginMarker).Should().Be(1);
     }
@@ -608,6 +614,23 @@ public class PowerShellHookSetupServiceTests
         cliSource.Should().Contain("\"hook\" => await HandleHook(args[1..])");
         cliSource.Should().Contain("PowerShell hook:");
         cliSource.Should().Contain("PowerShellHookSetupService.CreateUninstallPlan");
+    }
+
+    [Fact]
+    public void CliHookEvent_ForwardsWorkspaceSurfaceAndPaneContext()
+    {
+        var cliSource = Normalize(File.ReadAllText(FindRepoFile("src", "ECodex.Cli", "Program.cs")));
+        var mainViewModelSource = Normalize(File.ReadAllText(FindRepoFile("src", "ECodex", "ViewModels", "MainViewModel.cs")));
+
+        cliSource.Should().Contain("\"workspace-id\", \"workspaceId\", \"workspace\"");
+        cliSource.Should().Contain("\"surface-id\", \"surfaceId\", \"surface\"");
+        cliSource.Should().Contain("\"pane-id\", \"paneId\", \"pane\"");
+        cliSource.Should().Contain("eventArgs[\"workspaceId\"] = workspaceId");
+        cliSource.Should().Contain("eventArgs[\"surfaceId\"] = surfaceId");
+        cliSource.Should().Contain("eventArgs[\"paneId\"] = paneId");
+        mainViewModelSource.Should().Contain("workspaceId={workspaceId}");
+        mainViewModelSource.Should().Contain("surfaceId={surfaceId}");
+        mainViewModelSource.Should().Contain("paneId={paneId}");
     }
 
     private static string FindRepoFile(params string[] relativeParts)
@@ -1190,6 +1213,8 @@ public class DocsSiteTests
         sessionRestore.Should().Contain("ecodex restore-session");
         sessionRestore.Should().Contain("Ctrl+Shift+O");
         sessionRestore.Should().Contain("ECODEX_WORKSPACE_ID");
+        sessionRestore.Should().Contain("ECODEX_SURFACE_ID");
+        sessionRestore.Should().Contain("ECODEX_PANE_ID");
         sessionRestore.Should().Contain("关闭按钮和最小化默认只把 ECodex 隐藏到系统托盘");
         sessionRestore.Should().Contain("显式退出 ECodex 时，只断开主程序与 daemon 的客户端连接");
         sessionRestore.Should().Contain("重开时仅自动挂载 `session.json` 中已有 paneId 对应的 daemon 会话");
@@ -1700,6 +1725,7 @@ public class DaemonMessageRoundTripTests
             Cols = 120,
             Rows = 40,
             WorkspaceId = "workspace-1",
+            SurfaceId = "surface-1",
             WorkingDirectory = @"C:\repo",
             Command = "pwsh",
             Data = "hello",
@@ -1712,6 +1738,7 @@ public class DaemonMessageRoundTripTests
         roundTripped.Cols.Should().Be(120);
         roundTripped.Rows.Should().Be(40);
         roundTripped.WorkspaceId.Should().Be("workspace-1");
+        roundTripped.SurfaceId.Should().Be("surface-1");
         roundTripped.WorkingDirectory.Should().Be(@"C:\repo");
         roundTripped.Command.Should().Be("pwsh");
         roundTripped.Data.Should().Be("hello");
@@ -3595,6 +3622,21 @@ public class TerminalEnvironmentVariablesTests
 
         environment.Should().ContainKey(TerminalEnvironmentVariables.WorkspaceId)
             .WhoseValue.Should().Be("workspace-1");
+        environment.Should().NotContainKey(TerminalEnvironmentVariables.SurfaceId);
+        environment.Should().NotContainKey(TerminalEnvironmentVariables.PaneId);
+    }
+
+    [Fact]
+    public void ForPane_AddsWorkspaceSurfaceAndPaneIds()
+    {
+        var environment = TerminalEnvironmentVariables.ForPane("workspace-1", "surface-1", "pane-1");
+
+        environment.Should().ContainKey(TerminalEnvironmentVariables.WorkspaceId)
+            .WhoseValue.Should().Be("workspace-1");
+        environment.Should().ContainKey(TerminalEnvironmentVariables.SurfaceId)
+            .WhoseValue.Should().Be("surface-1");
+        environment.Should().ContainKey(TerminalEnvironmentVariables.PaneId)
+            .WhoseValue.Should().Be("pane-1");
     }
 
     [Fact]
@@ -3604,12 +3646,16 @@ public class TerminalEnvironmentVariablesTests
         {
             ["PATH"] = "test-path",
             [TerminalEnvironmentVariables.WorkspaceId] = "workspace-1",
+            [TerminalEnvironmentVariables.SurfaceId] = "surface-1",
+            [TerminalEnvironmentVariables.PaneId] = "pane-1",
             ["BAD=NAME"] = "ignored",
             [""] = "ignored",
         });
 
         merged["PATH"].Should().Be("test-path");
         merged[TerminalEnvironmentVariables.WorkspaceId].Should().Be("workspace-1");
+        merged[TerminalEnvironmentVariables.SurfaceId].Should().Be("surface-1");
+        merged[TerminalEnvironmentVariables.PaneId].Should().Be("pane-1");
         merged.Should().NotContainKey("BAD=NAME");
         merged.Should().NotContainKey("");
     }

@@ -991,8 +991,11 @@ public partial class MainViewModel : ObservableObject
         var command = args.GetValueOrDefault("command", "");
         var exitCode = args.GetValueOrDefault("exitCode", "");
         var cwd = args.GetValueOrDefault("cwd", "");
+        var workspaceId = args.GetValueOrDefault("workspaceId", "");
+        var surfaceId = args.GetValueOrDefault("surfaceId", "");
+        var paneId = args.GetValueOrDefault("paneId", "");
         var sanitized = App.CommandLogService.SanitizeCommandForStorage(command) ?? "[redacted]";
-        App.DaemonLog($"[Hook] phase={phase} exitCode={exitCode} cwd={cwd} command={sanitized}");
+        App.DaemonLog($"[Hook] phase={phase} exitCode={exitCode} workspaceId={workspaceId} surfaceId={surfaceId} paneId={paneId} cwd={cwd} command={sanitized}");
 
         return JsonSerializer.Serialize(new { ok = true });
     }
