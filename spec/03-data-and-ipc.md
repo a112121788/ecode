@@ -423,6 +423,21 @@ Windows Toast 只作为系统级提醒入口；通知中心的内存 `TerminalNo
 | 线程边界 | Toast activation 可能来自非 UI 线程；必须派发到 WPF Dispatcher 后访问 `MainWindow`、`MainViewModel` 和 UI 集合 |
 | 验证边界 | payload 解析、fallback 决策和 `JumpToNotification` 调用可单测；真实 Toast 点击、AUMID 与系统通知中心行为必须用 Windows live smoke 验证 |
 
+### 6.2 Codex 等待输入提醒契约（`NOT-02D-*`）
+
+Codex 等待用户输入、权限确认或关键错误决策时，需要在 ECodex 隐藏到托盘或非激活时低噪声提醒；普通日志输出、流式回答和前台活跃窗口不得刷通知。
+
+| 字段 / 规则 | 契约 |
+|---|---|
+| 数据来源 | 以 Terminal pane 的 VT 解析后文本尾部为主要输入；本地 ConPTY 与 daemon 托管会话都通过 `TerminalSession.OutputReceived` 后读取同一 buffer tail，不直接扫描未解码 raw bytes |
+| 检测边界 | 先做纯 Core 检测器（例如 `AgentAttentionSignalDetector`），输入为 pane text tail / 最近命令 / agent 线索，输出 `WaitingInput / ConfirmationRequired / ErrorNeedsDecision` 等信号；检测器不得访问 UI、通知服务或系统 Toast |
+| Codex 优先 | 首版只识别 Codex 常见等待语义和确认语义；Claude/Aider/Cursor 等代理只保留后续扩展点，避免用泛化关键字误报 |
+| 通知门控 | 只有 ECodex 窗口隐藏到托盘或非激活，且信号带 workspace / surface / pane 上下文时才创建未读通知并可能弹 Toast；前台活跃只记录诊断 / 状态，不创建通知 |
+| 去重 / 冷却 | 同 pane、同信号类型、同摘要在冷却窗口内只提醒一次；同一 pane 状态从等待输入变为确认 / 错误决策时可再次提醒；普通输出追加不刷新 Toast |
+| 安全与脱敏 | 通知 body 只包含脱敏后的短摘要，不包含完整命令输出、密钥、prompt 原文或大段上下文；检测失败不影响终端输入输出 |
+| 降级 | 无法确认 Codex 或信号置信度不足时 no-op；用户仍可通过 OSC / `ecodex notify` / 命令生命周期通知获得显式提醒 |
+| 验证边界 | 信号检测、去重和前台门控可单测 / source test；真实 Codex 等待输入场景需 Windows live smoke 或手测记录补证 |
+
 ---
 
 ## 7. 代码片段（`%USERPROFILE%/.ecodex/snippets.json`）

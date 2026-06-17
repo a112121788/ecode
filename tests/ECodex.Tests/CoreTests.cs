@@ -1442,7 +1442,7 @@ public class SmokeWorkflowTests
         backlog.Should().Contain("### `NOT-02C-3` - Windows Toast live smoke 与安装策略校验");
         backlog.Should().Contain("| 状态 | done |");
         backlog.Should().Contain("ToastActivationSmokeScript_CoversWindowsPrereqsManualEvidenceAndSkipsClearly");
-        backlog.Should().Contain("下个可领切片优先进入 `NOT-02D`");
+        backlog.Should().Contain("下个可领切片优先进入 `NOT-02D-1`");
     }
 }
 
@@ -1469,6 +1469,30 @@ public class TerminalControlSourceTests
         source.Should().Contain("else if (e.Key == Key.Enter && !ctrl)");
         source.Should().Contain("Key.Enter when modifiers.HasFlag(ModifierKeys.Control) => \"\\n\"");
         source.Should().Contain("Key.Enter => \"\\r\"");
+    }
+}
+
+public class NotificationBacklogRefinementTests
+{
+    [Fact]
+    public void Not02DRefinement_DefinesCodexAttentionContractAndReadySlices()
+    {
+        var contract = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "03-data-and-ipc.md"));
+        var backlog = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "07-implementation-backlog.md"));
+
+        contract.Should().Contain("### 6.2 Codex 等待输入提醒契约");
+        contract.Should().Contain("TerminalSession.OutputReceived");
+        contract.Should().Contain("AgentAttentionSignalDetector");
+        contract.Should().Contain("WaitingInput / ConfirmationRequired / ErrorNeedsDecision");
+        contract.Should().Contain("前台活跃只记录诊断 / 状态，不创建通知");
+        contract.Should().Contain("同 pane、同信号类型、同摘要");
+        contract.Should().Contain("脱敏后的短摘要");
+        backlog.Should().Contain("### `NOT-02D-R` - 拆分 Codex 等待输入提醒契约");
+        backlog.Should().Contain("### `NOT-02D-1` - Codex 等待输入信号纯检测器");
+        backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
+        backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
+        backlog.Should().Contain("| 状态 | ready |");
+        backlog.Should().Contain("下个可领切片优先进入 `NOT-02D-1`");
     }
 }
 

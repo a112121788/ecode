@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `NOT-02D` Codex 等待输入提醒的契约拆分与 ready 化；`NOT-02C-1/2/3` 已完成 payload、parser、窗口恢复、应用内跳转处理与 Windows-only live smoke/checklist。
+下个可领切片优先进入 `NOT-02D-1` Codex 等待输入信号纯检测器；`NOT-02C-1/2/3` 已完成 payload、parser、窗口恢复、应用内跳转处理与 Windows-only live smoke/checklist，`NOT-02D-R` 已补齐等待输入提醒契约和子队列。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -180,6 +180,58 @@ AI Agent 启动后按以下顺序选择任务：
 | 验收 | Windows 手测记录包含 Toast payload、点击恢复、pane 聚焦、缺 pane fallback；脚本 / checklist 能在无 Toast 权限或缺快捷方式时给出可读跳过 / 失败原因；`ToastActivationSmokeScript_CoversWindowsPrereqsManualEvidenceAndSkipsClearly` 固化脚本诊断字段；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
 | 风险 | 系统通知权限、专注助手、安装方式和 AUMID 注册都会影响 live smoke；CI 无法稳定证明系统 Toast 点击 |
 | 回滚 | 移除新增 smoke/checklist 文档或脚本，不影响运行时 Toast 展示能力 |
+
+### `NOT-02D-R` - 拆分 Codex 等待输入提醒契约
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P1 |
+| Outcome | Codex 等待输入、权限确认、错误决策提醒被拆成可独立实现的低风险子切片，明确数据来源、前台门控、去重和脱敏边界 |
+| Scope | 只做 spec/backlog refinement；阅读 `TerminalSession`、`SurfaceViewModel`、`CommandLifecycleNotificationService`、`NotificationService` 和 `03-data-and-ipc.md` 通知契约；不扫描真实终端输出、不写通知运行时代码 |
+| 关联 | `src/ECodex.Core/Terminal/TerminalSession.cs`、`src/ECodex/ViewModels/SurfaceViewModel.cs`、`src/ECodex.Core/Services/CommandLifecycleNotificationService.cs`、`src/ECodex.Core/Services/NotificationService.cs`、`03-data-and-ipc.md` §6.2 |
+| 验收 | `NOT-02D-1/2/3` Ready 字段补齐；`03-data-and-ipc.md` 明确等待输入信号来源、Codex 优先范围、前台 no-op、去重冷却、脱敏摘要和 live smoke 边界；`Not02DRefinement_DefinesCodexAttentionContractAndReadySlices` 通过；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| 风险 | 如果直接扫描 raw bytes 或泛化关键词，会误报普通流式输出；如果绕过前台门控，会造成高噪声 Toast |
+| 回滚 | 仅回退 spec/backlog refinement，不影响已有命令生命周期通知 |
+
+### `NOT-02D-1` - Codex 等待输入信号纯检测器
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | Core 层有可单测的 Codex attention 信号检测器，能从短文本尾部识别等待输入、确认授权和错误决策语义，但不产生通知 |
+| Scope | 新增纯 Core 检测器（建议 `AgentAttentionSignalDetector` + 小 DTO），输入为已脱敏 / 可脱敏的 pane text tail、最近命令和可选 agent hint；首版只覆盖 Codex 常见短语与结构化提示；不接 UI、不读 raw bytes、不显示 Toast、不做配置化规则 |
+| 关联 | `src/ECodex.Core/Terminal/TerminalSession.cs` 输出 buffer、`CommandLogService.SanitizeCommandForStorage` / transcript 脱敏思路、`03-data-and-ipc.md` §6.2 |
+| 验收 | 单测覆盖：Codex 等待用户输入 / approval / confirm / error decision 命中；普通日志、build 输出、流式回答不命中；长文本只返回脱敏短摘要；空输入 no-op；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~AgentAttention" --no-restore` 与 `git diff --check` 通过 |
+| 风险 | Codex 文案版本会变；检测规则必须保守，避免因为 “error” / “input” 单词出现在普通日志里就提醒 |
+| 回滚 | 删除检测器与测试；后续通知接入不受影响 |
+
+### `NOT-02D-2` - 等待输入信号接入低噪声通知
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | 当 ECodex 隐藏到托盘或非激活时，Codex pane 出现等待输入 / 确认 / 错误决策信号会生成一次未读通知并可点击跳回 pane |
+| Scope | 在 `SurfaceViewModel` 的 `TerminalSession.OutputReceived` 后读取 buffer tail 并调用 `NOT-02D-1` 检测器；新增小型去重 / 冷却状态（同 pane + signal + summary）；复用 `NotificationService.AddNotification` 和 Toast payload；前台活跃 no-op；不新增设置项、不支持非 Codex agent |
+| 关联 | `src/ECodex/ViewModels/SurfaceViewModel.cs`、`src/ECodex/App.xaml.cs` 前台判断、`src/ECodex.Core/Services/NotificationService.cs`、`ToastActivationParser` |
+| 验收 | 测试覆盖：后台 / 非激活命中信号创建通知；前台活跃 no-op；同 pane 同摘要冷却；不同 pane 不互相吞；通知带 workspace / surface / pane 且 Toast 点击沿 `NOT-02C` 路径跳转；focused tests 与 Debug build 通过 |
+| 风险 | `OutputReceived` 频繁触发，必须避免每个 chunk 扫描大缓冲或重复通知；读取 UI buffer 要保持线程边界安全 |
+| 回滚 | 移除接线与去重状态，保留纯检测器 |
+
+### `NOT-02D-3` - Codex 等待输入 live smoke 与文档
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P2 |
+| Outcome | 维护者可用手测脚本 / checklist 证明真实 Codex 等待输入场景会低噪声提醒，且普通输出不会误报 |
+| Scope | 增加或扩展 Windows-only smoke/checklist，覆盖窗口非激活、Codex 等待输入、确认授权、错误决策、普通流式输出不通知；同步 troubleshooting / installation 或 release readiness；不做可配置规则 UI |
+| 关联 | `scripts/smoke-toast-activation.ps1`、`docs/troubleshooting.md`、`docs/release-readiness.md`、`03-data-and-ipc.md` §6.2 |
+| 验收 | 手测记录包含触发文本、通知标题/body 摘要、点击跳转、冷却去重、普通输出不通知；缺 Codex CLI / Windows Toast 时给出可读 skip；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| 风险 | 真实 Codex CLI 文案和 approval 模式会随版本变化；脚本应能记录环境与原始触发样例，避免把 CI 静态测试当 live 证据 |
+| 回滚 | 删除 smoke/checklist 文档，不影响检测器与通知接线 |
 
 ### `PKG-02` - Inno 安装与卸载向导中文化
 
