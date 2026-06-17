@@ -994,10 +994,29 @@ public partial class MainViewModel : ObservableObject
         var workspaceId = args.GetValueOrDefault("workspaceId", "");
         var surfaceId = args.GetValueOrDefault("surfaceId", "");
         var paneId = args.GetValueOrDefault("paneId", "");
-        var sanitized = App.CommandLogService.SanitizeCommandForStorage(command) ?? "[redacted]";
-        App.DaemonLog($"[Hook] phase={phase} exitCode={exitCode} workspaceId={workspaceId} surfaceId={surfaceId} paneId={paneId} cwd={cwd} command={sanitized}");
+        var sanitized = App.CommandLogService.SanitizeCommandForStorage(command);
+        App.DaemonLog($"[Hook] phase={phase} exitCode={exitCode} workspaceId={workspaceId} surfaceId={surfaceId} paneId={paneId} cwd={cwd} command={sanitized ?? "[redacted]"}");
+        App.CommandLifecycleNotifications.HandleHookEvent(
+            new CommandLifecycleHookEvent(
+                phase,
+                sanitized,
+                ParseHookExitCode(exitCode),
+                cwd,
+                workspaceId,
+                surfaceId,
+                paneId),
+            IsMainWindowForegroundActive());
 
         return JsonSerializer.Serialize(new { ok = true });
+    }
+
+    private static int? ParseHookExitCode(string? exitCode)
+        => int.TryParse(exitCode, out var parsed) ? parsed : null;
+
+    private static bool IsMainWindowForegroundActive()
+    {
+        var window = Application.Current?.MainWindow;
+        return window is { IsActive: true, IsVisible: true };
     }
 
     private string HandleWorkspaceList()

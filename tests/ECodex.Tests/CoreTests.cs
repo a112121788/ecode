@@ -191,6 +191,105 @@ public class NotificationServiceTests
     };
 }
 
+public class CommandLifecycleNotificationServiceTests
+{
+    [Fact]
+    public void HandleHookEvent_MissingWorkspace_DoesNotNotify()
+    {
+        var notifications = new NotificationService();
+        var service = new CommandLifecycleNotificationService(notifications);
+
+        var added = service.HandleHookEvent(CreateHookEvent(workspaceId: ""), isAppForegroundActive: false);
+
+        added.Should().BeFalse();
+        notifications.Notifications.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void HandleHookEvent_EndSuccessInBackground_AddsCompletionNotification()
+    {
+        var notifications = new NotificationService();
+        var service = new CommandLifecycleNotificationService(notifications);
+
+        var added = service.HandleHookEvent(CreateHookEvent(command: "dotnet test", exitCode: 0), isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        var notification = notifications.Notifications.Should().ContainSingle().Which;
+        notification.Title.Should().Be("命令已完成");
+        notification.Body.Should().Be("dotnet test");
+        notification.WorkspaceId.Should().Be("workspace-1");
+        notification.SurfaceId.Should().Be("surface-1");
+        notification.PaneId.Should().Be("pane-1");
+        notification.IsRead.Should().BeFalse();
+    }
+
+    [Fact]
+    public void HandleHookEvent_EndFailureInBackground_AddsFailureNotification()
+    {
+        var notifications = new NotificationService();
+        var service = new CommandLifecycleNotificationService(notifications);
+
+        var added = service.HandleHookEvent(CreateHookEvent(command: "npm run build", exitCode: 2), isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        var notification = notifications.Notifications.Should().ContainSingle().Which;
+        notification.Title.Should().Be("命令失败");
+        notification.Body.Should().Be("npm run build (exit 2)");
+    }
+
+    [Fact]
+    public void HandleHookEvent_ForegroundActive_DoesNotNotify()
+    {
+        var notifications = new NotificationService();
+        var service = new CommandLifecycleNotificationService(notifications);
+
+        var added = service.HandleHookEvent(CreateHookEvent(command: "dotnet test", exitCode: 0), isAppForegroundActive: true);
+
+        added.Should().BeFalse();
+        notifications.Notifications.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void HandleHookEvent_MissingPaneId_AddsSurfaceLevelNotification()
+    {
+        var notifications = new NotificationService();
+        var service = new CommandLifecycleNotificationService(notifications);
+
+        var added = service.HandleHookEvent(CreateHookEvent(command: "pwsh -c ok", paneId: ""), isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        var notification = notifications.Notifications.Should().ContainSingle().Which;
+        notification.WorkspaceId.Should().Be("workspace-1");
+        notification.SurfaceId.Should().Be("surface-1");
+        notification.PaneId.Should().BeNull();
+    }
+
+    [Fact]
+    public void HandleHookEvent_EndWithoutCommand_UsesActiveStartCommand()
+    {
+        var notifications = new NotificationService();
+        var service = new CommandLifecycleNotificationService(notifications);
+
+        service.HandleHookEvent(CreateHookEvent(phase: "start", command: "pwsh -c work"), isAppForegroundActive: false)
+            .Should().BeFalse();
+        var added = service.HandleHookEvent(CreateHookEvent(command: "", exitCode: 0), isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        notifications.Notifications.Should().ContainSingle()
+            .Which.Body.Should().Be("pwsh -c work");
+    }
+
+    private static CommandLifecycleHookEvent CreateHookEvent(
+        string phase = "end",
+        string command = "echo ok",
+        int? exitCode = 0,
+        string workingDirectory = @"C:\repo",
+        string workspaceId = "workspace-1",
+        string surfaceId = "surface-1",
+        string paneId = "pane-1")
+        => new(phase, command, exitCode, workingDirectory, workspaceId, surfaceId, paneId);
+}
+
 public class NotificationApiServiceTests
 {
     [Fact]

@@ -33,7 +33,7 @@
 
 | 子命令 | 选项 | 行为 |
 |---|---|---|
-| `event` | `--phase start/end`、`--command <text>`、`--exit-code <n>`、`--cwd <path>`、`--workspace-id <id>`、`--surface-id <id>`、`--pane-id <id>` | 发送 `HOOK.COMMAND`，用于 PowerShell profile hook 回传命令生命周期和 ECodex pane 上下文；主应用先记录脱敏日志，通知生成由后续规则处理 |
+| `event` | `--phase start/end`、`--command <text>`、`--exit-code <n>`、`--cwd <path>`、`--workspace-id <id>`、`--surface-id <id>`、`--pane-id <id>` | 发送 `HOOK.COMMAND`，用于 PowerShell profile hook 回传命令生命周期和 ECodex workspace / surface / pane 上下文；主应用记录脱敏日志，并在后台 / 非激活 `phase=end` 时生成完成 / 失败通知 |
 
 #### `workspace`
 

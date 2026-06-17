@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先收口 S2 的低噪声命令生命周期通知闭环；当前顺序是 `NOT-02B-1` hook 定位、`NOT-02B-2` 通知生成、`NOT-02B-3` 去重节流，再进入 `NOT-02C-R` Toast 点击跳转 refinement。
+下个可领切片优先收口 S2 的低噪声命令生命周期通知闭环；`NOT-02B-1` hook 定位和 `NOT-02B-2` 通知生成已完成，下一步收口 `NOT-02B-3` 去重节流，再进入 `NOT-02C-R` Toast 点击跳转 refinement。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -107,7 +107,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | 当 ECodex 隐藏到托盘或处于非激活状态时，命令结束会按退出码进入未读中心：`0` 为完成通知，非 `0` 为失败通知；前台活跃时不创建未读通知、不弹 Toast |
 | Scope | 在 hook handler 周边或新增小服务维护 pane 级 active command lifecycle；只处理带 `workspaceId` 的 ECodex 终端事件；调用 `NotificationService.AddNotification` 生成 workspace / surface / pane 定位通知；同步 `03-data-and-ipc.md` 与必要 docs；不实现 Toast 点击激活、不识别 Codex 等待输入 |

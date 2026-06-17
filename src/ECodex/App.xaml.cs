@@ -19,6 +19,7 @@ public partial class App : Application
     private NamedPipeServer? _pipeServer;
 
     public static NotificationService NotificationService { get; } = new();
+    public static CommandLifecycleNotificationService CommandLifecycleNotifications { get; } = new(NotificationService);
     public static NamedPipeServer? PipeServer { get; private set; }
     public static SnippetService SnippetService { get; } = new();
     public static CommandLogService CommandLogService { get; } = new();
