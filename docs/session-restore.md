@@ -139,7 +139,7 @@ ecodex restore-session
 
 该入口复用 Core 层 `FailureLoopEvidenceCollector` 和 `FailureLoopEvidencePreviewFormatter`，UI 层只展示结果，不重新拼接证据，也不直接扫描 `%USERPROFILE%` 下的 `daemon-debug.log`。如果没有找到匹配的失败命令或证据，会显示 `No failure loop evidence available.`。
 
-AgentConversation Core 存储与 failure-loop `AgentMessages` provider 已经落地，Session Vault 通过 App 层显式 provider 读取 app-owned agent root；预览不会自行实例化 `AgentConversationStoreService`，也不会默认扫描其他 `%USERPROFILE%` profile。
+AgentConversation Core 存储、runtime recorder seam 与 failure-loop `AgentMessages` provider 已经落地，Session Vault 通过 App 层显式 provider 读取 app-owned agent root；预览不会自行实例化 `AgentConversationStoreService`，也不会默认扫描其他 `%USERPROFILE%` profile。
 
 Root 语义：Session Vault 不自行 new `AgentConversationStoreService`；App 层显式传入 `AgentMessages` provider。默认产品根目录只能是 `CompatibilityOptions.GetAppDataDir()` 下的 `agent` 子目录；目录不存在或 runtime 尚未写入时，Agent 消息区保持空集合 / 无匹配消息。
 
@@ -152,6 +152,6 @@ Root 语义：Session Vault 不自行 new `AgentConversationStoreService`；App 
 3. 打开 Session Vault：按 `Ctrl+Shift+V`，选中刚捕获的 transcript，点击“生成失败 loop 预览”。
 4. 生成预览：确认只读文本区出现 `Failure Loop Evidence`、失败命令、`Transcripts` 区块；点击“全部复制”后粘贴到临时文本编辑器核对内容可复制。
 5. 无证据负控：选择一个没有附近失败命令的 transcript，点击“生成失败 loop 预览”，应显示 `No failure loop evidence available.`。
-6. 边界记录：在 Agent runtime 写入真实消息前，当前结果不能作为 AgentConversation live 证据；Agent 消息区可能为空集合 / 无匹配消息。
+6. 边界记录：虽然 Core 已有 `AgentConversationRecorder` seam，但在 Agent runtime 接线写入真实消息前，当前结果不能作为 AgentConversation live 证据；Agent 消息区可能为空集合 / 无匹配消息。
 
 检查过程中不要手动打开或复制 `%USERPROFILE%\.ecodex\secrets.json`、`.env*`、`config/credentials*` 或 `secrets/**`；如果需要 daemon 诊断证据，只记录按钮生成的预览文本和手测截图，不直接粘贴完整真实日志。

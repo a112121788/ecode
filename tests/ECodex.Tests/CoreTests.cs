@@ -1737,7 +1737,7 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
         backlog.Should().Contain("| `NOT-02D` | done |");
-        backlog.Should().Contain("`OBS-01-13` AgentConversation runtime recorder Core seam");
+        backlog.Should().Contain("`OBS-01-14` AgentConversation runtime 最小接线 refinement");
     }
 }
 
@@ -1751,6 +1751,8 @@ public class Obs01RefinementTests
         var backlog = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "07-implementation-backlog.md"));
 
         modules.Should().Contain("AgentConversationStoreService.cs` | `AgentConversationStoreService`");
+        modules.Should().Contain("AgentConversationRecording.cs` | `AgentConversationThreadRecordingInput");
+        modules.Should().Contain("AgentConversationRecorder.cs` | `AgentConversationRecorder`");
         contract.Should().Contain("### 8.1 OBS-01 失败 loop 证据包契约");
         contract.Should().Contain("FailureLoopEvidencePackage");
         contract.Should().Contain("CommandLogService.GetForDate");
@@ -1767,6 +1769,8 @@ public class Obs01RefinementTests
         contract.Should().Contain("`InputTokens / OutputTokens / TotalTokens`");
         contract.Should().Contain("`IsCompaction=true`");
         contract.Should().Contain("不得读取 `secrets.json`");
+        contract.Should().Contain("`AgentConversationRecorder` 已提供纯 Core seam");
+        contract.Should().Contain("`AgentConversationRecordingResult` 失败");
         backlog.Should().Contain("### `OBS-01-R` - 拆分失败 loop 证据包契约");
         backlog.Should().Contain("### `OBS-01-1` - 失败 loop 证据包 Core DTO 与装配器");
         backlog.Should().Contain("### `OBS-01-2` - 失败 loop 证据源加载适配器");
@@ -1781,8 +1785,9 @@ public class Obs01RefinementTests
         backlog.Should().Contain("### `OBS-01-11` - Session Vault AgentMessages provider UI 接线");
         backlog.Should().Contain("### `OBS-01-12` - AgentConversation runtime 写入契约 refinement");
         backlog.Should().Contain("### `OBS-01-13` - AgentConversation runtime recorder Core seam");
+        backlog.Should().Contain("### `OBS-01-14` - AgentConversation runtime 最小接线 refinement");
         backlog.Should().Contain("FailureLoopEvidencePackage");
-        backlog.Should().Contain("`OBS-01-12` 已完成 AgentConversation runtime 写入契约 refinement");
+        backlog.Should().Contain("`OBS-01-13` 已完成 runtime recorder Core seam");
     }
 
     [Fact]
@@ -1791,6 +1796,7 @@ public class Obs01RefinementTests
         var sessionVault = File.ReadAllText(FindRepoFile("src", "ECodex", "Views", "SessionVaultWindow.xaml.cs"));
         var app = File.ReadAllText(FindRepoFile("src", "ECodex", "App.xaml.cs"));
         var agentStore = File.ReadAllText(FindRepoFile("src", "ECodex.Core", "Services", "AgentConversationStoreService.cs"));
+        var agentRecorder = File.ReadAllText(FindRepoFile("src", "ECodex.Core", "Services", "AgentConversationRecorder.cs"));
         var agentModels = File.ReadAllText(FindRepoFile("src", "ECodex.Core", "Models", "AgentConversation.cs"));
 
         sessionVault.Should().Contain("App.CommandLogService.GetTerminalTranscripts()");
@@ -1803,6 +1809,7 @@ public class Obs01RefinementTests
         app.Should().Contain("CompatibilityOptions.GetAppDataDir()");
         app.Should().Contain("\"agent\"");
         agentStore.Should().Contain("public sealed class AgentConversationStoreService");
+        agentRecorder.Should().Contain("public sealed class AgentConversationRecorder");
         agentModels.Should().Contain("public sealed record AgentConversationThread");
     }
 
@@ -2631,6 +2638,174 @@ public class AgentConversationStoreServiceTests
         public string Path { get; } = System.IO.Path.Combine(
             System.IO.Path.GetTempPath(),
             "ecodex-agent-conversation-tests-" + Guid.NewGuid().ToString("N"));
+
+        private TempDirectory()
+        {
+            Directory.CreateDirectory(Path);
+        }
+
+        public static TempDirectory Create() => new();
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+                Directory.Delete(Path, recursive: true);
+        }
+    }
+}
+
+public class AgentConversationRecorderTests
+{
+    [Fact]
+    public void StartThreadAndAppendMessages_MapsRuntimeInputsToStore()
+    {
+        using var temp = TempDirectory.Create();
+        var store = new AgentConversationStoreService(Path.Combine(temp.Path, "agent"));
+        var recorder = new AgentConversationRecorder(store);
+        var createdAt = new DateTimeOffset(2026, 6, 17, 9, 0, 0, TimeSpan.Zero);
+
+        var threadResult = recorder.StartThread(new AgentConversationThreadRecordingInput
+        {
+            WorkspaceId = "workspace-a",
+            SurfaceId = "surface-a",
+            PaneId = "pane-a",
+            Title = "Investigate runtime loop",
+            ThreadId = "thread-a",
+            CreatedAtUtc = createdAt,
+        });
+        var userResult = recorder.AppendMessage(new AgentConversationMessageRecordingInput
+        {
+            ThreadId = "thread-a",
+            Role = "USER",
+            Content = "please inspect the failing test",
+            MessageId = "message-user",
+            InputTokens = 4,
+            TotalTokens = 4,
+            CreatedAtUtc = createdAt.AddMinutes(1),
+        });
+        var assistantResult = recorder.AppendMessage(new AgentConversationMessageRecordingInput
+        {
+            ThreadId = "thread-a",
+            Role = "assistant",
+            Content = "the failing test points to the recorder seam",
+            MessageId = "message-assistant",
+            InputTokens = 2,
+            OutputTokens = 7,
+            TotalTokens = 9,
+            CreatedAtUtc = createdAt.AddMinutes(2),
+        });
+
+        threadResult.Succeeded.Should().BeTrue();
+        threadResult.Thread.Should().NotBeNull();
+        threadResult.Thread!.Id.Should().Be("thread-a");
+        userResult.Succeeded.Should().BeTrue();
+        userResult.Message!.Role.Should().Be("user");
+        assistantResult.Succeeded.Should().BeTrue();
+        assistantResult.Message!.OutputTokens.Should().Be(7);
+
+        var storedThread = store.GetThread("thread-a");
+        storedThread.Should().NotBeNull();
+        storedThread!.MessageCount.Should().Be(2);
+        storedThread.TotalInputTokens.Should().Be(6);
+        storedThread.TotalOutputTokens.Should().Be(7);
+        storedThread.TotalTokens.Should().Be(13);
+    }
+
+    [Fact]
+    public void AppendMessage_DefaultsMissingTokensToZeroAndAllowsSystemCompaction()
+    {
+        using var temp = TempDirectory.Create();
+        var store = new AgentConversationStoreService(Path.Combine(temp.Path, "agent"));
+        var recorder = new AgentConversationRecorder(store);
+        var createdAt = new DateTimeOffset(2026, 6, 17, 10, 0, 0, TimeSpan.Zero);
+        recorder.StartThread(new AgentConversationThreadRecordingInput
+        {
+            WorkspaceId = "workspace-a",
+            ThreadId = "thread-a",
+            CreatedAtUtc = createdAt,
+        }).Succeeded.Should().BeTrue();
+
+        var result = recorder.AppendMessage(new AgentConversationMessageRecordingInput
+        {
+            ThreadId = "thread-a",
+            Role = "SYSTEM",
+            Content = "compacted context summary",
+            IsCompaction = true,
+            CreatedAtUtc = createdAt.AddMinutes(1),
+        });
+
+        result.Succeeded.Should().BeTrue();
+        result.Message.Should().NotBeNull();
+        result.Message!.Role.Should().Be("system");
+        result.Message.InputTokens.Should().Be(0);
+        result.Message.OutputTokens.Should().Be(0);
+        result.Message.TotalTokens.Should().Be(0);
+        result.Message.IsCompaction.Should().BeTrue();
+        store.GetThread("thread-a")!.CompactionCount.Should().Be(1);
+    }
+
+    [Fact]
+    public void AppendMessage_RejectsInvalidRoleAndInvalidCompactionWithoutWriting()
+    {
+        using var temp = TempDirectory.Create();
+        var store = new AgentConversationStoreService(Path.Combine(temp.Path, "agent"));
+        var recorder = new AgentConversationRecorder(store);
+        recorder.StartThread(new AgentConversationThreadRecordingInput
+        {
+            WorkspaceId = "workspace-a",
+            ThreadId = "thread-a",
+        }).Succeeded.Should().BeTrue();
+
+        var invalidRole = recorder.AppendMessage(new AgentConversationMessageRecordingInput
+        {
+            ThreadId = "thread-a",
+            Role = "critic",
+            Content = "not an allowed runtime role",
+        });
+        var invalidCompaction = recorder.AppendMessage(new AgentConversationMessageRecordingInput
+        {
+            ThreadId = "thread-a",
+            Role = "user",
+            Content = "user message cannot be compaction",
+            IsCompaction = true,
+        });
+
+        invalidRole.Succeeded.Should().BeFalse();
+        invalidRole.ErrorMessage.Should().Contain("role");
+        invalidCompaction.Succeeded.Should().BeFalse();
+        invalidCompaction.ErrorMessage.Should().Contain("compaction");
+        store.GetMessages("thread-a").Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RecorderFailures_ReturnFailedResultWithoutThrowing()
+    {
+        using var temp = TempDirectory.Create();
+        var store = new AgentConversationStoreService(Path.Combine(temp.Path, "agent"));
+        var recorder = new AgentConversationRecorder(store);
+
+        var missingWorkspace = recorder.StartThread(new AgentConversationThreadRecordingInput
+        {
+            WorkspaceId = " ",
+        });
+        var missingThread = recorder.AppendMessage(new AgentConversationMessageRecordingInput
+        {
+            ThreadId = "missing-thread",
+            Role = "assistant",
+            Content = "this write should fail without throwing",
+        });
+
+        missingWorkspace.Succeeded.Should().BeFalse();
+        missingWorkspace.ErrorMessage.Should().NotBeNullOrWhiteSpace();
+        missingThread.Succeeded.Should().BeFalse();
+        missingThread.ErrorMessage.Should().Contain("not found");
+    }
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(),
+            "ecodex-agent-conversation-recorder-tests-" + Guid.NewGuid().ToString("N"));
 
         private TempDirectory()
         {

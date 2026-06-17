@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `OBS-01-13` AgentConversation runtime recorder Core seam；`OBS-01-12` 已完成 AgentConversation runtime 写入契约 refinement。
+下个可领切片优先进入 `OBS-01-14` AgentConversation runtime 最小接线 refinement；`OBS-01-13` 已完成 runtime recorder Core seam。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -406,7 +406,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | Core 层拥有一个不依赖 LLM provider 的 AgentConversation recorder seam，后续 runtime 只需提交规范化事件即可写入 thread/message |
 | Scope | 新增纯 Core recorder / input DTO，包装 `AgentConversationStoreService`；覆盖 create thread、append user/assistant/tool/system message、token metadata、compaction flag、写入失败 no-throw 结果；不接真实 LLM、不读取 secrets、不接 UI |
@@ -414,6 +414,19 @@ AI Agent 启动后按以下顺序选择任务：
 | 验收 | 单测覆盖 runtime event 到 store 的映射、role 归一、token 缺失为 0、compaction 标记、异常时返回失败结果不抛出；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~AgentConversation" --no-restore`、`git diff --check` 与 Debug build 通过 |
 | 风险 | seam 过早绑定具体 LLM / tool schema 会扩大范围；本切片只处理本地 DTO 和 store 写入 |
 | 回滚 | 删除 recorder seam 与测试，保留 Core store / Session Vault provider 接线 |
+
+### `OBS-01-14` - AgentConversation runtime 最小接线 refinement
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | 在真实 runtime 写入前，维护者明确哪一个 App / agent runtime 边界负责调用 `AgentConversationRecorder`，以及首次接线最小事件集合、开关和失败降级语义 |
+| Scope | 只做 refinement 与 source tests：阅读 `App` 服务初始化、terminal/agent settings、现有 AgentAttention / command log 边界和 recorder seam；不调用 LLM、不读取 secrets、不写真实用户 agent root、不接 UI 按钮 |
+| 关联 | `AgentConversationRecorder`、`AgentConversationStoreService`、`spec/03-data-and-ipc.md` §8.3、`docs/session-restore.md` |
+| 验收 | 文档明确 runtime 接线入口、启用条件、thread 生命周期、最小 user/assistant/tool/system 事件、错误 no-op / no-throw 和不读取 secrets 边界；source tests 覆盖当前源码尚未直接从 UI / terminal 自动调用 recorder；focused docs/source tests、`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| 风险 | 直接接真实 runtime 会扩大到 provider、密钥、tool schema 和用户内容持久化；必须先固定接线边界与 opt-in / no-op 语义 |
+| 回滚 | 回退 refinement 文档，不影响已完成 Core recorder seam 和 Session Vault provider |
 
 ### `PKG-02` - Inno 安装与卸载向导中文化
 
@@ -488,7 +501,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | ID | 状态 | Outcome | 缺口 | 下一步 |
 |---|---|---|---|---|
-| `OBS-01` | draft | Agent 会话、命令日志、terminal transcript 可串成一次失败 loop 的复盘视图 | 已完成 `OBS-01-1` Core DTO / 装配器、`OBS-01-2` provider seam、`OBS-01-3` daemon log parser、`OBS-01-4` preview formatter、`OBS-01-5` Session Vault 入口、`OBS-01-6` GUI smoke checklist、`OBS-01-7` planned 边界复核、`OBS-01-8` AgentConversation Core store、`OBS-01-9` AgentMessages provider、`OBS-01-10` root 语义 refinement、`OBS-01-11` Session Vault provider 接线与 `OBS-01-12` runtime 写入契约；Agent runtime 仍未写入真实消息 | 先完成 `OBS-01-13` runtime recorder Core seam，再评估 Agent runtime 最小接线 |
+| `OBS-01` | draft | Agent 会话、命令日志、terminal transcript 可串成一次失败 loop 的复盘视图 | 已完成 `OBS-01-1` Core DTO / 装配器、`OBS-01-2` provider seam、`OBS-01-3` daemon log parser、`OBS-01-4` preview formatter、`OBS-01-5` Session Vault 入口、`OBS-01-6` GUI smoke checklist、`OBS-01-7` planned 边界复核、`OBS-01-8` AgentConversation Core store、`OBS-01-9` AgentMessages provider、`OBS-01-10` root 语义 refinement、`OBS-01-11` Session Vault provider 接线、`OBS-01-12` runtime 写入契约与 `OBS-01-13` recorder Core seam；Agent runtime 仍未写入真实消息 | 先完成 `OBS-01-14` runtime 最小接线 refinement，再评估真实 runtime 接线 |
 | `BRS-01` | draft | Browser scripting API 增加更多真实页面回归样例 | 需要本地测试页和 WebView2 环境策略 | 先列 P0 API 现有覆盖矩阵 |
 | `PKG-01` | draft | 安装 / 更新 / 卸载 rollback 证据更清晰 | 需要 Windows 测试环境和 artifact 命名 | 先整理 release workflow 产物清单 |
 | `DX-01` | draft | 新贡献者按 `spec/` 能 30 分钟跑通第一个小 PR | 需要观测真实 onboarding 缺口 | 先用一次 fresh clone 记录摩擦点 |
