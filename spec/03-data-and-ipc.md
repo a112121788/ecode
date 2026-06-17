@@ -497,6 +497,7 @@ public sealed record FailureLoopEvidencePackage(
 | `FailureLoopEvidenceAssembler` | 把非零退出码命令、时间窗内 transcript 与 daemon log 片段装配成 `FailureLoopEvidencePackage` | Agent message 来源保持空集合；不做 UI、不写磁盘 |
 | `FailureLoopEvidenceCollector` | 通过 `IFailureLoopEvidenceSourceProvider` 获取指定日期命令、transcript 元数据 / 内容和 daemon log 片段，再调用装配器 | 只为失败时间窗内 transcript 调用内容加载；`CommandLogFailureLoopEvidenceSourceProvider` 包装调用方传入的 `CommandLogService`，不自行构造或扫描真实 profile |
 | `FailureLoopDaemonLogProvider` | 解析 daemon key=value 行，读取调用方显式提供文件路径的有限 tail，并输出 `FailureLoopDaemonLogInput` | 与 `DaemonClient.FormatDaemonLogLine(...)` 转义规则对齐；不默认定位或读取 `%USERPROFILE%` 下真实日志 |
+| `FailureLoopEvidencePreviewFormatter` | 将 evidence package 渲染成可复制的文本预览 | 不重新扫描日志；复用 package 内已截断 / 已脱敏内容，UI 后续只消费格式化结果 |
 
 | 来源 | 当前数据入口 | 证据用途 | 约束 |
 |---|---|---|---|

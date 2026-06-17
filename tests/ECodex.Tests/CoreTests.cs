@@ -1737,7 +1737,7 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
         backlog.Should().Contain("| `NOT-02D` | done |");
-        backlog.Should().Contain("`OBS-01-4` 失败 loop 证据包预览格式化器");
+        backlog.Should().Contain("`OBS-01-5` Session Vault 失败 loop 预览入口");
     }
 }
 
@@ -1763,8 +1763,9 @@ public class Obs01RefinementTests
         backlog.Should().Contain("### `OBS-01-2` - 失败 loop 证据源加载适配器");
         backlog.Should().Contain("### `OBS-01-3` - daemon log 行解析与有限 tail provider");
         backlog.Should().Contain("### `OBS-01-4` - 失败 loop 证据包预览格式化器");
+        backlog.Should().Contain("### `OBS-01-5` - Session Vault 失败 loop 预览入口");
         backlog.Should().Contain("FailureLoopEvidencePackage");
-        backlog.Should().Contain("`OBS-01-3` 已完成 daemon log 行解析与有限 tail provider");
+        backlog.Should().Contain("`OBS-01-4` 已完成 evidence package 预览格式化器");
     }
 
     [Fact]
@@ -2150,6 +2151,77 @@ public class FailureLoopEvidenceTests
 
         source.Should().NotContain("CompatibilityOptions.GetAppDataDir");
         source.Should().NotContain("daemon-debug.log");
+    }
+
+    [Fact]
+    public void PreviewFormatter_RendersCompactPackageSections()
+    {
+        var package = new FailureLoopEvidencePackage(
+            "pkg-1",
+            "workspace-a",
+            "surface-a",
+            "pane-a",
+            new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 6, 17, 11, 59, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 6, 17, 12, 1, 0, TimeSpan.Zero),
+            [],
+            [
+                new FailureLoopCommandEvidence(
+                    "cmd-1",
+                    "workspace-a",
+                    "surface-a",
+                    "pane-a",
+                    "dotnet test",
+                    1,
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 5, TimeSpan.Zero),
+                    @"C:\repo"),
+            ],
+            [
+                new FailureLoopTranscriptEvidence(
+                    "transcript.log",
+                    @"C:\transcripts\transcript.log",
+                    "workspace-a",
+                    "surface-a",
+                    "pane-a",
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 10, TimeSpan.Zero),
+                    "close",
+                    128,
+                    "build failed after sanitized output",
+                    SummaryWasTruncated: true),
+            ],
+            [],
+            [
+                new FailureLoopDaemonLogEvidence(
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 15, TimeSpan.Zero),
+                    "session.error pane-a",
+                    "pane-a",
+                    LineWasTruncated: false),
+            ]);
+        var formatter = new FailureLoopEvidencePreviewFormatter();
+
+        var preview = formatter.Format(package);
+
+        preview.Should().Contain("Failure Loop Evidence: pkg-1");
+        preview.Should().Contain("workspace=workspace-a");
+        preview.Should().Contain("pane=pane-a");
+        preview.Should().Contain("Commands");
+        preview.Should().Contain("dotnet test");
+        preview.Should().Contain("exit 1");
+        preview.Should().Contain("Transcripts");
+        preview.Should().Contain("transcript.log");
+        preview.Should().Contain("[truncated]");
+        preview.Should().Contain("Daemon Logs");
+        preview.Should().Contain("session.error pane-a");
+        preview.Should().Contain("Agent Messages: planned source not connected");
+    }
+
+    [Fact]
+    public void PreviewFormatter_ReturnsNoOpTextForMissingPackage()
+    {
+        var formatter = new FailureLoopEvidencePreviewFormatter();
+
+        formatter.Format(null).Should().Be("No failure loop evidence available.");
     }
 
     private sealed class RecordingFailureLoopEvidenceProvider : IFailureLoopEvidenceSourceProvider
