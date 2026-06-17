@@ -252,6 +252,12 @@ public partial class MainWindow : Window
         QueueFocusTerminal();
     }
 
+    public bool JumpToNotification(ECodex.Core.Models.TerminalNotification? notification)
+        => ViewModel.JumpToNotification(notification);
+
+    public void ShowNotificationFallback(ECodex.Core.Models.TerminalNotification? notification)
+        => ViewModel.ShowNotificationFallback(notification);
+
     private static void TerminateDaemonSessionsOnCloseIfConfigured()
     {
         if (App.PreserveDaemonSessionsOnExplicitShutdown)

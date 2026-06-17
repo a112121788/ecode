@@ -469,6 +469,178 @@ public class ToastActivationParserTests
     }
 }
 
+public class ToastActivationServiceTests
+{
+    [Fact]
+    public void HandleActivated_ValidPayload_DispatchesToUi()
+    {
+        var notifications = new NotificationService();
+        Action? dispatched = null;
+        var service = new ToastActivationService(
+            notifications,
+            _ => true,
+            () => { },
+            _ => { },
+            action => dispatched = action);
+
+        var handled = service.HandleActivated("action=jumpToNotification&notificationId=notification-1&workspaceId=workspace-1&surfaceId=surface-1&paneId=pane-1");
+
+        handled.Should().BeTrue();
+        dispatched.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void HandleActivated_NonJumpAction_DoesNotDispatch()
+    {
+        var dispatched = false;
+        var service = new ToastActivationService(
+            new NotificationService(),
+            _ => true,
+            () => { },
+            _ => { },
+            _ => dispatched = true);
+
+        var handled = service.HandleActivated("action=openSettings&notificationId=notification-1&workspaceId=workspace-1&surfaceId=surface-1");
+
+        handled.Should().BeFalse();
+        dispatched.Should().BeFalse();
+    }
+
+    [Fact]
+    public void HandleRequest_Success_RestoresWindowAndJumps()
+    {
+        var notifications = new NotificationService();
+        var notification = CreateNotification();
+        notifications.Notifications.Add(notification);
+        var restored = false;
+        var fallbackShown = false;
+        var service = new ToastActivationService(
+            notifications,
+            target =>
+            {
+                notifications.MarkAsRead(target!.Id);
+                return true;
+            },
+            () => restored = true,
+            _ => fallbackShown = true);
+
+        var result = service.HandleRequest(new ToastActivationRequest("notification-1", "workspace-1", "surface-1", "pane-1"));
+
+        result.Jumped.Should().BeTrue();
+        result.RestoredWindow.Should().BeTrue();
+        result.FallbackShown.Should().BeFalse();
+        restored.Should().BeTrue();
+        fallbackShown.Should().BeFalse();
+        notifications.Notifications.Single().IsRead.Should().BeTrue();
+    }
+
+    [Fact]
+    public void HandleRequest_MissingNotification_RestoresWindowAndShowsFallback()
+    {
+        var restored = false;
+        TerminalNotification? fallbackNotification = null;
+        var service = new ToastActivationService(
+            new NotificationService(),
+            _ => true,
+            () => restored = true,
+            notification => fallbackNotification = notification);
+
+        var result = service.HandleRequest(new ToastActivationRequest("missing", "workspace-1", "surface-1", "pane-1"));
+
+        result.Jumped.Should().BeFalse();
+        result.FallbackShown.Should().BeTrue();
+        restored.Should().BeTrue();
+        fallbackNotification.Should().BeNull();
+    }
+
+    [Fact]
+    public void HandleRequest_JumpFails_ShowsFallbackAndKeepsUnread()
+    {
+        var notifications = new NotificationService();
+        var notification = CreateNotification(paneId: "missing-pane");
+        notifications.Notifications.Add(notification);
+        var restored = false;
+        TerminalNotification? fallbackNotification = null;
+        var service = new ToastActivationService(
+            notifications,
+            _ => false,
+            () => restored = true,
+            fallback => fallbackNotification = fallback);
+
+        var result = service.HandleRequest(new ToastActivationRequest("notification-1", "workspace-1", "surface-1", "missing-pane"));
+
+        result.Jumped.Should().BeFalse();
+        result.FallbackShown.Should().BeTrue();
+        restored.Should().BeTrue();
+        fallbackNotification.Should().BeSameAs(notification);
+        notification.IsRead.Should().BeFalse();
+    }
+
+    private static TerminalNotification CreateNotification(string paneId = "pane-1")
+        => new()
+        {
+            Id = "notification-1",
+            WorkspaceId = "workspace-1",
+            SurfaceId = "surface-1",
+            PaneId = paneId,
+            IsRead = false,
+            Title = "命令已完成",
+            Body = "dotnet test",
+            Source = NotificationSource.Cli,
+        };
+}
+
+public class ToastActivationSourceTests
+{
+    [Fact]
+    public void App_RegistersToastActivationHandlerWithUiDispatcher()
+    {
+        var source = Normalize(File.ReadAllText(FindRepoFile("src", "ECodex", "App.xaml.cs")));
+
+        source.Should().Contain("new Services.ToastActivationService(");
+        source.Should().Contain("Services.ToastNotificationHelper.RegisterActivationHandler(arguments =>");
+        source.Should().Contain("_toastActivationService.HandleActivated(arguments)");
+        source.Should().Contain("private static void DispatchToUi(Action action)");
+        source.Should().Contain("dispatcher.BeginInvoke(action)");
+    }
+
+    [Fact]
+    public void MainViewModel_DoesNotJumpWhenPaneIsMissing()
+    {
+        var source = Normalize(File.ReadAllText(FindRepoFile("src", "ECodex", "ViewModels", "MainViewModel.cs")));
+
+        source.Should().Contain("surface.RootNode.FindNode(notification.PaneId) == null");
+        source.Should().Contain("return false;");
+        source.Should().Contain("public void ShowNotificationFallback(TerminalNotification? notification)");
+        source.Should().Contain("NotificationPanelVisible = true;");
+    }
+
+    [Fact]
+    public void ToastNotificationHelper_RegistersOnActivated()
+    {
+        var source = Normalize(File.ReadAllText(FindRepoFile("src", "ECodex", "Services", "ToastNotificationHelper.cs")));
+
+        source.Should().Contain("ToastNotificationManagerCompat.OnActivated += args => handleActivation(args.Argument)");
+    }
+
+    private static string FindRepoFile(params string[] relativeParts)
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current != null)
+        {
+            var candidate = Path.Combine(new[] { current.FullName }.Concat(relativeParts).ToArray());
+            if (File.Exists(candidate))
+                return candidate;
+
+            current = current.Parent;
+        }
+
+        throw new FileNotFoundException($"Unable to find repo file: {Path.Combine(relativeParts)}");
+    }
+
+    private static string Normalize(string value) => value.Replace("\r\n", "\n", StringComparison.Ordinal);
+}
+
 public class NotificationApiServiceTests
 {
     [Fact]

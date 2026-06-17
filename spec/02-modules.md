@@ -99,7 +99,8 @@
 | 文件 | 类型 | 说明 |
 |---|---|---|
 | `src/ECodex/App.xaml.cs` | `App : Application` | 单例服务：`NotificationService / CommandLifecycleNotificationService / PipeServer / SnippetService / CommandLogService / DaemonClient / WindowApi / DaemonConnectTask`；`OnStartup` 先用 `Global\ECodexMainApp` 保证主应用单实例，第二实例只通过 pipe 聚焦 / 恢复已有窗口后退出；初始化托盘图标、默认 skills、PowerShell hook；启管道 + 异步连守护进程；注册全局异常；非焦点时弹 Toast |
-| `src/ECodex/Services/ToastNotificationHelper.cs` | `ToastNotificationHelper` | 通过 `Microsoft.Toolkit.Uwp.Notifications` 显示 Windows Toast |
+| `src/ECodex/Services/ToastNotificationHelper.cs` | `ToastNotificationHelper` | 通过 `Microsoft.Toolkit.Uwp.Notifications` 显示 Windows Toast，并注册 `OnActivated` 回调把 activation arguments 转交应用层 |
+| `src/ECodex/Services/ToastActivationService.cs` | `ToastActivationService` | 处理 Toast activation：解析参数后派发到 UI 线程，恢复窗口，按 `notificationId` 跳转通知；跳转失败时打开通知面板 fallback |
 | `src/ECodex/Services/TrayIconService.cs` | `TrayIconService` | WinForms `NotifyIcon` 适配层；提供系统托盘图标、双击恢复和菜单“打开 ECodex / 退出并保留终端 / 退出并终止终端”；释放时隐藏并 Dispose 托盘资源 |
 | `src/ECodex/Services/AppLifecycleApiService.cs` | `AppLifecycleApiService` | 主应用 `ecodex.v2` 生命周期入口；`app.exit {"terminateTerminals":true}` 先终止 daemon 会话再请求应用退出 |
 | `src/ECodex/Services/AgentRuntimeService.cs` | `AgentRuntimeService` | 内置 Agent 运行时（OpenAI 兼容 / Anthropic），流式响应、工具调用（Bash / WebSearch / 自定义 / MCP）、上下文压缩、会话持久化（AgentConversationStoreService）、`TryHandlePaneCommand` 拦截 `/agent` 命令等 |

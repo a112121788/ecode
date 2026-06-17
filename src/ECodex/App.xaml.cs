@@ -17,6 +17,7 @@ public partial class App : Application
     private static TrayIconService? TrayIcon;
     private Mutex? _mainInstanceMutex;
     private NamedPipeServer? _pipeServer;
+    private Services.ToastActivationService? _toastActivationService;
 
     public static NotificationService NotificationService { get; } = new();
     public static CommandLifecycleNotificationService CommandLifecycleNotifications { get; } = new(NotificationService);
@@ -149,6 +150,29 @@ public partial class App : Application
                 Services.ToastNotificationHelper.ShowToast(notification, workspaceName);
             }
         };
+
+        _toastActivationService = new Services.ToastActivationService(
+            NotificationService,
+            notification => (Current.MainWindow as MainWindow)?.JumpToNotification(notification) == true,
+            () => (Current.MainWindow as MainWindow)?.RestoreFromTray(),
+            notification => (Current.MainWindow as MainWindow)?.ShowNotificationFallback(notification),
+            DispatchToUi);
+        Services.ToastNotificationHelper.RegisterActivationHandler(arguments =>
+        {
+            _toastActivationService.HandleActivated(arguments);
+        });
+    }
+
+    private static void DispatchToUi(Action action)
+    {
+        var dispatcher = Current?.Dispatcher;
+        if (dispatcher == null)
+            return;
+
+        if (dispatcher.CheckAccess())
+            action();
+        else
+            dispatcher.BeginInvoke(action);
     }
 
     private static void SeedDefaultSkills()

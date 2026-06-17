@@ -417,7 +417,7 @@ Windows Toast 只作为系统级提醒入口；通知中心的内存 `TerminalNo
 | Toast arguments | 必须带 `action=jumpToNotification`、`notificationId`、`workspaceId`、`surfaceId`、`paneId`；当通知没有 pane 时 `paneId` 传空字符串，不猜测当前 pane |
 | 事实源优先级 | 激活时先用 `notificationId` 查找内存通知；`workspaceId/surfaceId/paneId` 只作为 fallback、诊断和后续 Windows live smoke 断言 |
 | 未打包 WPF activation | AppUserModelID / shortcut / COM activation 注册属于 Windows-only 能力；注册失败或系统不支持 Toast activation 时，不影响 in-app 通知中心、未读数和命令生命周期通知 |
-| 窗口恢复 | 收到有效激活后先恢复 / 聚焦主窗口（等价 `RestoreFromTray`），再执行 workspace / surface / pane 跳转 |
+| 窗口恢复 | 收到有效激活后经 UI Dispatcher 恢复 / 聚焦主窗口（等价 `RestoreFromTray`），再执行 workspace / surface / pane 跳转 |
 | 成功跳转 | workspace 和 surface 存在，且 `paneId` 为空或目标 pane 存在时，选中目标并标记通知已读；目标 pane 存在时还应聚焦并 flash attention |
 | 降级 fallback | workspace / surface / pane 缺失时仍恢复窗口，打开通知面板并显示可见 fallback；不得跳到其他 pane，通知保持未读以便用户处理 |
 | 线程边界 | Toast activation 可能来自非 UI 线程；必须派发到 WPF Dispatcher 后访问 `MainWindow`、`MainViewModel` 和 UI 集合 |

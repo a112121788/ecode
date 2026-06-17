@@ -451,25 +451,31 @@ public partial class MainViewModel : ObservableObject
 
         // 找到对应的项目和 Surface
         var workspace = Workspaces.FirstOrDefault(w => w.Workspace.Id == notification.WorkspaceId);
-        if (workspace != null)
+        if (workspace == null) return false;
+
+        var surface = workspace.Surfaces.FirstOrDefault(s => s.Surface.Id == notification.SurfaceId);
+        if (surface == null) return false;
+
+        if (!string.IsNullOrWhiteSpace(notification.PaneId) &&
+            surface.RootNode.FindNode(notification.PaneId) == null)
+            return false;
+
+        SelectedWorkspace = workspace;
+        workspace.SelectedSurface = surface;
+        if (!string.IsNullOrWhiteSpace(notification.PaneId))
         {
-            SelectedWorkspace = workspace;
-            var surface = workspace.Surfaces.FirstOrDefault(s => s.Surface.Id == notification.SurfaceId);
-            if (surface != null)
-            {
-                workspace.SelectedSurface = surface;
-                if (notification.PaneId != null)
-                {
-                    surface.FocusPane(notification.PaneId);
-                    surface.FlashPaneAttention(notification.PaneId);
-                }
-            }
-            _notificationService.MarkAsRead(notification.Id);
-            NotificationPanelVisible = false;
-            return true;
+            surface.FocusPane(notification.PaneId);
+            surface.FlashPaneAttention(notification.PaneId);
         }
 
-        return false;
+        _notificationService.MarkAsRead(notification.Id);
+        NotificationPanelVisible = false;
+        return true;
+    }
+
+    public void ShowNotificationFallback(TerminalNotification? notification)
+    {
+        NotificationPanelVisible = true;
     }
 
     [RelayCommand]

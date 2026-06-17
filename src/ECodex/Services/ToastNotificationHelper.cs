@@ -10,6 +10,18 @@ namespace ECodex.Services;
 /// </summary>
 public static class ToastNotificationHelper
 {
+    public static void RegisterActivationHandler(Action<string?> handleActivation)
+    {
+        try
+        {
+            ToastNotificationManagerCompat.OnActivated += args => handleActivation(args.Argument);
+        }
+        catch
+        {
+            // 非打包 WPF / 系统策略可能不支持 Toast activation；通知中心仍可用。
+        }
+    }
+
     /// <summary>
     /// 为终端通知显示 Windows Toast 通知。
     /// </summary>

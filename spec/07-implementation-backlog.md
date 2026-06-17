@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `NOT-02C-2` Toast 激活恢复窗口并跳转；`NOT-02C-1` 已完成 payload 与 parser，后续再用 Windows live smoke 验证真实系统通知链路。
+下个可领切片优先进入 `NOT-02C-3` Windows Toast live smoke 与安装策略校验；`NOT-02C-1/2` 已完成 payload、parser、窗口恢复与应用内跳转处理。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -159,7 +159,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P2 |
 | Outcome | 用户点击 Toast 后，隐藏到托盘或非激活的 ECodex 会恢复窗口，并按通知定位跳到目标 workspace / surface / pane；缺目标时给出可见 fallback，不跳错 pane |
 | Scope | 注册 `ToastNotificationManagerCompat.OnActivated` 或等价 Windows activation 入口；在 UI Dispatcher 中恢复 `MainWindow.RestoreFromTray`，按 `notificationId` 找通知并复用 / 扩展 `MainViewModel.JumpToNotification`；缺 workspace / surface / pane 时打开通知面板并显示 fallback；成功跳转后标记已读；不处理 Codex 等待输入、不改变通知生成策略 |
