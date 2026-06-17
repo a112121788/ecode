@@ -413,6 +413,152 @@ public class AgentAttentionSignalDetectorTests
     }
 }
 
+public class AgentAttentionNotificationServiceTests
+{
+    [Fact]
+    public void TryNotify_BackgroundAttentionSignal_AddsPaneNotification()
+    {
+        var notifications = new NotificationService();
+        var service = new AgentAttentionNotificationService(notifications);
+
+        var added = service.TryNotify(
+            workspaceId: "workspace-1",
+            surfaceId: "surface-1",
+            paneId: "pane-1",
+            signal: CreateSignal(),
+            isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        var notification = notifications.Notifications.Should().ContainSingle().Which;
+        notification.WorkspaceId.Should().Be("workspace-1");
+        notification.SurfaceId.Should().Be("surface-1");
+        notification.PaneId.Should().Be("pane-1");
+        notification.Title.Should().Be("Codex 等待输入");
+        notification.Subtitle.Should().Be("Codex");
+        notification.Body.Should().Be("Codex is waiting for user input.");
+        notification.Source.Should().Be(NotificationSource.AgentAttention);
+    }
+
+    [Fact]
+    public void TryNotify_ForegroundActive_DoesNotNotify()
+    {
+        var notifications = new NotificationService();
+        var service = new AgentAttentionNotificationService(notifications);
+
+        var added = service.TryNotify("workspace-1", "surface-1", "pane-1", CreateSignal(), isAppForegroundActive: true);
+
+        added.Should().BeFalse();
+        notifications.Notifications.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void TryNotify_DuplicatePaneKindAndSummaryWithinCooldown_DoesNotNotifyAgain()
+    {
+        var now = new DateTimeOffset(2026, 6, 17, 8, 0, 0, TimeSpan.Zero);
+        var notifications = new NotificationService();
+        var service = new AgentAttentionNotificationService(notifications, () => now);
+
+        service.TryNotify("workspace-1", "surface-1", "pane-1", CreateSignal(), isAppForegroundActive: false)
+            .Should().BeTrue();
+        now = now.AddSeconds(10);
+        var duplicate = service.TryNotify("workspace-1", "surface-1", "pane-1", CreateSignal(), isAppForegroundActive: false);
+
+        duplicate.Should().BeFalse();
+        notifications.Notifications.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void TryNotify_DifferentPaneWithinCooldown_AddsIndependentNotification()
+    {
+        var now = new DateTimeOffset(2026, 6, 17, 8, 0, 0, TimeSpan.Zero);
+        var notifications = new NotificationService();
+        var service = new AgentAttentionNotificationService(notifications, () => now);
+
+        service.TryNotify("workspace-1", "surface-1", "pane-1", CreateSignal(), isAppForegroundActive: false)
+            .Should().BeTrue();
+        now = now.AddSeconds(10);
+        var added = service.TryNotify("workspace-1", "surface-1", "pane-2", CreateSignal(), isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        notifications.Notifications.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void TryNotify_DifferentSummaryWithinCooldown_AddsNotification()
+    {
+        var now = new DateTimeOffset(2026, 6, 17, 8, 0, 0, TimeSpan.Zero);
+        var notifications = new NotificationService();
+        var service = new AgentAttentionNotificationService(notifications, () => now);
+
+        service.TryNotify("workspace-1", "surface-1", "pane-1", CreateSignal("Codex is waiting for user input."), isAppForegroundActive: false)
+            .Should().BeTrue();
+        now = now.AddSeconds(10);
+        var added = service.TryNotify("workspace-1", "surface-1", "pane-1", CreateSignal("Do you want to allow this command?"), isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        notifications.Notifications.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void TryNotify_DuplicateAfterCooldown_AddsNotification()
+    {
+        var now = new DateTimeOffset(2026, 6, 17, 8, 0, 0, TimeSpan.Zero);
+        var notifications = new NotificationService();
+        var service = new AgentAttentionNotificationService(notifications, () => now);
+
+        service.TryNotify("workspace-1", "surface-1", "pane-1", CreateSignal(), isAppForegroundActive: false)
+            .Should().BeTrue();
+        now = now.AddSeconds(31);
+        var added = service.TryNotify("workspace-1", "surface-1", "pane-1", CreateSignal(), isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        notifications.Notifications.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void TryNotify_MissingSignalOrPane_DoesNotNotify()
+    {
+        var notifications = new NotificationService();
+        var service = new AgentAttentionNotificationService(notifications);
+
+        service.TryNotify("workspace-1", "surface-1", "pane-1", signal: null, isAppForegroundActive: false)
+            .Should().BeFalse();
+        service.TryNotify("workspace-1", "surface-1", "", CreateSignal(), isAppForegroundActive: false)
+            .Should().BeFalse();
+
+        notifications.Notifications.Should().BeEmpty();
+    }
+
+    private static AgentAttentionSignal CreateSignal(string summary = "Codex is waiting for user input.")
+        => new(AgentAttentionSignalKind.WaitingInput, "Codex 等待输入", summary, "waiting");
+}
+
+public class AgentAttentionSurfaceSourceTests
+{
+    [Fact]
+    public void SurfaceViewModel_WiresOutputReceivedToAgentAttentionNotification()
+    {
+        var source = Normalize(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex", "ViewModels", "SurfaceViewModel.cs")));
+
+        source.Should().Contain("session.OutputReceived += () => HandleAgentAttentionSignal(session, paneId);");
+        source.Should().Contain("session.Buffer.ExportPlainText(maxScrollbackLines: AgentAttentionTailLines)");
+        source.Should().Contain("AgentAttentionSignalDetector.Detect(new AgentAttentionDetectionInput(");
+        source.Should().Contain("RecentCommand: GetLatestCommand(paneId)");
+        source.Should().Contain("App.AgentAttentionNotifications.TryNotify(");
+        source.Should().Contain("IsMainWindowForegroundActive()");
+    }
+
+    [Fact]
+    public void App_RegistersSharedAgentAttentionNotificationService()
+    {
+        var source = Normalize(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex", "App.xaml.cs")));
+
+        source.Should().Contain("public static AgentAttentionNotificationService AgentAttentionNotifications { get; } = new(NotificationService);");
+    }
+
+    private static string Normalize(string value) => value.Replace("\r\n", "\n", StringComparison.Ordinal);
+}
+
 public class ToastActivationParserTests
 {
     [Fact]
@@ -1541,9 +1687,11 @@ public class NotificationBacklogRefinementTests
 
         modules.Should().Contain("Services/AgentAttentionSignalDetector.cs");
         modules.Should().Contain("AgentAttentionSignalDetector / AgentAttentionSignal");
+        modules.Should().Contain("Services/AgentAttentionNotificationService.cs");
         contract.Should().Contain("### 6.2 Codex 等待输入提醒契约");
         contract.Should().Contain("TerminalSession.OutputReceived");
         contract.Should().Contain("AgentAttentionSignalDetector");
+        contract.Should().Contain("NotificationSource.AgentAttention");
         contract.Should().Contain("WaitingInput / ConfirmationRequired / ErrorNeedsDecision");
         contract.Should().Contain("前台活跃只记录诊断 / 状态，不创建通知");
         contract.Should().Contain("同 pane、同信号类型、同摘要");
@@ -1552,6 +1700,7 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-1` - Codex 等待输入信号纯检测器");
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
+        backlog.Should().Contain("`NOT-02D-2` 已完成后台 / 非激活低噪声通知接入");
         backlog.Should().Contain("| 状态 | ready |");
         backlog.Should().Contain("下个可领切片优先进入");
     }

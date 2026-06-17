@@ -31,7 +31,7 @@
 | `Models/PaneStateSnapshot.cs` | `PaneStateSnapshot` | 单面板快照：cwd + shell + 命令历史 + `TerminalBufferSnapshot` |
 | `Models/ResumeBinding.cs` | `ResumeBindingFile / ResumeBinding / ResumeBindingKinds` | `%USERPROFILE%/.ecodex/resume.json` DTO；记录 workspace/surface/pane 与可恢复 shell 命令、cwd、安全环境、信任前缀和更新时间 |
 | `Models/CommandLogEntry.cs` | `CommandLogEntry` | 命令日志项：起止时间、退出码、状态图标（`\uE916 / \uE73E / \uE711`）、时长格式化 |
-| `Models/TerminalNotification.cs` | `TerminalNotification / AppNotification / NotificationSource` | OSC 通知或 CLI 通知，统一带 `IsRead`、`Source`（Osc9/Osc99/Osc777/Cli） |
+| `Models/TerminalNotification.cs` | `TerminalNotification / AppNotification / NotificationSource` | OSC、CLI 或内部检测通知，统一带 `IsRead`、`Source`（Osc9/Osc99/Osc777/Cli/AgentAttention） |
 | `Models/TerminalTranscriptEntry.cs` | `TerminalTranscriptEntry` | 脚本文件元数据：`FilePath / CapturedAt / Reason / SizeBytes` |
 | `Models/Snippet.cs` | `Snippet` | 代码片段：`{{key}}` 占位符解析（`Resolve`）+ `GetPlaceholders` |
 | `Models/ECodexJsonConfig.cs` | `ECodexJsonConfig / ECodexCommand / ECodexAction` | 项目级 `ecodex.json` DTO；M1 支持 `commands` 与 `actions` 的 `command` 子集，目标为 `currentTerminal` / `newTabInCurrentPane` |
@@ -47,6 +47,7 @@
 | `Services/NotificationService.cs` | `NotificationService` | 内存通知集合（≤500），线程安全（lock），事件 `NotificationAdded / UnreadCountChanged`；`GetLatestUnread / GetLatestText / MarkAsRead / MarkWorkspaceAsRead / MarkAllAsRead` |
 | `Services/CommandLifecycleNotificationService.cs` | `CommandLifecycleNotificationService` | 把 `HOOK.COMMAND` 生命周期事件转换成低噪声完成 / 失败通知：缺 `workspaceId` no-op，前台活跃 no-op，后台 `phase=end` 按退出码写入未读中心；缺 `paneId` 时只生成 surface 级通知；同 scope / command / exitCode 30 秒内去重 |
 | `Services/AgentAttentionSignalDetector.cs` | `AgentAttentionSignalDetector / AgentAttentionSignal` | 纯 Core 检测器；从 Codex pane 的短文本尾部识别 `WaitingInput / ConfirmationRequired / ErrorNeedsDecision` 信号，返回脱敏短摘要，不访问 UI、不创建通知、不扫描 raw bytes |
+| `Services/AgentAttentionNotificationService.cs` | `AgentAttentionNotificationService` | 把 `AgentAttentionSignal` 转为 `NotificationSource.AgentAttention` 未读通知：缺 workspace/surface/pane、前台活跃或空信号 no-op；同 pane / signal kind / summary 30 秒内去重 |
 | `Services/ToastActivationParser.cs` | `ToastActivationParser / ToastActivationRequest` | 统一构建 Windows Toast `action/notificationId/workspaceId/surfaceId/paneId` arguments，并把激活 query string 解析为可跳转请求 |
 | `Services/CommandLogService.cs` | `CommandLogService` | **OSC 133 提示符标记处理**（A/B/C/D）、命令提交、手动注入；按日 JSONL 持久化；脱敏（`SanitizeCommandForStorage / SanitizeTranscriptText`）；终端脚本捕获 `SaveTerminalTranscript / GetTerminalTranscripts / LoadTerminalTranscriptContent`；保留策略 `CommandLogRetentionDays / TranscriptRetentionDays`（0 = 永久，默认 90） |
 | `Services/SnippetService.cs` | `SnippetService` | 增删改查 + 搜索（按 name / content / category / tags / description，收藏优先）+ 首次启动播种 10 条默认 |
@@ -99,7 +100,7 @@
 
 | 文件 | 类型 | 说明 |
 |---|---|---|
-| `src/ECodex/App.xaml.cs` | `App : Application` | 单例服务：`NotificationService / CommandLifecycleNotificationService / PipeServer / SnippetService / CommandLogService / DaemonClient / WindowApi / DaemonConnectTask`；`OnStartup` 先用 `Global\ECodexMainApp` 保证主应用单实例，第二实例只通过 pipe 聚焦 / 恢复已有窗口后退出；初始化托盘图标、默认 skills、PowerShell hook；启管道 + 异步连守护进程；注册全局异常；非焦点时弹 Toast |
+| `src/ECodex/App.xaml.cs` | `App : Application` | 单例服务：`NotificationService / CommandLifecycleNotificationService / AgentAttentionNotificationService / PipeServer / SnippetService / CommandLogService / DaemonClient / WindowApi / DaemonConnectTask`；`OnStartup` 先用 `Global\ECodexMainApp` 保证主应用单实例，第二实例只通过 pipe 聚焦 / 恢复已有窗口后退出；初始化托盘图标、默认 skills、PowerShell hook；启管道 + 异步连守护进程；注册全局异常；非焦点时弹 Toast |
 | `src/ECodex/Services/ToastNotificationHelper.cs` | `ToastNotificationHelper` | 通过 `Microsoft.Toolkit.Uwp.Notifications` 显示 Windows Toast，并注册 `OnActivated` 回调把 activation arguments 转交应用层 |
 | `src/ECodex/Services/ToastActivationService.cs` | `ToastActivationService` | 处理 Toast activation：解析参数后派发到 UI 线程，恢复窗口，按 `notificationId` 跳转通知；跳转失败时打开通知面板 fallback |
 | `src/ECodex/Services/TrayIconService.cs` | `TrayIconService` | WinForms `NotifyIcon` 适配层；提供系统托盘图标、双击恢复和菜单“打开 ECodex / 退出并保留终端 / 退出并终止终端”；释放时隐藏并 Dispose 托盘资源 |
@@ -115,7 +116,7 @@
 |---|---|---|
 | `src/ECodex/ViewModels/MainViewModel.cs` | `MainViewModel : ObservableObject` | 顶层：管理项目集合 + 侧边栏（Visible/Width/CompactSidebar）；命令 `CreateNewWorkspace / DuplicateWorkspace / CloseWorkspace / SelectWorkspace / NextWorkspace / PreviousWorkspace / ToggleSidebar / ToggleCompactSidebar / ToggleNotificationPanel / JumpToLatestUnread / MarkAllNotificationsRead`；`HandlePipeCommand` 集中分派 CLI 命令，含 `CONFIG.RELOAD` 事件桥接；`SaveSession / RestoreSession / CloneSplitNode` |
 | `src/ECodex/ViewModels/WorkspaceViewModel.cs` | `WorkspaceViewModel : ObservableObject, IDisposable` | `Workspace` 包装；保持项目文件夹稳定显示，并作为新 Terminal Surface 的默认 cwd；定时器 5s 刷新 `GitBranch / DetectedAgent`（WMI）；`CreateNewSurface / CloseSurface / NextSurface / PreviousSurface / RefreshInfo`；图标字形自动判断字体（Segoe MDL2 Assets vs Segoe UI Emoji） |
-| `src/ECodex/ViewModels/SurfaceViewModel.cs` | `SurfaceViewModel : ObservableObject, IDisposable` | **关键**：Terminal surface 中 `SplitNode` ↔ `TerminalSession` 双向绑定；Browser surface 不启动终端进程，由 `BrowserControl` 托管；`StartSession` → 守护进程优先（异步 attach + 拉快照 + 300ms 后 CR 触发重绘）+ 失败回退本地；`OnDaemonDisconnected` 自动回退；`SplitFocused / ClosePane / FocusPane / FocusNextPane / FocusPreviousPane / ToggleZoom / EqualizePanes / OpenPaneWithShell`；`CapturePaneTranscript / CaptureAllPaneTranscripts / CapturePaneSnapshotsForPersistence`；`RegisterCommandSubmission / TryHandlePaneCommand`（Agent 拦截） |
+| `src/ECodex/ViewModels/SurfaceViewModel.cs` | `SurfaceViewModel : ObservableObject, IDisposable` | **关键**：Terminal surface 中 `SplitNode` ↔ `TerminalSession` 双向绑定；Browser surface 不启动终端进程，由 `BrowserControl` 托管；`StartSession` → 守护进程优先（异步 attach + 拉快照 + 300ms 后 CR 触发重绘）+ 失败回退本地；`OutputReceived` 后读取短 buffer tail 接入 Codex attention 低噪声通知；`OnDaemonDisconnected` 自动回退；`SplitFocused / ClosePane / FocusPane / FocusNextPane / FocusPreviousPane / ToggleZoom / EqualizePanes / OpenPaneWithShell`；`CapturePaneTranscript / CaptureAllPaneTranscripts / CapturePaneSnapshotsForPersistence`；`RegisterCommandSubmission / TryHandlePaneCommand`（Agent 拦截） |
 | `src/ECodex/ViewModels/BrowserPaneViewModel.cs` | `BrowserPaneViewModel : ObservableObject` | Browser pane 状态：`Url / Title / DisplayTitle / IsLoading / CanGoBack / CanGoForward / IsWebViewAvailable / ErrorMessage / NavigationVersion / History`；`BeginNavigation / CompleteNavigation / UpdateNavigationState / SetWebViewUnavailable / NormalizeUrl` |
 
 ### 8.3 控件

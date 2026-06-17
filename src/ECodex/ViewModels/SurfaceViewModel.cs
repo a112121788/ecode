@@ -27,6 +27,7 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
     private readonly HashSet<string> _autoResumedBindingIds = [];
     private readonly HashSet<string> _daemonPanes = [];
     private readonly HashSet<string> _daemonOutputLogged = [];
+    private const int AgentAttentionTailLines = 80;
     private static readonly object _daemonWaitLock = new();
     private static bool _daemonWaitDone;
 
@@ -417,6 +418,41 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
             : [];
     }
 
+    private string? GetLatestCommand(string paneId)
+    {
+        return _paneCommandHistory.TryGetValue(paneId, out var history) && history.Count > 0
+            ? history[^1]
+            : null;
+    }
+
+    private void HandleAgentAttentionSignal(TerminalSession session, string paneId)
+    {
+        try
+        {
+            var textTail = session.Buffer.ExportPlainText(maxScrollbackLines: AgentAttentionTailLines);
+            var signal = AgentAttentionSignalDetector.Detect(new AgentAttentionDetectionInput(
+                TextTail: textTail,
+                RecentCommand: GetLatestCommand(paneId)));
+
+            App.AgentAttentionNotifications.TryNotify(
+                _workspaceId,
+                Surface.Id,
+                paneId,
+                signal,
+                IsMainWindowForegroundActive());
+        }
+        catch (Exception ex)
+        {
+            App.DaemonLog($"[AgentAttention] detection failed for pane={paneId}: {ex.Message}");
+        }
+    }
+
+    private static bool IsMainWindowForegroundActive()
+    {
+        var window = Application.Current?.MainWindow;
+        return window is { IsActive: true, IsVisible: true };
+    }
+
     private static bool ShouldCaptureTranscript(string reason)
     {
         var settings = SettingsService.Current;
@@ -731,6 +767,8 @@ public partial class SurfaceViewModel : ObservableObject, IDisposable
                 _workspaceId, Surface.Id, paneId,
                 title, subtitle, body, source);
         };
+
+        session.OutputReceived += () => HandleAgentAttentionSignal(session, paneId);
 
         session.ShellPromptMarker += (marker, payload) =>
         {

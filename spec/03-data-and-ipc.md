@@ -400,7 +400,7 @@ public required string Title;
 public string? Subtitle;
 public required string Body;
 public DateTime Timestamp;        // UTC
-public NotificationSource Source; // Osc9 / Osc99 / Osc777 / Cli
+public NotificationSource Source; // Osc9 / Osc99 / Osc777 / Cli / AgentAttention
 ```
 
 - 内存上限 500（`AddNotification` 满则丢弃最旧）
@@ -430,10 +430,10 @@ Codex 等待用户输入、权限确认或关键错误决策时，需要在 ECod
 | 字段 / 规则 | 契约 |
 |---|---|
 | 数据来源 | 以 Terminal pane 的 VT 解析后文本尾部为主要输入；本地 ConPTY 与 daemon 托管会话都通过 `TerminalSession.OutputReceived` 后读取同一 buffer tail，不直接扫描未解码 raw bytes |
-| 检测边界 | 先做纯 Core 检测器（例如 `AgentAttentionSignalDetector`），输入为 pane text tail / 最近命令 / agent 线索，输出 `WaitingInput / ConfirmationRequired / ErrorNeedsDecision` 等信号；检测器不得访问 UI、通知服务或系统 Toast |
+| 检测边界 | `SurfaceViewModel` 在 `TerminalSession.OutputReceived` 后读取少量 pane text tail（当前 80 行）和最近命令，交给纯 Core `AgentAttentionSignalDetector`，输出 `WaitingInput / ConfirmationRequired / ErrorNeedsDecision` 等信号；检测器不得访问 UI、通知服务或系统 Toast |
 | Codex 优先 | 首版只识别 Codex 常见等待语义和确认语义；Claude/Aider/Cursor 等代理只保留后续扩展点，避免用泛化关键字误报 |
-| 通知门控 | 只有 ECodex 窗口隐藏到托盘或非激活，且信号带 workspace / surface / pane 上下文时才创建未读通知并可能弹 Toast；前台活跃只记录诊断 / 状态，不创建通知 |
-| 去重 / 冷却 | 同 pane、同信号类型、同摘要在冷却窗口内只提醒一次；同一 pane 状态从等待输入变为确认 / 错误决策时可再次提醒；普通输出追加不刷新 Toast |
+| 通知门控 | `AgentAttentionNotificationService` 只有在 ECodex 窗口隐藏到托盘或非激活，且信号带 workspace / surface / pane 上下文时才创建 `NotificationSource.AgentAttention` 未读通知并可能弹 Toast；前台活跃只记录诊断 / 状态，不创建通知 |
+| 去重 / 冷却 | 同 pane、同信号类型、同摘要 30 秒内只提醒一次；同一 pane 状态从等待输入变为确认 / 错误决策时可再次提醒；普通输出追加不刷新 Toast |
 | 安全与脱敏 | 通知 body 只包含脱敏后的短摘要，不包含完整命令输出、密钥、prompt 原文或大段上下文；检测失败不影响终端输入输出 |
 | 降级 | 无法确认 Codex 或信号置信度不足时 no-op；用户仍可通过 OSC / `ecodex notify` / 命令生命周期通知获得显式提醒 |
 | 验证边界 | 信号检测、去重和前台门控可单测 / source test；真实 Codex 等待输入场景需 Windows live smoke 或手测记录补证 |

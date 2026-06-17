@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace ECodex.Core.Models;
 
 /// <summary>
-/// 通知来源 - OSC 序列或 CLI 触发
+/// 通知来源 - OSC 序列、CLI 或 ECodex 内部检测触发
 /// </summary>
 public enum NotificationSource
 {
@@ -12,10 +12,11 @@ public enum NotificationSource
     Osc99,   // OSC 99 序列（键值对通知）
     Osc777,  // OSC 777 序列（结构化通知）
     Cli,     // CLI 命令触发
+    AgentAttention, // Agent 等待输入 / 确认等状态检测触发
 }
 
 /// <summary>
-/// 终端通知 - 由终端 OSC 序列或 CLI 触发的通知消息，支持已读/未读状态
+/// 终端通知 - 由终端 OSC 序列、CLI 或内部检测触发的通知消息，支持已读/未读状态
 /// </summary>
 public record TerminalNotification : INotifyPropertyChanged
 {

@@ -17,6 +17,7 @@ ECodex 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 - PowerShell shell integration 现在会随命令生命周期事件回传 `workspaceId`、`surfaceId` 与 `paneId`，为后台完成 / 失败通知提供精确 pane 定位。
 - 后台 / 非激活状态下，带 ECodex 上下文的命令结束事件会按退出码进入未读中心：`0` 生成完成通知，非 `0` 生成失败通知。
 - 命令生命周期通知新增 30 秒低噪声冷却：同 workspace / surface / pane、同命令、同退出码的重复事件不会短时间刷屏。
+- 后台 / 非激活状态下，Codex pane 出现等待输入、权限确认或错误决策信号时会生成低噪声未读通知，并复用 Toast 跳转定位。
 - Windows Toast payload 现在携带完整 `notificationId/workspaceId/surfaceId/paneId`，并具备可复用的激活参数解析能力，为后续点击跳转铺路。
 - Windows Toast 激活现在会经 UI Dispatcher 恢复 ECodex 窗口，并按通知定位跳转；目标缺失时打开通知面板 fallback 且保持未读。
 - 新增 `scripts/smoke-toast-activation.ps1` Windows-only 手动 smoke/checklist，用真实通知 payload 校验 Toast 展示、点击恢复、pane 聚焦和缺 pane fallback 证据。

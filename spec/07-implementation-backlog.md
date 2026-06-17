@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `NOT-02D-2` 等待输入信号接入低噪声通知；`NOT-02D-1` 已完成纯 Core 检测器和保守匹配测试。
+下个可领切片优先进入 `NOT-02D-3` Codex 等待输入 live smoke 与文档；`NOT-02D-2` 已完成后台 / 非激活低噪声通知接入。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -211,12 +211,12 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | 当 ECodex 隐藏到托盘或非激活时，Codex pane 出现等待输入 / 确认 / 错误决策信号会生成一次未读通知并可点击跳回 pane |
 | Scope | 在 `SurfaceViewModel` 的 `TerminalSession.OutputReceived` 后读取 buffer tail 并调用 `NOT-02D-1` 检测器；新增小型去重 / 冷却状态（同 pane + signal + summary）；复用 `NotificationService.AddNotification` 和 Toast payload；前台活跃 no-op；不新增设置项、不支持非 Codex agent |
-| 关联 | `src/ECodex/ViewModels/SurfaceViewModel.cs`、`src/ECodex/App.xaml.cs` 前台判断、`src/ECodex.Core/Services/NotificationService.cs`、`ToastActivationParser` |
-| 验收 | 测试覆盖：后台 / 非激活命中信号创建通知；前台活跃 no-op；同 pane 同摘要冷却；不同 pane 不互相吞；通知带 workspace / surface / pane 且 Toast 点击沿 `NOT-02C` 路径跳转；focused tests 与 Debug build 通过 |
+| 关联 | `src/ECodex/ViewModels/SurfaceViewModel.cs`、`src/ECodex/App.xaml.cs` 前台判断、`src/ECodex.Core/Services/AgentAttentionNotificationService.cs`、`src/ECodex.Core/Services/NotificationService.cs`、`ToastActivationParser` |
+| 验收 | 已覆盖：后台 / 非激活命中信号创建 `NotificationSource.AgentAttention` 通知；前台活跃 no-op；同 pane 同摘要冷却；不同 pane / 不同摘要不互相吞；通知带 workspace / surface / pane 且复用 `NOT-02C` Toast payload 跳转路径；focused tests 与 Debug build 通过 |
 | 风险 | `OutputReceived` 频繁触发，必须避免每个 chunk 扫描大缓冲或重复通知；读取 UI buffer 要保持线程边界安全 |
 | 回滚 | 移除接线与去重状态，保留纯检测器 |
 
