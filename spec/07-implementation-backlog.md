@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `OBS-01-8` AgentConversation Core DTO 与存储契约；`OBS-01-7` 已完成 AgentConversation planned 边界复核。
+下个可领切片优先进入 `OBS-01-9` 失败 loop AgentMessages provider 接入；`OBS-01-8` 已完成 AgentConversation Core DTO 与存储契约。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -239,10 +239,10 @@ AI Agent 启动后按以下顺序选择任务：
 |---|---|
 | 状态 | done |
 | 优先级 | P1 |
-| Outcome | 维护者明确 Session Vault / 命令日志 / terminal transcript / daemon log 如何组成失败 loop 证据包，并确认 AgentConversation 相关类型当前只是 planned，不作为现有事实源 |
+| Outcome | 维护者明确 Session Vault / 命令日志 / terminal transcript / daemon log 如何组成失败 loop 证据包，并确认当时 AgentConversation 相关类型只是 planned，不作为现有事实源 |
 | Scope | 只做 spec/backlog refinement；阅读 `SessionVaultWindow`、`CommandLogService`、`TerminalTranscriptEntry`、`02-modules.md` 与 `03-data-and-ipc.md`；不读取真实日志内容、不实现 UI、不新增存储 |
 | 关联 | `spec/03-data-and-ipc.md` §8.1、`spec/02-modules.md`、`src/ECodex/Views/SessionVaultWindow.xaml.cs`、`src/ECodex.Core/Services/CommandLogService.cs` |
-| 验收 | `Obs01RefinementTests` 覆盖 `FailureLoopEvidencePackage` 契约、当前源码缺少 `AgentConversationStoreService` 的显式边界、`OBS-01-1` ready 字段；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| 验收 | `Obs01RefinementTests` 覆盖 `FailureLoopEvidencePackage` 契约、OBS-01-8 前源码缺少 `AgentConversationStoreService` 的显式边界、`OBS-01-1` ready 字段；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
 | 风险 | 如果把 planned Agent 存储当作已存在，会导致后续实现直接失败；如果从 UI 扫日志，会绕过脱敏和时间窗约束 |
 | 回滚 | 仅回退 OBS-01 契约和 backlog 拆分，不影响现有 Session Vault |
 
@@ -330,10 +330,10 @@ AI Agent 启动后按以下顺序选择任务：
 |---|---|
 | 状态 | done |
 | 优先级 | P1 |
-| Outcome | 在接入 Agent 会话证据前，维护者明确当前源码仍没有 `AgentConversationStoreService` / `AgentConversationThread`，并拆出不破坏现有 Session Vault 的最小存储契约或继续保持 planned |
+| Outcome | 在接入 Agent 会话证据前，维护者明确 OBS-01-8 前源码仍没有 `AgentConversationStoreService` / `AgentConversationThread`，并拆出不破坏现有 Session Vault 的最小存储契约 |
 | Scope | 只做 spec/backlog refinement 与 source tests；复核 `src/ECodex.Core/Models`、`src/ECodex.Core/Services`、`src/ECodex/Services` 是否出现 AgentConversation 相关类型；不实现 Agent runtime、不写真实 agent 日志、不读取 secrets |
-| 关联 | `spec/02-modules.md` planned AgentConversation 行、`spec/03-data-and-ipc.md` §8.1、`OBS-01` draft 行 |
-| 验收 | 测试覆盖 AgentConversation 类型仍为 planned / absent，新增下一可执行子切片 ready 字段，明确 Session Vault preview 继续以空 AgentMessages 运行；focused tests、`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| 关联 | `spec/02-modules.md` 当时 planned AgentConversation 行、`spec/03-data-and-ipc.md` §8.1、`OBS-01` draft 行 |
+| 验收 | 测试覆盖 AgentConversation 类型在 OBS-01-8 前仍为 planned / absent，新增下一可执行子切片 ready 字段，明确 Session Vault preview 继续以空 AgentMessages 运行；focused tests、`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
 | 风险 | 直接实现 Agent 存储会扩大到 runtime / LLM 工具调用 / token 统计；本切片只做边界收敛，避免把 planned 类型当现有依赖 |
 | 回滚 | 回退 refinement 文档，不影响已完成 failure-loop Core 和 Session Vault 预览 |
 
@@ -341,14 +341,27 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P1 |
 | Outcome | Core 层拥有可单测的 AgentConversation DTO 与存储服务最小契约，为后续 failure-loop 证据包接入 AgentMessages 提供真实事实源 |
 | Scope | 新增 `AgentConversationThread` / `AgentConversationMessage` DTO 和纯 Core `AgentConversationStoreService`；只读写调用方传入的测试目录或明确配置根目录；不接 Agent runtime、不调用 LLM、不接 Session Vault UI、不读取 secrets |
-| 关联 | `spec/03-data-and-ipc.md` §8 planned 契约、`FailureLoopEvidencePackage.AgentMessages`、`OBS-01-7` refinement |
+| 关联 | `spec/03-data-and-ipc.md` §8 Core 存储契约、`FailureLoopEvidencePackage.AgentMessages`、`OBS-01-7` refinement |
 | 验收 | 单测覆盖 create/search/thread index、append message、token 聚合、last preview、多值 JSON/BOM/JSONL 兼容读取、测试目录隔离；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~AgentConversation" --no-restore` 与 `git diff --check` 通过 |
 | 风险 | 存储实现可能误读真实 `%USERPROFILE%` agent 数据或扩大到 runtime；首版必须依赖显式根目录，真实 profile 接线留到后续切片 |
 | 回滚 | 删除 AgentConversation DTO / store 和测试；failure-loop evidence 继续保持空 AgentMessages |
+
+### `OBS-01-9` - 失败 loop AgentMessages provider 接入
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | `FailureLoopEvidencePackage.AgentMessages` 能从显式 AgentConversation 存储中读取同 workspace / surface / pane / 时间窗的消息摘要，Session Vault 仍不直接扫描 profile |
+| Scope | 扩展 failure-loop provider seam 或新增 AgentConversation provider；只读取调用方注入的 `AgentConversationStoreService` / agent 根目录；装配器接收已截断消息摘要；不接 Agent runtime、不改 UI、不默认读取 `%USERPROFILE%`、不读取 secrets |
+| 关联 | `AgentConversationStoreService`、`FailureLoopEvidenceCollector`、`FailureLoopEvidenceAssembler`、`FailureLoopEvidencePackage.AgentMessages`、`spec/03-data-and-ipc.md` §8.1 |
+| 验收 | 单测覆盖 Agent message 时间窗 / workspace / surface / pane 过滤、摘要截断、无 provider 仍为空集合、Session Vault 不直接 new store；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~FailureLoopEvidence|FullyQualifiedName~AgentConversation" --no-restore` 与 `git diff --check` 通过 |
+| 风险 | 过早接真实 profile 会读取用户会话内容；本切片必须保持显式注入和测试 fixture，不处理 runtime 写入 |
+| 回滚 | 移除 AgentMessages provider 接入，保留 AgentConversation Core store 和原有 failure-loop 命令 / transcript / daemon 证据 |
 
 ### `PKG-02` - Inno 安装与卸载向导中文化
 
@@ -423,7 +436,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 | ID | 状态 | Outcome | 缺口 | 下一步 |
 |---|---|---|---|---|
-| `OBS-01` | draft | Agent 会话、命令日志、terminal transcript 可串成一次失败 loop 的复盘视图 | 已完成 `OBS-01-1` Core DTO / 装配器、`OBS-01-2` provider seam、`OBS-01-3` daemon log parser、`OBS-01-4` preview formatter、`OBS-01-5` Session Vault 入口、`OBS-01-6` GUI smoke checklist 与 `OBS-01-7` planned 边界复核；AgentConversation 相关源码当前未落地 | 先完成 `OBS-01-8` AgentConversation Core DTO / store，再接入 failure-loop AgentMessages |
+| `OBS-01` | draft | Agent 会话、命令日志、terminal transcript 可串成一次失败 loop 的复盘视图 | 已完成 `OBS-01-1` Core DTO / 装配器、`OBS-01-2` provider seam、`OBS-01-3` daemon log parser、`OBS-01-4` preview formatter、`OBS-01-5` Session Vault 入口、`OBS-01-6` GUI smoke checklist、`OBS-01-7` planned 边界复核与 `OBS-01-8` AgentConversation Core store；failure-loop 仍未接 AgentMessages | 先完成 `OBS-01-9` AgentMessages provider，再评估 Session Vault 展示接线 |
 | `BRS-01` | draft | Browser scripting API 增加更多真实页面回归样例 | 需要本地测试页和 WebView2 环境策略 | 先列 P0 API 现有覆盖矩阵 |
 | `PKG-01` | draft | 安装 / 更新 / 卸载 rollback 证据更清晰 | 需要 Windows 测试环境和 artifact 命名 | 先整理 release workflow 产物清单 |
 | `DX-01` | draft | 新贡献者按 `spec/` 能 30 分钟跑通第一个小 PR | 需要观测真实 onboarding 缺口 | 先用一次 fresh clone 记录摩擦点 |

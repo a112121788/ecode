@@ -139,7 +139,7 @@ ecodex restore-session
 
 该入口复用 Core 层 `FailureLoopEvidenceCollector` 和 `FailureLoopEvidencePreviewFormatter`，UI 层只展示结果，不重新拼接证据，也不直接扫描 `%USERPROFILE%` 下的 `daemon-debug.log`。如果没有找到匹配的失败命令或证据，会显示 `No failure loop evidence available.`。
 
-首版 Agent 会话来源仍是 planned/empty；`AgentConversationStoreService` 落地前，预览不会读取或假设 Agent 消息存储。
+AgentConversation Core 存储已经落地，但该入口尚未接入 `AgentMessages` provider；预览不会自行实例化 `AgentConversationStoreService`，也不会默认读取真实 `%USERPROFILE%` profile。
 
 ### 手动 smoke checklist
 
@@ -150,6 +150,6 @@ ecodex restore-session
 3. 打开 Session Vault：按 `Ctrl+Shift+V`，选中刚捕获的 transcript，点击“生成失败 loop 预览”。
 4. 生成预览：确认只读文本区出现 `Failure Loop Evidence`、失败命令、`Transcripts` 区块；点击“全部复制”后粘贴到临时文本编辑器核对内容可复制。
 5. 无证据负控：选择一个没有附近失败命令的 transcript，点击“生成失败 loop 预览”，应显示 `No failure loop evidence available.`。
-6. 边界记录：首版结果不能作为 AgentConversation live 证据；`AgentConversationStoreService` 未落地前，Agent 消息区只能视为 planned/empty。
+6. 边界记录：当前结果不能作为 AgentConversation live 证据；在 `AgentMessages` provider 接入前，Agent 消息区仍只能视为空集合 / 未接入来源。
 
 检查过程中不要手动打开或复制 `%USERPROFILE%\.ecodex\secrets.json`、`.env*`、`config/credentials*` 或 `secrets/**`；如果需要 daemon 诊断证据，只记录按钮生成的预览文本和手测截图，不直接粘贴完整真实日志。

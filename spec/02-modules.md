@@ -33,11 +33,10 @@
 | `Models/CommandLogEntry.cs` | `CommandLogEntry` | 命令日志项：起止时间、退出码、状态图标（`\uE916 / \uE73E / \uE711`）、时长格式化 |
 | `Models/TerminalNotification.cs` | `TerminalNotification / AppNotification / NotificationSource` | OSC、CLI 或内部检测通知，统一带 `IsRead`、`Source`（Osc9/Osc99/Osc777/Cli/AgentAttention） |
 | `Models/TerminalTranscriptEntry.cs` | `TerminalTranscriptEntry` | 脚本文件元数据：`FilePath / CapturedAt / Reason / SizeBytes` |
-| `Models/FailureLoopEvidencePackage.cs` | `FailureLoopEvidencePackage / FailureLoopCommandEvidence / FailureLoopTranscriptEvidence / FailureLoopDaemonLogEvidence` | OBS-01 失败 loop 证据包 DTO；只承载调用方传入的已脱敏命令、transcript 摘要、daemon log 片段，Agent 消息首版为空集合 |
+| `Models/FailureLoopEvidencePackage.cs` | `FailureLoopEvidencePackage / FailureLoopCommandEvidence / FailureLoopTranscriptEvidence / FailureLoopDaemonLogEvidence` | OBS-01 失败 loop 证据包 DTO；只承载调用方传入的已脱敏命令、transcript 摘要、daemon log 片段，Agent 消息仍需后续 provider 接入 |
 | `Models/Snippet.cs` | `Snippet` | 代码片段：`{{key}}` 占位符解析（`Resolve`）+ `GetPlaceholders` |
 | `Models/ECodexJsonConfig.cs` | `ECodexJsonConfig / ECodexCommand / ECodexAction` | 项目级 `ecodex.json` DTO；M1 支持 `commands` 与 `actions` 的 `command` 子集，目标为 `currentTerminal` / `newTabInCurrentPane` |
-| `Models/AgentConversationThread.cs`（planned） | `AgentConversationThread` | OBS-01 规划中的 Agent 会话线程索引；当前源码未落地，不作为现有事实源 |
-| `Models/AgentConversationMessage.cs`（planned） | `AgentConversationMessage` | OBS-01 规划中的 Agent 单条消息；当前源码未落地，不作为现有事实源 |
+| `Models/AgentConversation.cs` | `AgentConversationThread / AgentConversationMessage` | OBS-01 Agent 会话 Core DTO：线程索引、消息内容、token 聚合与压缩标记；runtime / UI 接线后续切片处理 |
 | `Models/GhosttyTheme.cs` | `GhosttyTheme` | Ghostty 风格主题：背景/前景/16 色调色板/光标/选区颜色/字体 |
 
 ## 3. ECodex.Core · Services
@@ -60,7 +59,7 @@
 | `Services/ResumeBindingService.cs` | `ResumeBindingService` | 读写 `%USERPROFILE%/.ecodex/resume.json`；支持 `Load / Save / Add / Remove / FindForSurface / TrustPrefix`；保存前剔除 TOKEN / PASSWORD / SECRET / API_KEY 等敏感环境变量 |
 | `Services/DaemonSessionTerminator.cs` | `DaemonSessionTerminator` | 通过 `SESSION_LIST` 获取 daemon 会话，再逐个发送 `SESSION_CLOSE`；用于退出 ECodex 并终止托管终端，不再暴露 daemon `SESSION_CLOSE_ALL` |
 | `Services/PowerShellHookSetupService.cs` | `PowerShellHookSetupService` | 规划 / 安装 PowerShell shell integration 标记块；hook 通过 `ecodex hook event` 回传命令开始、结束、退出码和 ECodex workspace / surface / pane 上下文；写入前备份 profile 到 `%USERPROFILE%\.ecodex\backups\`；冲突标记块跳过 |
-| `Services/AgentConversationStoreService.cs`（planned） | `AgentConversationStoreService` | OBS-01 规划中的 Agent 会话线程存储；当前源码未落地，失败 loop 证据包首个切片必须先定义 DTO / 装配契约 |
+| `Services/AgentConversationStoreService.cs` | `AgentConversationStoreService` | OBS-01 Agent 会话 Core 存储；只读写调用方显式传入的 agent 根目录，维护 `threads.json` 与 `messages/<threadId>.jsonl`，不自行读取真实 profile |
 | `Services/SecretStoreService.cs` | `SecretStoreService` (static) | DPAPI `ProtectedData.Protect/Unprotect` 存取 `secrets.json`；`GetSecret/SetSecret/RemoveSecret` |
 | `Services/GitService.cs` | `GitService` (static) | 快速读 `.git/HEAD`；`git rev-parse --abbrev-ref HEAD` 回退；`GetRemoteUrl` |
 | `Services/PortScanner.cs` | `PortScanner` (static) | `netstat -ano -p TCP` + WMI 进程树 → 监听端口列表 |

@@ -1682,7 +1682,7 @@ public class SmokeWorkflowTests
         releaseReadiness.Should().Contain("-Scenario CodexAttention");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
         backlog.Should().Contain("CodexAttentionSmokeScript_CoversAgentAttentionScenarioAndNegativeControl");
-        backlog.Should().Contain("`NOT-02D-3` 已完成");
+        backlog.Should().Contain("| `NOT-02D` | done |");
     }
 }
 
@@ -1737,7 +1737,7 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
         backlog.Should().Contain("| `NOT-02D` | done |");
-        backlog.Should().Contain("`OBS-01-8` AgentConversation Core DTO 与存储契约");
+        backlog.Should().Contain("`OBS-01-9` 失败 loop AgentMessages provider 接入");
     }
 }
 
@@ -1750,14 +1750,14 @@ public class Obs01RefinementTests
         var contract = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "03-data-and-ipc.md"));
         var backlog = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "07-implementation-backlog.md"));
 
-        modules.Should().Contain("AgentConversationStoreService.cs`（planned）");
+        modules.Should().Contain("AgentConversationStoreService.cs` | `AgentConversationStoreService`");
         contract.Should().Contain("### 8.1 OBS-01 失败 loop 证据包契约");
         contract.Should().Contain("FailureLoopEvidencePackage");
         contract.Should().Contain("CommandLogService.GetForDate");
         contract.Should().Contain("TerminalTranscriptEntry");
         contract.Should().Contain("daemon-debug.log");
-        contract.Should().Contain("当前源码未包含 `AgentConversationStoreService`");
-        contract.Should().Contain("## 8. Agent 会话（planned：`%USERPROFILE%/.ecodex/agent/`）");
+        contract.Should().Contain("当前源码包含纯 Core 的 `AgentConversationStoreService`");
+        contract.Should().Contain("## 8. Agent 会话（Core 存储：显式 agent 根目录）");
         contract.Should().Contain("不得读取 `secrets.json`");
         backlog.Should().Contain("### `OBS-01-R` - 拆分失败 loop 证据包契约");
         backlog.Should().Contain("### `OBS-01-1` - 失败 loop 证据包 Core DTO 与装配器");
@@ -1768,22 +1768,23 @@ public class Obs01RefinementTests
         backlog.Should().Contain("### `OBS-01-6` - Session Vault 失败 loop GUI smoke checklist");
         backlog.Should().Contain("### `OBS-01-7` - AgentConversation planned 存储接入前 refinement");
         backlog.Should().Contain("### `OBS-01-8` - AgentConversation Core DTO 与存储契约");
+        backlog.Should().Contain("### `OBS-01-9` - 失败 loop AgentMessages provider 接入");
         backlog.Should().Contain("FailureLoopEvidencePackage");
-        backlog.Should().Contain("`OBS-01-7` 已完成 AgentConversation planned 边界复核");
+        backlog.Should().Contain("`OBS-01-8` 已完成 AgentConversation Core DTO 与存储契约");
     }
 
     [Fact]
     public void Obs01Refinement_GroundsSessionVaultInCurrentTranscriptImplementation()
     {
         var sessionVault = File.ReadAllText(FindRepoFile("src", "ECodex", "Views", "SessionVaultWindow.xaml.cs"));
-        var sourceFiles = Directory.EnumerateFiles(FindRepoDirectory("src"), "*.cs", SearchOption.AllDirectories)
-            .Select(Path.GetFileName)
-            .ToList();
+        var agentStore = File.ReadAllText(FindRepoFile("src", "ECodex.Core", "Services", "AgentConversationStoreService.cs"));
+        var agentModels = File.ReadAllText(FindRepoFile("src", "ECodex.Core", "Models", "AgentConversation.cs"));
 
         sessionVault.Should().Contain("App.CommandLogService.GetTerminalTranscripts()");
         sessionVault.Should().Contain("App.CommandLogService.LoadTerminalTranscriptContent(e.FilePath)");
-        sourceFiles.Should().NotContain("AgentConversationStoreService.cs");
-        sourceFiles.Should().NotContain("AgentConversationThread.cs");
+        sessionVault.Should().NotContain("AgentConversationStoreService");
+        agentStore.Should().Contain("public sealed class AgentConversationStoreService");
+        agentModels.Should().Contain("public sealed record AgentConversationThread");
     }
 
     private static string FindRepoFile(params string[] relativeParts)
@@ -2355,6 +2356,113 @@ public class FailureLoopEvidenceTests
         }
 
         throw new DirectoryNotFoundException($"Could not find repo directory: {Path.Combine(relativeParts)}");
+    }
+}
+
+public class AgentConversationStoreServiceTests
+{
+    [Fact]
+    public void CreateAppendAndSearchThreads_PersistsIndexAndAggregatesMessages()
+    {
+        using var temp = TempDirectory.Create();
+        var agentRoot = Path.Combine(temp.Path, "agent");
+        var store = new AgentConversationStoreService(agentRoot);
+        var createdAt = new DateTimeOffset(2026, 6, 17, 8, 0, 0, TimeSpan.Zero);
+
+        var thread = store.CreateThread(
+            "workspace-a",
+            surfaceId: "surface-a",
+            paneId: "pane-a",
+            title: "Investigate OBS failure",
+            threadId: "thread-a",
+            createdAtUtc: createdAt);
+
+        thread.Id.Should().Be("thread-a");
+        store.AgentDirectory.Should().Be(agentRoot);
+        File.Exists(Path.Combine(agentRoot, "threads.json")).Should().BeTrue();
+
+        store.AppendMessage(
+            "thread-a",
+            new AgentConversationMessage
+            {
+                Role = "USER",
+                Content = "first line\r\nsecond line",
+                InputTokens = 3,
+                TotalTokens = 3,
+                CreatedAtUtc = createdAt.AddMinutes(1),
+            });
+        store.AppendMessage(
+            "thread-a",
+            new AgentConversationMessage
+            {
+                Id = "message-b",
+                Role = "assistant",
+                Content = new string('x', 180),
+                InputTokens = 1,
+                OutputTokens = 5,
+                TotalTokens = 6,
+                IsCompaction = true,
+                CreatedAtUtc = createdAt.AddMinutes(2),
+            });
+
+        var storedThread = store.GetThread("thread-a");
+        storedThread.Should().NotBeNull();
+        storedThread!.MessageCount.Should().Be(2);
+        storedThread.TotalInputTokens.Should().Be(4);
+        storedThread.TotalOutputTokens.Should().Be(5);
+        storedThread.TotalTokens.Should().Be(9);
+        storedThread.CompactionCount.Should().Be(1);
+        storedThread.LastMessagePreview.Should().HaveLength(160);
+        storedThread.LastMessagePreview.Should().NotContain("\r").And.NotContain("\n");
+
+        store.SearchThreads("obs").Should().ContainSingle(t => t.Id == "thread-a");
+        store.GetThreads().Should().ContainSingle(t => t.Id == "thread-a");
+
+        var messagePath = Path.Combine(agentRoot, "messages", "thread-a.jsonl");
+        var messages = store.ReadMessagesFromFile(messagePath);
+        messages.Should().HaveCount(2);
+        messages[0].Id.Should().NotBeNullOrWhiteSpace();
+        messages[0].ThreadId.Should().Be("thread-a");
+        messages[0].Role.Should().Be("user");
+        messages[1].Id.Should().Be("message-b");
+        messages[1].Role.Should().Be("assistant");
+    }
+
+    [Fact]
+    public void ReadMessagesFromFile_SupportsBomJsonlAndMultipleTopLevelJsonValues()
+    {
+        using var temp = TempDirectory.Create();
+        var store = new AgentConversationStoreService(Path.Combine(temp.Path, "agent"));
+        var filePath = Path.Combine(temp.Path, "fixture.jsonl");
+        var first = JsonSerializer.Serialize(new AgentConversationMessage { Id = "m1", Role = "USER", Content = "hello" });
+        var second = JsonSerializer.Serialize(new AgentConversationMessage { Id = "m2", Role = "assistant", Content = "world" });
+        var third = JsonSerializer.Serialize(new AgentConversationMessage { Id = "m3", Role = "tool", Content = "ok" });
+        File.WriteAllText(filePath, $"{first}{Environment.NewLine}{second}{third}", new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+
+        var messages = store.ReadMessagesFromFile(filePath);
+
+        messages.Select(m => m.Id).Should().Equal("m1", "m2", "m3");
+        messages.Select(m => m.Role).Should().Equal("user", "assistant", "tool");
+    }
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(),
+            "ecodex-agent-conversation-tests-" + Guid.NewGuid().ToString("N"));
+
+        private TempDirectory()
+        {
+            Directory.CreateDirectory(Path);
+        }
+
+        public static TempDirectory Create() => new();
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+                Directory.Delete(Path, recursive: true);
+        }
     }
 }
 

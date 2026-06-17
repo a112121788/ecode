@@ -451,27 +451,27 @@ Codex 等待用户输入、权限确认或关键错误决策时，需要在 ECod
 
 ---
 
-## 8. Agent 会话（planned：`%USERPROFILE%/.ecodex/agent/`）
+## 8. Agent 会话（Core 存储：显式 agent 根目录）
 
-当前源码未包含 `AgentConversationStoreService`、`AgentConversationThread`、`AgentConversationMessage` 或 `AgentRuntimeService`。本节只描述 OBS-01 后续可实现的存储契约，不代表当前运行时代码已经会写入或读取这些文件；Session Vault 失败 loop 预览在这些类型落地前必须保持 `AgentMessages` 空集合。
+当前源码包含纯 Core 的 `AgentConversationStoreService`、`AgentConversationThread` 与 `AgentConversationMessage`。该存储只读写调用方显式传入的 agent 根目录；`AgentRuntimeService`、真实 `%USERPROFILE%/.ecodex/agent/` 接线、Session Vault `AgentMessages` 接入仍未落地。
 
 ```
 agent/
 ├── threads.json                              // 索引（每次 PersistThreadsIndex 整体重写）
-└── threads/
+└── messages/
     └── <threadId>.jsonl                      // 追加写
 ```
 
-- planned `AgentConversationStoreService`：
+- `AgentConversationStoreService`：
   - `CreateThread / GetThread / GetThreads / SearchThreads` — 受 lock 保护，clone 返回
   - `AppendMessage` 追加消息（角色归一化小写，ID/时间缺失时填默认值）
   - `PersistThreadsIndex` 整体重写索引（按 `UpdatedAtUtc` 倒序）
   - `ReadMessagesFromFile` 兼容 BOM + 多值 JSON + 退化的单行 JSONL
-- planned 线程聚合统计：`MessageCount / TotalInputTokens / TotalOutputTokens / TotalTokens / CompactionCount / LastMessagePreview`（前 160 字符，多行折叠成空格）
+- 线程聚合统计：`MessageCount / TotalInputTokens / TotalOutputTokens / TotalTokens / CompactionCount / LastMessagePreview`（前 160 字符，多行折叠成空格）
 
 ### 8.1 OBS-01 失败 loop 证据包契约
 
-`OBS-01` 的第一阶段只定义可装配、可脱敏、可测试的证据包，不直接做 UI，也不假设不存在的 Agent 存储已经可用。当前源码未包含 `AgentConversationStoreService`、`AgentConversationThread` 或 `AgentRuntimeService`；这些只能作为 planned 来源，必须等后续切片落地后再接入。
+`OBS-01` 的第一阶段只定义可装配、可脱敏、可测试的证据包，不直接做 UI。当前 Core 已有 AgentConversation 存储事实源，但 failure-loop collector / Session Vault 还没有接入 Agent message provider；接入前 `FailureLoopEvidencePackage.AgentMessages` 仍保持空集合。
 
 ```csharp
 public sealed record FailureLoopEvidencePackage(
@@ -496,7 +496,7 @@ public sealed record FailureLoopEvidencePackage(
 | `FailureLoopEvidenceRequest` | 指定 `workspaceId / surfaceId / paneId`、失败命令前后时间窗、摘要长度和可选 `packageId / capturedAtUtc` | 调用方显式传入；不从 UI 或磁盘推断 |
 | `FailureLoopTranscriptInput` | 包装 `TerminalTranscriptEntry` 与已脱敏 transcript 摘要 | 装配器只截断，不重新读取 `FilePath` |
 | `FailureLoopDaemonLogInput` | 包装调用方提供的 daemon log 时间戳、行文本与可选 paneId | 装配器只做时间窗和 paneId 过滤，不读取 `%USERPROFILE%` |
-| `FailureLoopEvidenceAssembler` | 把非零退出码命令、时间窗内 transcript 与 daemon log 片段装配成 `FailureLoopEvidencePackage` | Agent message 来源保持空集合；不做 UI、不写磁盘 |
+| `FailureLoopEvidenceAssembler` | 把非零退出码命令、时间窗内 transcript 与 daemon log 片段装配成 `FailureLoopEvidencePackage` | Agent message 来源保持空集合，直到后续切片接入显式 AgentConversation provider；不做 UI、不写磁盘 |
 | `FailureLoopEvidenceCollector` | 通过 `IFailureLoopEvidenceSourceProvider` 获取指定日期命令、transcript 元数据 / 内容和 daemon log 片段，再调用装配器 | 只为失败时间窗内 transcript 调用内容加载；`CommandLogFailureLoopEvidenceSourceProvider` 包装调用方传入的 `CommandLogService`，不自行构造或扫描真实 profile |
 | `FailureLoopDaemonLogProvider` | 解析 daemon key=value 行，读取调用方显式提供文件路径的有限 tail，并输出 `FailureLoopDaemonLogInput` | 与 `DaemonClient.FormatDaemonLogLine(...)` 转义规则对齐；不默认定位或读取 `%USERPROFILE%` 下真实日志 |
 | `FailureLoopEvidencePreviewFormatter` | 将 evidence package 渲染成可复制的文本预览 | 不重新扫描日志；复用 package 内已截断 / 已脱敏内容，UI 后续只消费格式化结果 |
@@ -507,7 +507,7 @@ public sealed record FailureLoopEvidencePackage(
 | 命令日志 | `CommandLogService.GetForDate(...)` / `CommandLogEntry` | 找到失败命令、退出码、cwd、workspace / surface / pane、时间窗口 | 只使用已脱敏命令；不补采 shell 历史 |
 | Terminal transcript | `TerminalTranscriptEntry` + `CommandLogService.LoadTerminalTranscriptContent(...)` | 提取失败前后可读输出、关闭 / 清屏原因、pane 上下文 | 只通过 `LoadTerminalTranscriptContent` 读取，保留脱敏结果；首版截断摘要，不整段塞进通知 |
 | daemon 诊断 | `%USERPROFILE%\.ecodex\daemon-debug.log` | 串联 attach / fallback / pipe / session 生命周期异常 | 只按时间窗和 paneId 读取有限 tail；不得读取 `secrets.json`、`.env*` 或 credentials |
-| Agent 会话 | planned `AgentConversationStoreService` | 未来串联 Agent 消息、压缩、工具调用与 token 统计 | 当前 no-op；不得把 spec 中 planned 类型当作现有源码 |
+| Agent 会话 | `AgentConversationStoreService` + `AgentConversationThread / AgentConversationMessage` | 后续串联 Agent 消息、压缩与 token 统计 | Core 存储已落地，但 failure-loop provider / UI 未接入；只能使用调用方显式传入的 agent 根目录，不默认读取真实 profile |
 
 | 规则 | 契约 |
 |---|---|
@@ -515,7 +515,7 @@ public sealed record FailureLoopEvidencePackage(
 | 失败判定 | 首版只把非零 `exitCode`、daemon fallback / session error、用户手动选择的 transcript 作为候选失败 loop |
 | 脱敏 | 命令日志与 transcript 继续复用 `CommandLogService` 的脱敏结果；证据包不得读取 `secrets.json`、`.env*`、`config/credentials*` 或 `secrets/**` |
 | 输出边界 | `FailureLoopEvidencePackage` 是 Core DTO / 装配结果；UI 只消费 package，不在 UI 层重新扫描日志文件 |
-| 验证边界 | `FailureLoopEvidenceTests` 覆盖命令日志 + transcript + daemon log 的时间窗关联；Agent 会话来源在 planned 类型落地前必须保持空集合 |
+| 验证边界 | `AgentConversationStoreServiceTests` 覆盖 Core 存储契约；`FailureLoopEvidenceTests` 覆盖命令日志 + transcript + daemon log 的时间窗关联，Agent 会话接入前 `AgentMessages` 仍为空集合 |
 
 ---
 
