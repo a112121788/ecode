@@ -358,7 +358,21 @@ Shell 写入 `\e]133;A` / `\e]133;B;<command>` / `\e]133;C` / `\e]133;D;<exitcod
 
 `LooksLikeSecretInput`（启发式）会在 `B` 时把单独看起来像密码的输入剔除。
 
-### 5.4 保留策略
+### 5.4 S2 hook 生命周期通知目标契约（待 `NOT-02B-*` 实现）
+
+`NOT-02A` 已安装的 PowerShell profile hook 当前只保证把 `phase / command / exitCode / cwd` 送到 `HOOK.COMMAND` 并写诊断日志；S2 后续切片必须按下列目标契约扩展，避免全局 profile hook 对外部 PowerShell 会话造成误通知：
+
+| 字段 / 规则 | 目标契约 |
+|---|---|
+| ECodex 终端环境 | ECodex 启动的 shell 注入 `ECODEX_WORKSPACE_ID`、`ECODEX_SURFACE_ID`、`ECODEX_PANE_ID`；本地 ConPTY 与 daemon 托管会话保持一致 |
+| hook 事件参数 | `ecodex hook event` 继续发送 `phase=start/end`、`command`、`exitCode`、`cwd`，并附加 `workspaceId`、`surfaceId`、`paneId`；参数来自上述环境变量 |
+| 外部 shell fallback | 缺少 `workspaceId` 的事件只允许写诊断日志，不创建通知，避免用户全局 PowerShell profile 中的普通命令刷 ECodex 通知 |
+| 缺失 pane fallback | 有 `workspaceId/surfaceId` 但缺少 `paneId` 时，只能创建 workspace / surface 级通知，不得猜测当前 pane 或跳转到错误 pane |
+| 前台活跃行为 | ECodex 主窗口处于前台活跃状态时只保留命令日志 / 诊断，不创建未读通知、不弹 Toast |
+| 后台 / 非激活行为 | 窗口隐藏到托盘或非激活时，`phase=end` 依据退出码生成完成 / 失败通知并进入未读中心；Toast 仍由窗口焦点与系统能力决定 |
+| 去重 / 节流 | 同 pane、同命令、同退出状态的短时间重复完成事件必须去重或冷却；不同 pane 的事件不能互相吞掉 |
+
+### 5.5 保留策略
 
 | 字段 | 含义 |
 |---|---|

@@ -75,6 +75,73 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
+下个可领切片优先收口 S2 的低噪声命令生命周期通知闭环；当前顺序是 `NOT-02B-1` hook 定位、`NOT-02B-2` 通知生成、`NOT-02B-3` 去重节流，再进入 `NOT-02C-R` Toast 点击跳转 refinement。
+
+### `NOT-02B-R` - 拆分命令生命周期通知契约
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | done |
+| 优先级 | P1 |
+| Outcome | 维护者获得可执行的 `NOT-02B` 子队列，明确 hook 事件如何定位 workspace / surface / pane，以及完成、失败、前台活跃、Toast、去重与节流的边界 |
+| Scope | 只做 backlog / spec refinement；阅读 `TerminalEnvironmentVariables`、`PowerShellHookSetupService`、`MainViewModel.HandleHookCommand`、`NotificationService`、`ToastNotificationHelper`；可更新 `spec/03-data-and-ipc.md` 与本文；不改运行时代码、不写真实 PowerShell profile、不做 Toast live 验证 |
+| 关联 | `06-roadmap.md` Now 的命令生命周期通知；`03-data-and-ipc.md` 的 `HOOK.COMMAND`、命令日志、通知契约；`NOT-02A` 已完成的 PowerShell hook |
+| 验收 | `NOT-02B-1`、`NOT-02B-2`、`NOT-02B-3`、`NOT-02C-R` 的 Ready 字段补齐；明确是否新增 `ECODEX_SURFACE_ID` / `ECODEX_PANE_ID` 环境变量；明确前台活跃时是“不进通知中心”还是“进通知中心但不弹 Toast”；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| 风险 | 如果前台行为或 pane 定位语义未确认，后续实现容易误报或跳错 pane；若 hook contract 设计过宽，会增加 profile 兼容风险 |
+| 回滚 | 仅回退本文与相关 spec 的 refinement diff，不影响已完成的 `NOT-02A` hook 安装能力 |
+
+### `NOT-02B-1` - 为 hook 生命周期事件补 pane 定位
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | PowerShell hook 生命周期事件能带上 ECodex 启动终端的 workspace / surface / pane 上下文，后续通知可以定位到触发命令的 pane，外部 PowerShell 不会被误当作 ECodex pane |
+| Scope | 扩展 `TerminalEnvironmentVariables` 与终端启动调用，新增 `ECODEX_SURFACE_ID`、`ECODEX_PANE_ID`；更新 `PowerShellHookSetupService` 的 hook block 读取环境变量并透传到 `ecodex hook event`；更新 CLI hook 参数解析和 `MainViewModel.HandleHookCommand` 日志字段；同步 `spec/03-data-and-ipc.md`；不生成通知、不写真实 profile |
+| 关联 | `src/ECodex.Core/Terminal/TerminalEnvironmentVariables.cs`、`src/ECodex/ViewModels/SurfaceViewModel.cs`、`src/ECodex.Daemon/DaemonSessionManager.cs`、`src/ECodex.Core/Services/PowerShellHookSetupService.cs`、`src/ECodex.Cli/Program.cs`、`src/ECodex/ViewModels/MainViewModel.cs`、`03-data-and-ipc.md` §5.4 |
+| 验收 | `TerminalEnvironmentVariablesTests` 覆盖 workspace / surface / pane 环境变量和无效名过滤；`PowerShellHookSetupServiceTests` 覆盖 hook block 发送 `--workspace-id`、`--surface-id`、`--pane-id`；CLI source test 覆盖 `hook event` 参数透传；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~TerminalEnvironmentVariablesTests|FullyQualifiedName~PowerShellHookSetupServiceTests" --no-restore` 与 `git diff --check` 通过 |
+| 风险 | daemon session 创建路径当前主要按 workspace 注入环境，补 surface / pane 需要避免打破现有 attach / restore；全局 profile hook 必须在缺少 ECodex 环境变量时保持 no-op 通知 |
+| 回滚 | 移除新增环境变量和 hook 参数，恢复只记录 `phase / command / exitCode / cwd` 的 `NOT-02A` 行为 |
+
+### `NOT-02B-2` - 生成低噪声完成 / 失败通知
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | 当 ECodex 隐藏到托盘或处于非激活状态时，命令结束会按退出码进入未读中心：`0` 为完成通知，非 `0` 为失败通知；前台活跃时不创建未读通知、不弹 Toast |
+| Scope | 在 hook handler 周边或新增小服务维护 pane 级 active command lifecycle；只处理带 `workspaceId` 的 ECodex 终端事件；调用 `NotificationService.AddNotification` 生成 workspace / surface / pane 定位通知；同步 `03-data-and-ipc.md` 与必要 docs；不实现 Toast 点击激活、不识别 Codex 等待输入 |
+| 关联 | `src/ECodex/ViewModels/MainViewModel.cs`、`src/ECodex.Core/Services/NotificationService.cs`、`src/ECodex.Core/Models/TerminalNotification.cs`、`src/ECodex/App.xaml.cs`、`03-data-and-ipc.md` §5.4/§6 |
+| 验收 | 测试覆盖：外部 shell 缺 `workspaceId` 只写日志不通知；后台 / 非激活 `exitCode=0` 生成完成通知；非 `0` 生成失败通知；前台活跃不创建未读通知；缺 `paneId` 时只生成 workspace / surface 级通知且不跳错 pane；focused tests 与 `git diff --check` 通过 |
+| 风险 | WPF 窗口活跃 / 隐藏状态在纯单测中只能通过抽象或 source test 验证；真实 Toast 噪声仍需 Windows 手测 |
+| 回滚 | 禁用 hook lifecycle 到 `NotificationService` 的桥接，保留 hook 日志和命令日志 |
+
+### `NOT-02B-3` - 生命周期通知去重与节流
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P1 |
+| Outcome | watch / dev server / 重复 hook 不会短时间刷屏，同时不同 pane 的完成或失败事件仍能独立提醒 |
+| Scope | 为 `NOT-02B-2` 的通知生成层增加保守去重 / 冷却；建议默认同 pane + 同命令 + 同退出状态 30 秒内只保留 1 条，失败通知可更新最近一条摘要但不重复 Toast；同步 spec；不新增用户设置项 |
+| 关联 | `NotificationService`、`MainViewModel.HandleHookCommand` 或新增 lifecycle notification 服务、`03-data-and-ipc.md` §5.4 |
+| 验收 | 测试覆盖同 pane 同命令同退出状态重复 end event 被节流；不同 pane 不互相吞；成功与失败状态变化不互相吞；冷却窗口后可再次通知；focused tests 与 `git diff --check` 通过 |
+| 风险 | 冷却过强会漏掉真实重复失败；默认值需保守，并在后续用户反馈后再决定是否配置化 |
+| 回滚 | 移除节流层，恢复每个合格 hook end event 生成一条通知 |
+
+### `NOT-02C-R` - 拆分 Toast 点击跳转契约
+
+| 字段 | 内容 |
+|---|---|
+| 状态 | ready |
+| 优先级 | P2 |
+| Outcome | Windows Toast 点击后恢复托盘窗口并跳转到目标 workspace / surface / pane 的实现边界清晰，后续可分为可单测的激活参数解析和 Windows-only live smoke |
+| Scope | 只做 spec/backlog refinement；阅读 `ToastNotificationHelper`、`App.xaml.cs`、`NotificationApiService`、`MainViewModel.JumpToLatestUnread` 相关入口；明确 AppUserModelID、未打包 WPF activation、目标 pane 丢失 fallback；不实现 live activation |
+| 关联 | `src/ECodex/Services/ToastNotificationHelper.cs`、`src/ECodex/App.xaml.cs`、`src/ECodex/Services/NotificationApiService.cs`、`src/ECodex/ViewModels/MainViewModel.cs`、`WIN-01` Windows GUI 验证限制 |
+| 验收 | 后续 `NOT-02C-*` 子项补齐 Ready 字段；明确 Toast argument 必须包含 `notificationId/workspaceId/surfaceId/paneId`；目标 pane 不存在时恢复窗口并显示可见 fallback；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| 风险 | 非打包 WPF 的 Toast activation 与 AppUserModelID 受 Windows 环境影响，不能用纯单测证明 live 点击链路 |
+| 回滚 | 仅回退 spec/backlog refinement；现有 Toast 展示不受影响 |
+
 ### `PKG-02` - Inno 安装与卸载向导中文化
 
 | 字段 | 内容 |
