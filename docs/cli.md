@@ -191,7 +191,7 @@ ecodex setup install --write true
 ecodex setup uninstall --write true
 ```
 
-`setup` 可规划并应用 PATH、PowerShell profile、cmd AutoRun 集成。默认 dry-run；传 `--write true` 才会写入。PowerShell profile 会包含 ECodex 专属 shell integration 标记块，用于通过内部 `ecodex hook event` 回传命令开始、结束、退出码和 ECodex workspace / surface / pane 上下文；后台 / 非激活命令结束会按退出码进入未读中心；写入前会把原 profile 备份到 `%USERPROFILE%\.ecodex\backups\`。
+`setup` 可规划并应用 PATH、PowerShell profile、cmd AutoRun 集成。默认 dry-run；传 `--write true` 才会写入。PowerShell profile 会包含 ECodex 专属 shell integration 标记块，用于通过内部 `ecodex hook event` 回传命令开始、结束、退出码和 ECodex workspace / surface / pane 上下文；后台 / 非激活命令结束会按退出码进入未读中心，并对同 pane、同命令、同退出码的重复事件做 30 秒冷却；写入前会把原 profile 备份到 `%USERPROFILE%\.ecodex\backups\`。
 
 `setup status` 会显示 `PowerShell hook: installed / missing / drifted / conflict`；`setup uninstall --write true` 只移除 ECodex 标记块和已规划的 PATH / AutoRun 集成，不会删除用户其他 profile 内容。
 

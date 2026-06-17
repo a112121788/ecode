@@ -371,7 +371,7 @@ Shell 写入 `\e]133;A` / `\e]133;B;<command>` / `\e]133;C` / `\e]133;D;<exitcod
 | 缺失 pane fallback | 有 `workspaceId/surfaceId` 但缺少 `paneId` 时，只能创建 workspace / surface 级通知，不得猜测当前 pane 或跳转到错误 pane |
 | 前台活跃行为 | ECodex 主窗口处于前台活跃状态时只保留命令日志 / 诊断，不创建未读通知、不弹 Toast |
 | 后台 / 非激活行为 | 窗口隐藏到托盘或非激活时，`phase=end` 依据退出码生成完成 / 失败通知并进入未读中心；Toast 仍由窗口焦点与系统能力决定 |
-| 去重 / 节流 | `NOT-02B-3` 继续实现同 pane、同命令、同退出状态的短时间重复事件去重 / 冷却；不同 pane 的事件不能互相吞掉 |
+| 去重 / 节流 | 同 workspace / surface / pane、同命令、同退出码的重复 `phase=end` 事件 30 秒内只生成 1 条通知；不同 pane 不互相吞，成功 / 失败或不同退出码变化不互相吞 |
 
 ### 5.5 保留策略
 

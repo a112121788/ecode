@@ -45,7 +45,7 @@
 |---|---|---|
 | `Services/SessionPersistenceService.cs` | `SessionPersistenceService` | `Load/Save` 会话 JSON；`BuildState` 把内存模型序列化为 DTO；`SerializeSplitNode / DeserializeSplitNode` 桥接 `SplitNode ↔ SplitNodeState` |
 | `Services/NotificationService.cs` | `NotificationService` | 内存通知集合（≤500），线程安全（lock），事件 `NotificationAdded / UnreadCountChanged`；`GetLatestUnread / GetLatestText / MarkAsRead / MarkWorkspaceAsRead / MarkAllAsRead` |
-| `Services/CommandLifecycleNotificationService.cs` | `CommandLifecycleNotificationService` | 把 `HOOK.COMMAND` 生命周期事件转换成低噪声完成 / 失败通知：缺 `workspaceId` no-op，前台活跃 no-op，后台 `phase=end` 按退出码写入未读中心；缺 `paneId` 时只生成 surface 级通知 |
+| `Services/CommandLifecycleNotificationService.cs` | `CommandLifecycleNotificationService` | 把 `HOOK.COMMAND` 生命周期事件转换成低噪声完成 / 失败通知：缺 `workspaceId` no-op，前台活跃 no-op，后台 `phase=end` 按退出码写入未读中心；缺 `paneId` 时只生成 surface 级通知；同 scope / command / exitCode 30 秒内去重 |
 | `Services/CommandLogService.cs` | `CommandLogService` | **OSC 133 提示符标记处理**（A/B/C/D）、命令提交、手动注入；按日 JSONL 持久化；脱敏（`SanitizeCommandForStorage / SanitizeTranscriptText`）；终端脚本捕获 `SaveTerminalTranscript / GetTerminalTranscripts / LoadTerminalTranscriptContent`；保留策略 `CommandLogRetentionDays / TranscriptRetentionDays`（0 = 永久，默认 90） |
 | `Services/SnippetService.cs` | `SnippetService` | 增删改查 + 搜索（按 name / content / category / tags / description，收藏优先）+ 首次启动播种 10 条默认 |
 | `Services/ECodexJsonService.cs` | `ECodexJsonService` | 读取 `%USERPROFILE%\.config\ecodex\ecodex.json`、`<cwd>\.ecodex\ecodex.json`、`<cwd>\ecodex.json`；支持 JSONC 注释 / 尾随逗号；全局与本地配置合并；输出可显示的诊断 |

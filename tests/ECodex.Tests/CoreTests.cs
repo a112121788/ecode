@@ -279,6 +279,70 @@ public class CommandLifecycleNotificationServiceTests
             .Which.Body.Should().Be("pwsh -c work");
     }
 
+    [Fact]
+    public void HandleHookEvent_DuplicateWithinCooldown_DoesNotNotifyAgain()
+    {
+        var now = new DateTimeOffset(2026, 6, 17, 8, 0, 0, TimeSpan.Zero);
+        var notifications = new NotificationService();
+        var service = new CommandLifecycleNotificationService(notifications, () => now);
+
+        service.HandleHookEvent(CreateHookEvent(command: "dotnet test", exitCode: 0), isAppForegroundActive: false)
+            .Should().BeTrue();
+        now = now.AddSeconds(10);
+        var duplicate = service.HandleHookEvent(CreateHookEvent(command: "dotnet test", exitCode: 0), isAppForegroundActive: false);
+
+        duplicate.Should().BeFalse();
+        notifications.Notifications.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void HandleHookEvent_DifferentPaneWithinCooldown_AddsIndependentNotification()
+    {
+        var now = new DateTimeOffset(2026, 6, 17, 8, 0, 0, TimeSpan.Zero);
+        var notifications = new NotificationService();
+        var service = new CommandLifecycleNotificationService(notifications, () => now);
+
+        service.HandleHookEvent(CreateHookEvent(command: "dotnet test", exitCode: 0, paneId: "pane-1"), isAppForegroundActive: false)
+            .Should().BeTrue();
+        now = now.AddSeconds(10);
+        var added = service.HandleHookEvent(CreateHookEvent(command: "dotnet test", exitCode: 0, paneId: "pane-2"), isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        notifications.Notifications.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandleHookEvent_DifferentExitStatusWithinCooldown_AddsNotification()
+    {
+        var now = new DateTimeOffset(2026, 6, 17, 8, 0, 0, TimeSpan.Zero);
+        var notifications = new NotificationService();
+        var service = new CommandLifecycleNotificationService(notifications, () => now);
+
+        service.HandleHookEvent(CreateHookEvent(command: "npm run build", exitCode: 0), isAppForegroundActive: false)
+            .Should().BeTrue();
+        now = now.AddSeconds(10);
+        var added = service.HandleHookEvent(CreateHookEvent(command: "npm run build", exitCode: 1), isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        notifications.Notifications.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void HandleHookEvent_DuplicateAfterCooldown_AddsNotification()
+    {
+        var now = new DateTimeOffset(2026, 6, 17, 8, 0, 0, TimeSpan.Zero);
+        var notifications = new NotificationService();
+        var service = new CommandLifecycleNotificationService(notifications, () => now);
+
+        service.HandleHookEvent(CreateHookEvent(command: "dotnet test", exitCode: 0), isAppForegroundActive: false)
+            .Should().BeTrue();
+        now = now.AddSeconds(31);
+        var added = service.HandleHookEvent(CreateHookEvent(command: "dotnet test", exitCode: 0), isAppForegroundActive: false);
+
+        added.Should().BeTrue();
+        notifications.Notifications.Should().HaveCount(2);
+    }
+
     private static CommandLifecycleHookEvent CreateHookEvent(
         string phase = "end",
         string command = "echo ok",
