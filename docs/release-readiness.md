@@ -47,7 +47,10 @@ npm run docs:build
 
 ```powershell
 .\scripts\ci.ps1 -Config Release -IncludeSmoke
+pwsh ./scripts/smoke-toast-activation.ps1 -Scenario CodexAttention
 ```
+
+`-Scenario CodexAttention` 需要正在运行的 ECodex 主应用和非激活/隐藏窗口状态；它输出 `agentAttentionPayload`、`simulatedTriggerText` 和普通输出负控，用于补齐 Codex 等待输入提醒的 Windows-only 手测证据。
 
 ## 发布证据清单
 

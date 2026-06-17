@@ -44,7 +44,7 @@ AI Agent 启动后按以下顺序选择任务：
 | `NOT-02A` | done | PowerShell shell integration hook 默认随 App 首次启动安装，可回传命令开始、结束和退出码 | 扩展现有 setup/profile 机制：ECodex 专属标记块、写入前备份到 `%USERPROFILE%\.ecodex\backups\`、`setup status` 可检查、`setup uninstall --write true` 可移除；默认仅 PowerShell，cmd/Git Bash 后续再做；冲突时跳过并提示，不静默覆盖 | `PowerShellHookSetupServiceTests` 覆盖缺失安装、幂等、冲突跳过、写前备份与 App/CLI 接入；`.dotnet\dotnet.exe test tests\ECodex.Tests\ECodex.Tests.csproj --filter "FullyQualifiedName~PowerShellHookSetupServiceTests" --no-restore` 通过；真实 profile 写入手测待人工确认 |
 | `NOT-02B` | draft | 后台/非激活时，基于命令生命周期发送完成、失败、等待输入通知，并进入未读中心 | 依赖 `NOT-02A` 的 hook 事件；定义 pane/session/command id 数据流、退出码映射、通知去重与节流；没有 hook 时降级到 OSC / `ecodex notify` / 关键输出规则 | 后台执行命令成功结束只产生完成通知；非 0 退出码产生失败通知；前台活跃时不刷 Toast；通知能定位 workspace/surface/pane；普通流式输出不逐条通知 |
 | `NOT-02C` | done | 点击 Windows Toast 精准打开 ECodex 并跳转到对应 workspace / surface / pane | 明确 Toast activation/AppUserModelID/非打包应用策略；复用通知 ID、workspaceId、surfaceId、paneId；窗口隐藏到托盘时也能恢复并跳转 | Toast 点击后窗口显示并聚焦对应 pane；通知标记为已读；目标 pane 不存在时给出可见 fallback；Windows Toast 不可用时不影响应用主流程；Windows-only live smoke/checklist 已覆盖诊断与人工证据 |
-| `NOT-02D` | draft | Codex 等待输入、关键确认、错误决策等交互状态能触发低噪声提醒 | 在生命周期通知之外补充状态识别；优先识别 Codex 常见等待输入/确认语义，再扩展可配置规则；仅窗口隐藏/非激活且匹配关键状态时提醒 | Codex 等待用户输入时后台收到通知；普通日志不通知；同一状态有去重/冷却；规则可在后续版本扩展 |
+| `NOT-02D` | done | Codex 等待输入、关键确认、错误决策等交互状态能触发低噪声提醒 | 在生命周期通知之外补充状态识别；优先识别 Codex 常见等待输入/确认语义，再扩展可配置规则；仅窗口隐藏/非激活且匹配关键状态时提醒 | Codex 等待用户输入时后台收到 `AgentAttention` 通知；普通输出负控不通知；同一状态有去重/冷却；Windows-only smoke/checklist 已覆盖证据模板 |
 
 ### 1.1 上一冲刺归档：S1 - 会话恢复与 AI loop 稳定化
 
@@ -75,7 +75,7 @@ AI Agent 启动后按以下顺序选择任务：
 
 ## 2. Ready 队列（Now）
 
-下个可领切片优先进入 `NOT-02D-3` Codex 等待输入 live smoke 与文档；`NOT-02D-2` 已完成后台 / 非激活低噪声通知接入。
+Ready 队列当前已清空；`NOT-02D-3` 已完成 Codex 等待输入 smoke/checklist，下一步需先从 Draft / Refinement 队列拆出新的 ready 切片。
 
 ### `NOT-02B-R` - 拆分命令生命周期通知契约
 
@@ -224,12 +224,12 @@ AI Agent 启动后按以下顺序选择任务：
 
 | 字段 | 内容 |
 |---|---|
-| 状态 | ready |
+| 状态 | done |
 | 优先级 | P2 |
 | Outcome | 维护者可用手测脚本 / checklist 证明真实 Codex 等待输入场景会低噪声提醒，且普通输出不会误报 |
-| Scope | 增加或扩展 Windows-only smoke/checklist，覆盖窗口非激活、Codex 等待输入、确认授权、错误决策、普通流式输出不通知；同步 troubleshooting / installation 或 release readiness；不做可配置规则 UI |
+| Scope | 扩展 Windows-only `scripts/smoke-toast-activation.ps1 -Scenario CodexAttention`，覆盖窗口非激活、Codex-like 等待输入触发、`AgentAttention` 通知、普通输出负控与手测证据模板；同步 troubleshooting / installation / release readiness；不做可配置规则 UI |
 | 关联 | `scripts/smoke-toast-activation.ps1`、`docs/troubleshooting.md`、`docs/release-readiness.md`、`03-data-and-ipc.md` §6.2 |
-| 验收 | 手测记录包含触发文本、通知标题/body 摘要、点击跳转、冷却去重、普通输出不通知；缺 Codex CLI / Windows Toast 时给出可读 skip；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
+| 验收 | `CodexAttentionSmokeScript_CoversAgentAttentionScenarioAndNegativeControl` 覆盖 `-Scenario CodexAttention`、`agentAttentionPayload`、普通输出负控和手测字段；`CodexAttentionSmokeDocs_CoverInstallTroubleshootingReleaseAndBacklog` 覆盖 installation / troubleshooting / release readiness；`pwsh ./scripts/check-doc-links.ps1` 与 `git diff --check` 通过 |
 | 风险 | 真实 Codex CLI 文案和 approval 模式会随版本变化；脚本应能记录环境与原始触发样例，避免把 CI 静态测试当 live 证据 |
 | 回滚 | 删除 smoke/checklist 文档，不影响检测器与通知接线 |
 

@@ -75,10 +75,11 @@ Windows Toast 点击链路依赖系统通知权限、未开启专注助手 / 请
 
 ```powershell
 pwsh ./scripts/smoke-toast-activation.ps1
+pwsh ./scripts/smoke-toast-activation.ps1 -Scenario CodexAttention
 pwsh ./scripts/smoke-toast-activation.ps1 -Interactive -Cleanup
 ```
 
-脚本会检查 Windows、CLI、主应用 pipe、系统 Toast 权限、专注助手提示、开始菜单 / 桌面快捷方式和 AppUserModelID 线索，然后用真实 `workspace/surface/pane` 上下文生成一条生命周期通知。默认输出 JSON 证据和手测步骤；`-Interactive` 会等待人工确认 Toast 是否出现、点击后是否恢复窗口、是否聚焦目标 pane，以及目标缺失时是否打开通知面板 fallback。若缺少 Toast 权限、快捷方式或主应用未运行，脚本会给出可读的 `skipped` / `failed` 原因，不把 CI 静态检查误报成 live 通过。
+脚本会检查 Windows、CLI、主应用 pipe、系统 Toast 权限、专注助手提示、开始菜单 / 桌面快捷方式和 AppUserModelID 线索，然后用真实 `workspace/surface/pane` 上下文生成一条生命周期通知。`-Scenario CodexAttention` 会写入一条 Codex-like 等待输入输出，验证 Codex 等待输入提醒生成 `AgentAttention` 通知，并用普通输出做负控。默认输出 JSON 证据和手测步骤；`-Interactive` 会等待人工确认 Toast 是否出现、点击后是否恢复窗口、是否聚焦目标 pane，以及目标缺失时是否打开通知面板 fallback。若缺少 Toast 权限、快捷方式或主应用未运行，脚本会给出可读的 `skipped` / `failed` 原因，不把 CI 静态检查误报成 live 通过。
 
 ## MSIX 企业包
 

@@ -4,6 +4,8 @@ param(
     [string] $WorkspaceName = "smoke-toast-activation-$([DateTimeOffset]::UtcNow.ToString('yyyyMMdd-HHmmss'))",
     [string] $WorkspaceRoot = "",
     [int] $WaitSeconds = 8,
+    [ValidateSet("LifecycleToast", "CodexAttention")]
+    [string] $Scenario = "LifecycleToast",
     [switch] $Interactive,
     [switch] $RequireActivationPrerequisites,
     [switch] $Cleanup
@@ -19,22 +21,42 @@ if ([string]::IsNullOrWhiteSpace($WorkspaceRoot)) {
 }
 
 $script:Checks = @()
-$script:ManualSteps = @(
-    "Keep this PowerShell window focused so ECodex is hidden or inactive before the toast is raised.",
-    "Confirm a Windows Toast appears with title 'ECodex Toast Smoke' and body containing the smoke marker.",
-    "Click the Toast in the notification banner or Windows notification center.",
-    "Expected: ECodex restores from tray/inactive state and focuses the workspace/surface/pane listed in evidence.toastPayload.",
-    "Expected fallback: if the target pane is gone before click, ECodex restores and opens the notification panel instead of jumping elsewhere.",
-    "After recording evidence, run evidence.cleanup.command or rerun with -Interactive -Cleanup to remove the smoke workspace."
-)
+$script:ManualSteps = @()
+if ($Scenario -eq "CodexAttention") {
+    $script:ManualSteps = @(
+        "Keep this PowerShell window focused so ECodex is hidden or inactive before the Codex attention trigger is raised.",
+        "Run this script with -Scenario CodexAttention; it writes a Codex-like waiting-input line and records evidence.agentAttentionPayload.",
+        "Confirm a Windows Toast appears with title 'Codex 等待输入' and body containing the codex-attention marker.",
+        "Click the Toast in the notification banner or Windows notification center.",
+        "Expected: ECodex restores from tray/inactive state and focuses the workspace/surface/pane listed in evidence.toastPayload.",
+        "Confirm evidence.negativeControl shows ordinary-output did not create an AgentAttention notification.",
+        "For real Codex CLI sign-off, repeat with a real Codex approval / waiting-input prompt and paste the observed trigger text into manual notes.",
+        "After recording evidence, run evidence.cleanup.command or rerun with -Interactive -Cleanup to remove the smoke workspace."
+    )
+}
+else {
+    $script:ManualSteps = @(
+        "Keep this PowerShell window focused so ECodex is hidden or inactive before the toast is raised.",
+        "Confirm a Windows Toast appears with title 'ECodex Toast Smoke' and body containing the smoke marker.",
+        "Click the Toast in the notification banner or Windows notification center.",
+        "Expected: ECodex restores from tray/inactive state and focuses the workspace/surface/pane listed in evidence.toastPayload.",
+        "Expected fallback: if the target pane is gone before click, ECodex restores and opens the notification panel instead of jumping elsewhere.",
+        "After recording evidence, run evidence.cleanup.command or rerun with -Interactive -Cleanup to remove the smoke workspace."
+    )
+}
 $script:Evidence = [ordered]@{
     toastPayload = $null
+    agentAttentionPayload = $null
+    simulatedTriggerText = $null
+    negativeControl = $null
     cleanup = $null
     manualEvidenceTemplate = [ordered]@{
         toastShown = $null
         clickRestoredWindow = $null
         paneFocused = $null
         fallbackVisible = $null
+        sourceIsAgentAttention = $null
+        ordinaryOutputDidNotNotify = $null
         notes = ""
     }
 }
@@ -297,12 +319,44 @@ function Test-InstallerShortcutContract {
     Add-SmokeCheck "installer-shortcuts" $status "Inno installer shortcut entries checked; AppUserModelID remains a live-smoke prerequisite for unpackaged WPF activation." $data
 }
 
+function Test-NotificationMatches {
+    param(
+        [object] $Notification,
+        [string] $Marker,
+        [string] $ExpectedSource = "",
+        [string] $ExpectedTitle = ""
+    )
+
+    $body = [string](Get-JsonProperty $Notification "body")
+    if (-not $body.Contains($Marker, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $false
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedSource)) {
+        $source = [string](Get-JsonProperty $Notification "source")
+        if (-not $source.Equals($ExpectedSource, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $false
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedTitle)) {
+        $title = [string](Get-JsonProperty $Notification "title")
+        if (-not $title.Equals($ExpectedTitle, [System.StringComparison]::Ordinal)) {
+            return $false
+        }
+    }
+
+    return $true
+}
+
 function Wait-ForNotification {
     param(
         [string] $WorkspaceId,
         [string] $SurfaceId,
         [string] $PaneId,
-        [string] $Marker
+        [string] $Marker,
+        [string] $ExpectedSource = "",
+        [string] $ExpectedTitle = ""
     )
 
     $last = $null
@@ -314,8 +368,7 @@ function Wait-ForNotification {
         $notifications = Get-JsonProperty $result "notifications"
         $last = $notifications
         foreach ($notification in @($notifications)) {
-            $body = [string](Get-JsonProperty $notification "body")
-            if ($body.Contains($Marker, [System.StringComparison]::OrdinalIgnoreCase)) {
+            if (Test-NotificationMatches -Notification $notification -Marker $Marker -ExpectedSource $ExpectedSource -ExpectedTitle $ExpectedTitle) {
                 return $notification
             }
         }
@@ -325,6 +378,37 @@ function Wait-ForNotification {
 
     $details = $last | ConvertTo-Json -Depth 8 -Compress
     throw "Notification with marker '$Marker' did not appear. ECodex may be foreground-active, or lifecycle notifications may be disabled. Last notifications: $details"
+}
+
+function Assert-NoNotification {
+    param(
+        [string] $WorkspaceId,
+        [string] $SurfaceId,
+        [string] $PaneId,
+        [string] $Marker,
+        [string] $ExpectedSource = "",
+        [int] $TimeoutSeconds = 2
+    )
+
+    $last = $null
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds([Math]::Max(1, $TimeoutSeconds))
+    while ([DateTimeOffset]::UtcNow -lt $deadline) {
+        $list = Invoke-ECodexJson @('--json', 'notification', 'list', '--unread', 'true', '--workspace', $WorkspaceId, '--surface', $SurfaceId, '--pane', $PaneId, '--limit', '20')
+        Assert-ECodexSuccess $list "notification.list"
+        $result = Get-ECodexResult $list
+        $notifications = Get-JsonProperty $result "notifications"
+        $last = $notifications
+        foreach ($notification in @($notifications)) {
+            if (Test-NotificationMatches -Notification $notification -Marker $Marker -ExpectedSource $ExpectedSource) {
+                $details = $notification | ConvertTo-Json -Depth 8 -Compress
+                throw "Unexpected notification with marker '$Marker' was found: $details"
+            }
+        }
+
+        Start-Sleep -Milliseconds 300
+    }
+
+    return $last
 }
 
 if (-not (Test-IsWindows)) {
@@ -418,24 +502,75 @@ try {
         throw "pane.list did not return surface id and pane id."
     }
 
-    $marker = "toast-smoke-$([Guid]::NewGuid().ToString('N'))"
-    $paneWrite = Invoke-ECodexJson @('--json', 'pane', 'write', '--workspace', $workspaceTarget, $marker, '--submit', 'true')
-    Assert-ECodexSuccess $paneWrite "pane.write"
+    if ($Scenario -eq "CodexAttention") {
+        $marker = "codex-attention-smoke-$([Guid]::NewGuid().ToString('N'))"
+        $simulatedTriggerText = "Codex is waiting for user input. Please respond in the terminal. $marker"
+        $script:Evidence["simulatedTriggerText"] = $simulatedTriggerText
+        $paneWrite = Invoke-ECodexJson @('--json', 'pane', 'write', '--workspace', $workspaceTarget, "echo $simulatedTriggerText", '--submit', 'true')
+        Assert-ECodexSuccess $paneWrite "pane.write.codex-attention"
 
-    $hook = Invoke-ECodexJson @('--json', 'hook', 'event', '--phase', 'end', '--command', "ECodex Toast Smoke $marker", '--exit-code', '0', '--cwd', $workspaceRootFull, '--workspace-id', $workspaceId, '--surface-id', $surfaceId, '--pane-id', $paneId)
-    Assert-ECodexSuccess $hook "hook.event"
-    $notification = Wait-ForNotification -WorkspaceId $workspaceId -SurfaceId $surfaceId -PaneId $paneId -Marker $marker
-    $notificationId = Get-JsonProperty $notification "id"
+        $notification = Wait-ForNotification -WorkspaceId $workspaceId -SurfaceId $surfaceId -PaneId $paneId -Marker $marker -ExpectedSource "AgentAttention" -ExpectedTitle "Codex 等待输入"
+        $notificationId = Get-JsonProperty $notification "id"
+        $source = Get-JsonProperty $notification "source"
+        $title = Get-JsonProperty $notification "title"
+        $body = Get-JsonProperty $notification "body"
 
-    $script:Evidence["toastPayload"] = [ordered]@{
-        action = "jumpToNotification"
-        notificationId = $notificationId
-        workspaceId = $workspaceId
-        workspaceRef = $workspaceRef
-        surfaceId = $surfaceId
-        paneId = $paneId
-        marker = $marker
+        $script:Evidence["agentAttentionPayload"] = [ordered]@{
+            notificationId = $notificationId
+            source = $source
+            title = $title
+            body = $body
+            marker = $marker
+        }
+        $script:Evidence["toastPayload"] = [ordered]@{
+            action = "jumpToNotification"
+            notificationId = $notificationId
+            workspaceId = $workspaceId
+            workspaceRef = $workspaceRef
+            surfaceId = $surfaceId
+            paneId = $paneId
+            marker = $marker
+            source = $source
+        }
+
+        Add-SmokeCheck "codex-attention-notification-created" "ok" "AgentAttention notification was created with workspace/surface/pane context." $script:Evidence["agentAttentionPayload"]
+
+        $ordinaryMarker = "ordinary-output-$([Guid]::NewGuid().ToString('N'))"
+        $ordinaryText = "Build succeeded without waiting for input $ordinaryMarker"
+        $ordinaryWrite = Invoke-ECodexJson @('--json', 'pane', 'write', '--workspace', $workspaceTarget, "echo $ordinaryText", '--submit', 'true')
+        Assert-ECodexSuccess $ordinaryWrite "pane.write.ordinary-output"
+        Assert-NoNotification -WorkspaceId $workspaceId -SurfaceId $surfaceId -PaneId $paneId -Marker $ordinaryMarker -ExpectedSource "AgentAttention" | Out-Null
+
+        $script:Evidence["negativeControl"] = [ordered]@{
+            marker = $ordinaryMarker
+            expectedSource = "AgentAttention"
+            ordinaryText = $ordinaryText
+        }
+        Add-SmokeCheck "codex-attention-negative-control" "ok" "ordinary-output did not create an AgentAttention notification." $script:Evidence["negativeControl"]
     }
+    else {
+        $marker = "toast-smoke-$([Guid]::NewGuid().ToString('N'))"
+        $paneWrite = Invoke-ECodexJson @('--json', 'pane', 'write', '--workspace', $workspaceTarget, $marker, '--submit', 'true')
+        Assert-ECodexSuccess $paneWrite "pane.write"
+
+        $hook = Invoke-ECodexJson @('--json', 'hook', 'event', '--phase', 'end', '--command', "ECodex Toast Smoke $marker", '--exit-code', '0', '--cwd', $workspaceRootFull, '--workspace-id', $workspaceId, '--surface-id', $surfaceId, '--pane-id', $paneId)
+        Assert-ECodexSuccess $hook "hook.event"
+        $notification = Wait-ForNotification -WorkspaceId $workspaceId -SurfaceId $surfaceId -PaneId $paneId -Marker $marker
+        $notificationId = Get-JsonProperty $notification "id"
+
+        $script:Evidence["toastPayload"] = [ordered]@{
+            action = "jumpToNotification"
+            notificationId = $notificationId
+            workspaceId = $workspaceId
+            workspaceRef = $workspaceRef
+            surfaceId = $surfaceId
+            paneId = $paneId
+            marker = $marker
+        }
+
+        Add-SmokeCheck "notification-created" "ok" "Lifecycle notification was created with workspace/surface/pane context." $script:Evidence["toastPayload"]
+    }
+
     $script:Evidence["cleanup"] = [ordered]@{
         workspaceId = $workspaceId
         workspaceRoot = $workspaceRootFull
@@ -443,22 +578,31 @@ try {
     }
     $script:PreparedManualSmoke = $true
 
-    Add-SmokeCheck "notification-created" "ok" "Lifecycle notification was created with workspace/surface/pane context." $script:Evidence["toastPayload"]
-
     if ($Interactive) {
         $toastShown = Read-Host "Did the Windows Toast appear? (y/n)"
         $clickRestored = Read-Host "After clicking the Toast, did ECodex restore/focus? (y/n)"
         $paneFocused = Read-Host "Did it focus the target pane? (y/n)"
         $fallbackVisible = Read-Host "If you tested a missing pane, was fallback visible? (y/n/skip)"
+        $sourceIsAgentAttention = if ($Scenario -eq "CodexAttention") { Read-Host "Was the notification source AgentAttention in evidence? (y/n)" } else { "skip" }
+        $ordinaryOutputDidNotNotify = if ($Scenario -eq "CodexAttention") { Read-Host "Did ordinary-output avoid AgentAttention notification? (y/n)" } else { "skip" }
         $script:Evidence["manualEvidenceTemplate"] = [ordered]@{
             toastShown = $toastShown
             clickRestoredWindow = $clickRestored
             paneFocused = $paneFocused
             fallbackVisible = $fallbackVisible
+            sourceIsAgentAttention = $sourceIsAgentAttention
+            ordinaryOutputDidNotNotify = $ordinaryOutputDidNotNotify
             notes = "Recorded by -Interactive"
         }
 
-        if ($toastShown -match '^(y|yes)$' -and $clickRestored -match '^(y|yes)$' -and $paneFocused -match '^(y|yes)$') {
+        $scenarioPassed = $toastShown -match '^(y|yes)$' -and $clickRestored -match '^(y|yes)$' -and $paneFocused -match '^(y|yes)$'
+        if ($Scenario -eq "CodexAttention") {
+            $scenarioPassed = $scenarioPassed -and
+                $sourceIsAgentAttention -match '^(y|yes)$' -and
+                $ordinaryOutputDidNotNotify -match '^(y|yes)$'
+        }
+
+        if ($scenarioPassed) {
             Write-SmokeSummary "passed" "Manual Toast click smoke passed."
         }
 

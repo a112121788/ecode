@@ -436,7 +436,7 @@ Codex 等待用户输入、权限确认或关键错误决策时，需要在 ECod
 | 去重 / 冷却 | 同 pane、同信号类型、同摘要 30 秒内只提醒一次；同一 pane 状态从等待输入变为确认 / 错误决策时可再次提醒；普通输出追加不刷新 Toast |
 | 安全与脱敏 | 通知 body 只包含脱敏后的短摘要，不包含完整命令输出、密钥、prompt 原文或大段上下文；检测失败不影响终端输入输出 |
 | 降级 | 无法确认 Codex 或信号置信度不足时 no-op；用户仍可通过 OSC / `ecodex notify` / 命令生命周期通知获得显式提醒 |
-| 验证边界 | 信号检测、去重和前台门控可单测 / source test；真实 Codex 等待输入场景需 Windows live smoke 或手测记录补证 |
+| 验证边界 | 信号检测、去重和前台门控可单测 / source test；`scripts/smoke-toast-activation.ps1 -Scenario CodexAttention` 记录 Windows-only 触发样例、`AgentAttention` payload、普通输出负控和手测证据，真实 Codex CLI 文案仍需人工补证 |
 
 ---
 

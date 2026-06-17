@@ -1611,6 +1611,8 @@ public class SmokeWorkflowTests
     {
         var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "smoke-toast-activation.ps1"));
 
+        script.Should().Contain("[ValidateSet(\"LifecycleToast\", \"CodexAttention\")]");
+        script.Should().Contain("$Scenario = \"LifecycleToast\"");
         script.Should().Contain("Toast activation live smoke requires Windows");
         script.Should().Contain("ECodex CLI was not found");
         script.Should().Contain("ECodex app is not running");
@@ -1626,6 +1628,22 @@ public class SmokeWorkflowTests
         script.Should().Contain("paneFocused");
         script.Should().Contain("fallbackVisible");
         script.Should().Contain("cleanup.command");
+    }
+
+    [Fact]
+    public void CodexAttentionSmokeScript_CoversAgentAttentionScenarioAndNegativeControl()
+    {
+        var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "smoke-toast-activation.ps1"));
+
+        script.Should().Contain("CodexAttention");
+        script.Should().Contain("codex-attention-notification-created");
+        script.Should().Contain("agentAttentionPayload");
+        script.Should().Contain("AgentAttention");
+        script.Should().Contain("Assert-NoNotification");
+        script.Should().Contain("codex-attention-negative-control");
+        script.Should().Contain("Codex is waiting for user input");
+        script.Should().Contain("ordinary-output");
+        script.Should().Contain("simulatedTriggerText");
     }
 
     [Fact]
@@ -1647,6 +1665,24 @@ public class SmokeWorkflowTests
         backlog.Should().Contain("### `NOT-02C-3` - Windows Toast live smoke 与安装策略校验");
         backlog.Should().Contain("| 状态 | done |");
         backlog.Should().Contain("ToastActivationSmokeScript_CoversWindowsPrereqsManualEvidenceAndSkipsClearly");
+    }
+
+    [Fact]
+    public void CodexAttentionSmokeDocs_CoverInstallTroubleshootingReleaseAndBacklog()
+    {
+        var installation = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "installation.md"));
+        var troubleshooting = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "troubleshooting.md"));
+        var releaseReadiness = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "release-readiness.md"));
+        var backlog = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "spec", "07-implementation-backlog.md"));
+
+        installation.Should().Contain("-Scenario CodexAttention");
+        installation.Should().Contain("Codex 等待输入提醒");
+        troubleshooting.Should().Contain("Codex 等待输入提醒");
+        troubleshooting.Should().Contain("codex-attention-notification-created");
+        releaseReadiness.Should().Contain("-Scenario CodexAttention");
+        backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
+        backlog.Should().Contain("CodexAttentionSmokeScript_CoversAgentAttentionScenarioAndNegativeControl");
+        backlog.Should().Contain("`NOT-02D-3` 已完成");
     }
 }
 
@@ -1700,9 +1736,9 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-1` - Codex 等待输入信号纯检测器");
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
-        backlog.Should().Contain("`NOT-02D-2` 已完成后台 / 非激活低噪声通知接入");
-        backlog.Should().Contain("| 状态 | ready |");
-        backlog.Should().Contain("下个可领切片优先进入");
+        backlog.Should().Contain("`NOT-02D-3` 已完成 Codex 等待输入 smoke/checklist");
+        backlog.Should().Contain("| `NOT-02D` | done |");
+        backlog.Should().Contain("Ready 队列当前已清空");
     }
 }
 

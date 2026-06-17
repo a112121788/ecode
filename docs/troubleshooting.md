@@ -92,7 +92,8 @@ Get-Content "$env:USERPROFILE\.ecodex\daemon-debug.log" -Tail 120
 2. 在 Windows 设置中确认 ECodex 的通知权限已开启，并临时关闭专注助手 / 请勿打扰；专注助手开启时 Toast 可能只进入通知中心，不弹横幅。
 3. 确认通过安装器或固定目录快捷方式启动 `ecodex-app.exe`，开始菜单 / 桌面快捷方式应指向当前安装目录；缺快捷方式或 AppUserModelID（AUMID）异常时，非打包 WPF 的 Toast activation 可能无法回到应用。
 4. 确认 ECodex 主窗口在触发通知时处于隐藏到托盘或非激活状态；前台活跃时命令生命周期和 Codex 等待输入信号都不会刷未读通知或 Toast。
-5. 点击 Toast 后如果目标 workspace / surface / pane 已关闭，预期行为是恢复窗口并打开通知面板 fallback，而不是跳到其他 pane；若没有 fallback，请附 `toastPayload` 和 `%USERPROFILE%\.ecodex\daemon-debug.log` 提交 issue。
+5. Codex 等待输入提醒异常时，运行 `pwsh ./scripts/smoke-toast-activation.ps1 -Scenario CodexAttention`，确认 JSON 中有 `codex-attention-notification-created`、`agentAttentionPayload.source=AgentAttention` 和 `codex-attention-negative-control`；若只有命令完成通知而没有 AgentAttention，附 `simulatedTriggerText` 和日志提交 issue。
+6. 点击 Toast 后如果目标 workspace / surface / pane 已关闭，预期行为是恢复窗口并打开通知面板 fallback，而不是跳到其他 pane；若没有 fallback，请附 `toastPayload` 和 `%USERPROFILE%\.ecodex\daemon-debug.log` 提交 issue。
 
 ## PATH / shell profile 问题
 
