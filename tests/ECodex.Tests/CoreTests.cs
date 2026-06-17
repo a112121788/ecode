@@ -2936,6 +2936,7 @@ public class DocsSiteTests
         foreach (var page in new[] { "index.md", "installation.md", "getting-started.md", "custom-commands.md", "session-restore.md", "cli.md", "browser-api.md", "troubleshooting.md", "release-readiness.md", "roadmap.md" })
             File.Exists(Path.Combine(docsRoot, page)).Should().BeTrue(page);
         File.Exists(Path.Combine(docsRoot, "release-notes", "1.0.0.md")).Should().BeTrue();
+        File.Exists(Path.Combine(docsRoot, "release-notes", "1.0.2.md")).Should().BeTrue();
     }
 
     [Fact]
@@ -3120,20 +3121,20 @@ public class DocsSiteTests
     public void ReleaseNotesDocs_CoverInstallUpgradeHighlightsAndLimits()
     {
         var config = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", ".vitepress", "config.mts"));
-        var notes = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "release-notes", "1.0.0.md"));
+        var notes = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "release-notes", "1.0.2.md"));
 
         config.Should().Contain("发布说明");
-        config.Should().Contain("link: '/release-notes/1.0.0'");
-        notes.Should().Contain("ECodex 1.0.0 发布说明");
+        config.Should().Contain("link: '/release-notes/1.0.2'");
+        notes.Should().Contain("ECodex 1.0.2 发布说明");
         notes.Should().Contain("推荐下载");
         notes.Should().Contain("ecodex-win-x64-sc");
-        notes.Should().Contain("Velopack 安装器/feed");
+        notes.Should().Contain("Inno Setup 安装器");
         notes.Should().Contain("新特性");
-        notes.Should().Contain("ecodex browser");
-        notes.Should().Contain("ecodex.v2");
+        notes.Should().Contain("托盘常驻");
+        notes.Should().Contain("低噪声通知");
         notes.Should().Contain("%USERPROFILE%\\.ecodex");
         notes.Should().Contain("升级注意事项");
-        notes.Should().Contain("已知限制");
+        notes.Should().Contain("AgentConversation");
         notes.Should().Contain("P0 = 0、P1 <= 3");
         notes.Should().Contain("故障排查");
     }
@@ -3250,16 +3251,16 @@ public class ReleaseVersionTests
         ns.AddNamespace("m", "http://schemas.microsoft.com/appx/manifest/foundation/windows10");
 
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "CHANGELOG.md"))
-            .Should().Contain("## [1.0.1] - 2026-06-16");
-        props.SelectSingleNode("/Project/PropertyGroup/Version")!.InnerText.Should().Be("1.0.1");
+            .Should().Contain("## [1.0.2] - 2026-06-17");
+        props.SelectSingleNode("/Project/PropertyGroup/Version")!.InnerText.Should().Be("1.0.2");
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "installer", "ecodex.iss"))
-            .Should().Contain("#define MyAppVersion \"1.0.1\"");
-        manifest.SelectSingleNode("/m:Package/m:Identity[@Version='1.0.1.0']", ns)
+            .Should().Contain("#define MyAppVersion \"1.0.2\"");
+        manifest.SelectSingleNode("/m:Package/m:Identity[@Version='1.0.2.0']", ns)
             .Should().NotBeNull();
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "src", "ECodex", "Views", "SettingsWindow.xaml"))
-            .Should().Contain("Text=\"v1.0.1\"");
+            .Should().Contain("Text=\"v1.0.2\"");
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "installation.md"))
-            .Should().Contain("ECodex-win-x64-1.0.1.0.msix");
+            .Should().Contain("ECodex-win-x64-1.0.2.0.msix");
     }
 }
 

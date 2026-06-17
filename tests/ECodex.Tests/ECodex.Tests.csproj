@@ -87,6 +87,7 @@
     <None Include="..\..\docs\release-readiness.md" Link="docs\release-readiness.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\roadmap.md" Link="docs\roadmap.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\docs\release-notes\1.0.0.md" Link="docs\release-notes\1.0.0.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\docs\release-notes\1.0.2.md" Link="docs\release-notes\1.0.2.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

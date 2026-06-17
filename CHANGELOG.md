@@ -8,6 +8,10 @@ ECodex 的用户可读变更记录。维护规则参见 `spec/06-roadmap.md` §3
 
 ## [Unreleased]
 
+暂无。
+
+## [1.0.2] - 2026-06-17
+
 ### Added
 
 - 终端输入新增全局 `Ctrl+Enter` 换行，适合 Codex CLI 等多行输入场景；普通 `Enter` 仍提交命令。
