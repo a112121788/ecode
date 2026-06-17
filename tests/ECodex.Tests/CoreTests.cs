@@ -1737,7 +1737,7 @@ public class NotificationBacklogRefinementTests
         backlog.Should().Contain("### `NOT-02D-2` - 等待输入信号接入低噪声通知");
         backlog.Should().Contain("### `NOT-02D-3` - Codex 等待输入 live smoke 与文档");
         backlog.Should().Contain("| `NOT-02D` | done |");
-        backlog.Should().Contain("`OBS-01-1` 失败 loop 证据包 Core DTO 与装配器");
+        backlog.Should().Contain("`OBS-01-2` 失败 loop 证据源加载适配器");
     }
 }
 
@@ -1760,8 +1760,9 @@ public class Obs01RefinementTests
         contract.Should().Contain("不得读取 `secrets.json`");
         backlog.Should().Contain("### `OBS-01-R` - 拆分失败 loop 证据包契约");
         backlog.Should().Contain("### `OBS-01-1` - 失败 loop 证据包 Core DTO 与装配器");
+        backlog.Should().Contain("### `OBS-01-2` - 失败 loop 证据源加载适配器");
         backlog.Should().Contain("FailureLoopEvidencePackage");
-        backlog.Should().Contain("| 状态 | ready |");
+        backlog.Should().Contain("`OBS-01-1` 已完成纯 Core DTO 与装配器");
     }
 
     [Fact]
@@ -1833,6 +1834,151 @@ public class PerfBudgetScriptTests
         workflow.Should().Contain("./scripts/perf/measure.ps1");
         workflow.Should().Contain("ecodex-perf-report");
         ci.Should().Contain("Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'scripts') -Filter '*.ps1' -File -Recurse");
+    }
+}
+
+public class FailureLoopEvidenceTests
+{
+    [Fact]
+    public void Assemble_SelectsFailedCommandAndAssociatesTranscriptWithinPaneWindow()
+    {
+        var started = new DateTime(2026, 6, 17, 8, 0, 0, DateTimeKind.Utc);
+        var completed = started.AddMinutes(2);
+        var assembler = new FailureLoopEvidenceAssembler();
+
+        var package = assembler.Assemble(
+            new FailureLoopEvidenceRequest("workspace-a", "surface-a", "pane-a")
+            {
+                CapturedAtUtc = new DateTimeOffset(2026, 6, 17, 8, 5, 0, TimeSpan.Zero),
+                PackageId = "pkg-1",
+                WindowBefore = TimeSpan.FromMinutes(3),
+                WindowAfter = TimeSpan.FromMinutes(3),
+                MaxTranscriptSummaryChars = 32,
+            },
+            [
+                new CommandLogEntry
+                {
+                    Id = "ok",
+                    WorkspaceId = "workspace-a",
+                    SurfaceId = "surface-a",
+                    PaneId = "pane-a",
+                    Command = "dotnet build",
+                    StartedAt = started.AddMinutes(-10),
+                    CompletedAt = started.AddMinutes(-9),
+                    ExitCode = 0,
+                },
+                new CommandLogEntry
+                {
+                    Id = "fail",
+                    WorkspaceId = "workspace-a",
+                    SurfaceId = "surface-a",
+                    PaneId = "pane-a",
+                    Command = "dotnet test",
+                    StartedAt = started,
+                    CompletedAt = completed,
+                    ExitCode = 1,
+                    WorkingDirectory = @"C:\repo",
+                },
+            ],
+            [
+                new FailureLoopTranscriptInput(
+                    new TerminalTranscriptEntry
+                    {
+                        FileName = "inside.txt",
+                        FilePath = @"C:\transcripts\inside.txt",
+                        WorkspaceId = "workspace-a",
+                        SurfaceId = "surface-a",
+                        PaneId = "pane-a",
+                        CapturedAt = completed.AddMinutes(1),
+                        Reason = "close",
+                        SizeBytes = 4096,
+                    },
+                    "OPENAI_API_KEY=[REDACTED] failed with stack trace that should be trimmed"),
+                new FailureLoopTranscriptInput(
+                    new TerminalTranscriptEntry
+                    {
+                        FileName = "other-pane.txt",
+                        FilePath = @"C:\transcripts\other-pane.txt",
+                        WorkspaceId = "workspace-a",
+                        SurfaceId = "surface-a",
+                        PaneId = "pane-b",
+                        CapturedAt = completed.AddMinutes(1),
+                        Reason = "close",
+                    },
+                    "other pane output"),
+            ],
+            []);
+
+        package.PackageId.Should().Be("pkg-1");
+        package.WorkspaceId.Should().Be("workspace-a");
+        package.SurfaceId.Should().Be("surface-a");
+        package.PaneId.Should().Be("pane-a");
+        package.Commands.Should().ContainSingle()
+            .Which.Should().BeEquivalentTo(new
+            {
+                Id = "fail",
+                Command = "dotnet test",
+                ExitCode = 1,
+                WorkingDirectory = @"C:\repo",
+            });
+        package.FromUtc.Should().Be(new DateTimeOffset(started.AddMinutes(-3), TimeSpan.Zero));
+        package.ToUtc.Should().Be(new DateTimeOffset(completed.AddMinutes(3), TimeSpan.Zero));
+        package.Transcripts.Should().ContainSingle()
+            .Which.Should().Match<FailureLoopTranscriptEvidence>(e =>
+                e.FileName == "inside.txt" &&
+                e.Summary.StartsWith("OPENAI_API_KEY=[REDACTED]") &&
+                e.Summary.Length == 32 &&
+                e.SummaryWasTruncated);
+        package.AgentMessages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Assemble_FiltersDaemonLogsByPaneAndFailureWindow()
+    {
+        var started = new DateTime(2026, 6, 17, 9, 0, 0, DateTimeKind.Utc);
+        var completed = started.AddMinutes(1);
+        var assembler = new FailureLoopEvidenceAssembler();
+
+        var package = assembler.Assemble(
+            new FailureLoopEvidenceRequest("workspace-a", "surface-a", "pane-a")
+            {
+                CapturedAtUtc = new DateTimeOffset(2026, 6, 17, 9, 3, 0, TimeSpan.Zero),
+                WindowBefore = TimeSpan.FromMinutes(1),
+                WindowAfter = TimeSpan.FromMinutes(2),
+                MaxDaemonLogLineChars = 16,
+            },
+            [
+                new CommandLogEntry
+                {
+                    Id = "fail",
+                    WorkspaceId = "workspace-a",
+                    SurfaceId = "surface-a",
+                    PaneId = "pane-a",
+                    Command = "ecodex run",
+                    StartedAt = started,
+                    CompletedAt = completed,
+                    ExitCode = 2,
+                },
+            ],
+            [],
+            [
+                new FailureLoopDaemonLogInput(new DateTimeOffset(started.AddSeconds(5), TimeSpan.Zero), "pane-a fallback to attach session", "pane-a"),
+                new FailureLoopDaemonLogInput(new DateTimeOffset(started.AddSeconds(6), TimeSpan.Zero), "pane-b fallback", "pane-b"),
+                new FailureLoopDaemonLogInput(new DateTimeOffset(started.AddSeconds(7), TimeSpan.Zero), "untagged fallback"),
+                new FailureLoopDaemonLogInput(new DateTimeOffset(started.AddMinutes(5), TimeSpan.Zero), "pane-a late fallback", "pane-a"),
+            ]);
+
+        package.DaemonLogs.Should().ContainSingle()
+            .Which.Should().Match<FailureLoopDaemonLogEvidence>(e =>
+                e.PaneId == "pane-a" &&
+                e.Line == "pane-a fallback " &&
+                e.LineWasTruncated);
+        package.Sources.Should().Contain(source =>
+            source.Kind == FailureLoopEvidenceSourceKind.DaemonLog &&
+            source.Count == 1);
+        package.Sources.Should().Contain(source =>
+            source.Kind == FailureLoopEvidenceSourceKind.AgentConversation &&
+            source.Count == 0);
     }
 }
 

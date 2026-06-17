@@ -33,6 +33,7 @@
 | `Models/CommandLogEntry.cs` | `CommandLogEntry` | 命令日志项：起止时间、退出码、状态图标（`\uE916 / \uE73E / \uE711`）、时长格式化 |
 | `Models/TerminalNotification.cs` | `TerminalNotification / AppNotification / NotificationSource` | OSC、CLI 或内部检测通知，统一带 `IsRead`、`Source`（Osc9/Osc99/Osc777/Cli/AgentAttention） |
 | `Models/TerminalTranscriptEntry.cs` | `TerminalTranscriptEntry` | 脚本文件元数据：`FilePath / CapturedAt / Reason / SizeBytes` |
+| `Models/FailureLoopEvidencePackage.cs` | `FailureLoopEvidencePackage / FailureLoopCommandEvidence / FailureLoopTranscriptEvidence / FailureLoopDaemonLogEvidence` | OBS-01 失败 loop 证据包 DTO；只承载调用方传入的已脱敏命令、transcript 摘要、daemon log 片段，Agent 消息首版为空集合 |
 | `Models/Snippet.cs` | `Snippet` | 代码片段：`{{key}}` 占位符解析（`Resolve`）+ `GetPlaceholders` |
 | `Models/ECodexJsonConfig.cs` | `ECodexJsonConfig / ECodexCommand / ECodexAction` | 项目级 `ecodex.json` DTO；M1 支持 `commands` 与 `actions` 的 `command` 子集，目标为 `currentTerminal` / `newTabInCurrentPane` |
 | `Models/AgentConversationThread.cs`（planned） | `AgentConversationThread` | OBS-01 规划中的 Agent 会话线程索引；当前源码未落地，不作为现有事实源 |
@@ -49,6 +50,7 @@
 | `Services/AgentAttentionSignalDetector.cs` | `AgentAttentionSignalDetector / AgentAttentionSignal` | 纯 Core 检测器；从 Codex pane 的短文本尾部识别 `WaitingInput / ConfirmationRequired / ErrorNeedsDecision` 信号，返回脱敏短摘要，不访问 UI、不创建通知、不扫描 raw bytes |
 | `Services/AgentAttentionNotificationService.cs` | `AgentAttentionNotificationService` | 把 `AgentAttentionSignal` 转为 `NotificationSource.AgentAttention` 未读通知：缺 workspace/surface/pane、前台活跃或空信号 no-op；同 pane / signal kind / summary 30 秒内去重 |
 | `Services/ToastActivationParser.cs` | `ToastActivationParser / ToastActivationRequest` | 统一构建 Windows Toast `action/notificationId/workspaceId/surfaceId/paneId` arguments，并把激活 query string 解析为可跳转请求 |
+| `Services/FailureLoopEvidenceAssembler.cs` | `FailureLoopEvidenceAssembler / FailureLoopEvidenceRequest / FailureLoopTranscriptInput / FailureLoopDaemonLogInput` | 纯 Core 装配器；按 workspace / surface / pane 过滤非零退出码命令，用失败命令扩展时间窗关联 transcript 与 daemon log，并限制摘要长度；不读真实日志、不写磁盘、不接 UI |
 | `Services/CommandLogService.cs` | `CommandLogService` | **OSC 133 提示符标记处理**（A/B/C/D）、命令提交、手动注入；按日 JSONL 持久化；脱敏（`SanitizeCommandForStorage / SanitizeTranscriptText`）；终端脚本捕获 `SaveTerminalTranscript / GetTerminalTranscripts / LoadTerminalTranscriptContent`；保留策略 `CommandLogRetentionDays / TranscriptRetentionDays`（0 = 永久，默认 90） |
 | `Services/SnippetService.cs` | `SnippetService` | 增删改查 + 搜索（按 name / content / category / tags / description，收藏优先）+ 首次启动播种 10 条默认 |
 | `Services/ECodexJsonService.cs` | `ECodexJsonService` | 读取 `%USERPROFILE%\.config\ecodex\ecodex.json`、`<cwd>\.ecodex\ecodex.json`、`<cwd>\ecodex.json`；支持 JSONC 注释 / 尾随逗号；全局与本地配置合并；输出可显示的诊断 |

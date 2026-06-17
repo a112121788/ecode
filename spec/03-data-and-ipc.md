@@ -487,6 +487,15 @@ public sealed record FailureLoopEvidencePackage(
     IReadOnlyList<FailureLoopDaemonLogEvidence> DaemonLogs);
 ```
 
+首版实现落在 `src/ECodex.Core/Models/FailureLoopEvidencePackage.cs` 与 `src/ECodex.Core/Services/FailureLoopEvidenceAssembler.cs`：
+
+| 类型 | 作用 | 首版边界 |
+|---|---|---|
+| `FailureLoopEvidenceRequest` | 指定 `workspaceId / surfaceId / paneId`、失败命令前后时间窗、摘要长度和可选 `packageId / capturedAtUtc` | 调用方显式传入；不从 UI 或磁盘推断 |
+| `FailureLoopTranscriptInput` | 包装 `TerminalTranscriptEntry` 与已脱敏 transcript 摘要 | 装配器只截断，不重新读取 `FilePath` |
+| `FailureLoopDaemonLogInput` | 包装调用方提供的 daemon log 时间戳、行文本与可选 paneId | 装配器只做时间窗和 paneId 过滤，不读取 `%USERPROFILE%` |
+| `FailureLoopEvidenceAssembler` | 把非零退出码命令、时间窗内 transcript 与 daemon log 片段装配成 `FailureLoopEvidencePackage` | Agent message 来源保持空集合；不做 UI、不写磁盘 |
+
 | 来源 | 当前数据入口 | 证据用途 | 约束 |
 |---|---|---|---|
 | 命令日志 | `CommandLogService.GetForDate(...)` / `CommandLogEntry` | 找到失败命令、退出码、cwd、workspace / surface / pane、时间窗口 | 只使用已脱敏命令；不补采 shell 历史 |
@@ -500,7 +509,7 @@ public sealed record FailureLoopEvidencePackage(
 | 失败判定 | 首版只把非零 `exitCode`、daemon fallback / session error、用户手动选择的 transcript 作为候选失败 loop |
 | 脱敏 | 命令日志与 transcript 继续复用 `CommandLogService` 的脱敏结果；证据包不得读取 `secrets.json`、`.env*`、`config/credentials*` 或 `secrets/**` |
 | 输出边界 | `FailureLoopEvidencePackage` 是 Core DTO / 装配结果；UI 只消费 package，不在 UI 层重新扫描日志文件 |
-| 验证边界 | 先用 fixture 单测覆盖命令日志 + transcript + daemon log 的时间窗关联；Agent 会话来源在 planned 类型落地前必须保持空集合 |
+| 验证边界 | `FailureLoopEvidenceTests` 覆盖命令日志 + transcript + daemon log 的时间窗关联；Agent 会话来源在 planned 类型落地前必须保持空集合 |
 
 ---
 
